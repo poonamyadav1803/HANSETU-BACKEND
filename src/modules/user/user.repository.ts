@@ -1,103 +1,66 @@
-import { Pool } from "pg";
-import { Database } from "../../config/database";
+import { eq, desc } from "drizzle-orm";
+import { db } from "../../db";
+import { users } from "../../db/schema";
 import { IUser, BusinessType } from "./user.entity";
 
 export class UserRepository {
+  async create(data: Partial<IUser>) {
+    const [row] = await db
+      .insert(users)
+      .values({
+        gstNumber: data.gstNumber!,
+        email: data.email!,
+        mobile: data.mobile!,
+        username: data.username!,
+        password: data.password!,
+        businessType: data.businessType!,
+        emailVerified: data.emailVerified ?? false,
+        mobileVerified: data.mobileVerified ?? false,
+        isActive: data.isActive ?? true,
+      })
+      .returning();
 
-    private get pool(): Pool {
-        return Database.getPool();
-    }
+    return this.mapRow(row);
+  }
 
-    //Create User
-    async create(data: Partial<IUser>) {
-        const result = await this.pool.query(
-            `
-      INSERT INTO users
-      (gst_number, email, mobile, username, password, business_type, email_verified, mobile_verified, is_active)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-      RETURNING *;
-      `,
-            [
-                data.gstNumber,
-                data.email,
-                data.mobile,
-                data.username,
-                data.password,
-                data.businessType as BusinessType,
-                data.emailVerified ?? false,
-                data.mobileVerified ?? false,
-                data.isActive ?? true
-            ]
-        );
+  async findByEmail(email: string) {
+    const [row] = await db.select().from(users).where(eq(users.email, email));
+    return row ? this.mapRow(row) : null;
+  }
 
-        return this.mapRow(result.rows[0]);
-    }
+  async findById(id: string) {
+    const [row] = await db.select().from(users).where(eq(users.id, id));
+    return row ? this.mapRow(row) : null;
+  }
 
-    //Find by Email
-    async findByEmail(email: string) {
-        const result = await this.pool.query(
-            `SELECT * FROM users WHERE email = $1`,
-            [email]
-        );
+  async findByUsername(username: string) {
+    const [row] = await db.select().from(users).where(eq(users.username, username));
+    return row ? this.mapRow(row) : null;
+  }
 
-        if (!result.rows.length) return null;
-        return this.mapRow(result.rows[0]);
-    }
+  async findAll() {
+    const rows = await db.select().from(users).orderBy(desc(users.createdAt));
+    return rows.map((row) => this.mapRow(row));
+  }
 
-    //Find by ID
-    async findById(id: string) {
-        const result = await this.pool.query(
-            `SELECT * FROM users WHERE id = $1`,
-            [id]
-        );
+  async deactivateUser(id: string) {
+    await db.update(users).set({ isActive: false }).where(eq(users.id, id));
+  }
 
-        if (!result.rows.length) return null;
-        return this.mapRow(result.rows[0]);
-    }
-
-    //Find by Username
-    async findByUsername(username: string) {
-        const result = await this.pool.query(
-            `SELECT * FROM users WHERE username = $1`,
-            [username]
-        );
-
-        if (!result.rows.length) return null;
-        return this.mapRow(result.rows[0]);
-    }
-
-    //Admin: Get All Users
-    async findAll() {
-        const result = await this.pool.query(
-            `SELECT * FROM users ORDER BY created_at DESC`
-        );
-
-        return result.rows.map(this.mapRow);
-    }
-
-    //Admin: Deactivate User
-    async deactivateUser(id: string) {
-        await this.pool.query(
-            `UPDATE users SET is_active = false WHERE id = $1`,
-            [id]
-        );
-    }
-
-    //Internal Mapper (DB → Entity)
-    private mapRow(row: any): IUser {
-        return {
-            id: row.id,
-            gstNumber: row.gst_number,
-            email: row.email,
-            mobile: row.mobile,
-            username: row.username,
-            password: row.password,
-            businessType: row.business_type,
-            emailVerified: row.email_verified,
-            mobileVerified: row.mobile_verified,
-            isActive: row.is_active,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at
-        };
-    }
+  private mapRow(row: typeof users.$inferSelect): IUser {
+    return {
+      id: row.id,
+      gstNumber: row.gstNumber,
+      email: row.email,
+      mobile: row.mobile,
+      username: row.username,
+      password: row.password,
+      businessType: row.businessType as BusinessType,
+      emailVerified: row.emailVerified ?? false,
+      mobileVerified: row.mobileVerified ?? false,
+      isActive: row.isActive ?? true,
+      createdAt: row.createdAt ?? new Date(),
+      updatedAt: row.updatedAt ?? new Date(),
+    };
+  }
 }
