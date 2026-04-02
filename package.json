@@ -8,10 +8,16 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "ts-node-dev --transpile-only src/db/migrate.ts",
-    "db:push": "drizzle-kit push",
-    "db:seed": "ts-node-dev --transpile-only src/db/seeds/index.ts"
+
+    "db:generate":        "drizzle-kit generate",
+    "db:migrate":         "ts-node-dev --transpile-only src/db/migrate.ts",
+    "db:push":            "drizzle-kit push",
+    "db:seed":            "ts-node-dev --transpile-only src/db/seeds/index.ts",
+    "db:studio":          "drizzle-kit studio",
+
+    "db:export":          "bash scripts/db-export.sh",
+    "db:import":          "bash scripts/db-import.sh",
+    "migrate:provider":   "ts-node-dev --transpile-only scripts/migrate-provider.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",
