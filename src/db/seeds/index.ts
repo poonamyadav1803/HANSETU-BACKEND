@@ -1,9 +1,5 @@
 /**
- * Database Seeder
- *
- * Run with: npm run db:seed
- *
- * Seeds all reference data into the database.
+ * Database Seeder — Run with: npm run db:seed
  * Safe to run multiple times — all seeders use upsert (skip on conflict).
  */
 
@@ -15,6 +11,13 @@ import { seedManufacturers } from "./manufacturer.seeder";
 import { seedRawMaterials } from "./raw_material.seeder";
 import { seedMachines } from "./machine.seeder";
 import { seedOffers } from "./offer.seeder";
+import { seedCalibrationServices } from "./calibration.seeder";
+import { seedTestingServices } from "./testing.seeder";
+import { seedHrServices } from "./hr.seeder";
+import { seedTrainingPrograms } from "./training.seeder";
+import { seedStudentServices } from "./student.seeder";
+import { seedFinancialServices } from "./financial.seeder";
+import { seedSuppliers } from "./supplier.seeder";
 
 async function runSeeds() {
   log("═══════════════════════════════════════════");
@@ -28,6 +31,13 @@ async function runSeeds() {
     await seedRawMaterials();
     await seedMachines();
     await seedOffers();
+    await seedCalibrationServices();
+    await seedTestingServices();
+    await seedHrServices();
+    await seedTrainingPrograms();
+    await seedStudentServices();
+    await seedFinancialServices();
+    await seedSuppliers();
 
     log("═══════════════════════════════════════════");
     log("  All seeds completed successfully.");
@@ -37,7 +47,6 @@ async function runSeeds() {
     console.error(err);
     process.exit(1);
   } finally {
-    // Gracefully close the pool
     const { pool } = await import("../index");
     await pool.end();
   }

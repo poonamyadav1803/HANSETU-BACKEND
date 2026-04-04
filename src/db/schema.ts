@@ -39,6 +39,26 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GST Info (cache for Masters India API results)
+// ─────────────────────────────────────────────────────────────────────────────
+export const gstInfo = pgTable("gst_info", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  gstNumber: varchar("gst_number", { length: 20 }).unique().notNull(),
+  legalName: varchar("legal_name", { length: 500 }),
+  tradeName: varchar("trade_name", { length: 500 }),
+  registrationStatus: varchar("registration_status", { length: 100 }),
+  dateOfRegistration: varchar("date_of_registration", { length: 50 }),
+  constitutionOfBusiness: varchar("constitution_of_business", { length: 255 }),
+  principalPlaceOfBusiness: text("principal_place_of_business"),
+  natureOfBusinessActivities: text("nature_of_business_activities"),
+  rawApiResponse: text("raw_api_response"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type GstInfo = typeof gstInfo.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Industries
 // ─────────────────────────────────────────────────────────────────────────────
 export const industries = pgTable("industries", {
@@ -246,3 +266,174 @@ export const insertOfferSchema = createInsertSchema(offers).omit({
 
 export type InsertOffer = z.infer<typeof insertOfferSchema>;
 export type Offer = typeof offers.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calibration Services
+// ─────────────────────────────────────────────────────────────────────────────
+export const calibrationServices = pgTable("calibration_services", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 500 }).notNull(),
+  industrySlug: varchar("industry_slug", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  price: varchar("price", { length: 100 }),
+  accreditation: varchar("accreditation", { length: 255 }),
+  doorDelivery: boolean("door_delivery").default(false),
+  visitServices: boolean("visit_services").default(false),
+  responseTime: varchar("response_time", { length: 100 }),
+  rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  instruments: text("instruments"), // JSON array
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCalibrationServiceSchema = createInsertSchema(calibrationServices).omit({ id: true, createdAt: true });
+export type InsertCalibrationService = z.infer<typeof insertCalibrationServiceSchema>;
+export type CalibrationService = typeof calibrationServices.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Testing Services
+// ─────────────────────────────────────────────────────────────────────────────
+export const testingServices = pgTable("testing_services", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 500 }).notNull(),
+  category: varchar("category", { length: 255 }),
+  provider: varchar("provider", { length: 255 }),
+  industrySlug: varchar("industry_slug", { length: 100 }),
+  price: varchar("price", { length: 100 }),
+  turnaround: varchar("turnaround", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  certifications: text("certifications"), // JSON array
+  testTypes: text("test_types"), // JSON array
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTestingServiceSchema = createInsertSchema(testingServices).omit({ id: true, createdAt: true });
+export type InsertTestingService = z.infer<typeof insertTestingServiceSchema>;
+export type TestingService = typeof testingServices.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HR Services
+// ─────────────────────────────────────────────────────────────────────────────
+export const hrServices = pgTable("hr_services", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 500 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  industrySlug: varchar("industry_slug", { length: 100 }),
+  company: varchar("company", { length: 255 }),
+  type: varchar("type", { length: 100 }),
+  experience: varchar("experience", { length: 100 }),
+  salary: varchar("salary", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  skills: text("skills"), // JSON array
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertHrServiceSchema = createInsertSchema(hrServices).omit({ id: true, createdAt: true });
+export type InsertHrService = z.infer<typeof insertHrServiceSchema>;
+export type HrService = typeof hrServices.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Training Programs
+// ─────────────────────────────────────────────────────────────────────────────
+export const trainingPrograms = pgTable("training_programs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 500 }).notNull(),
+  category: varchar("category", { length: 255 }),
+  industrySlug: varchar("industry_slug", { length: 100 }),
+  provider: varchar("provider", { length: 255 }),
+  price: varchar("price", { length: 100 }),
+  duration: varchar("duration", { length: 100 }),
+  mode: varchar("mode", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  capacity: varchar("capacity", { length: 100 }),
+  certification: varchar("certification", { length: 255 }),
+  skills: text("skills"), // JSON array
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTrainingProgramSchema = createInsertSchema(trainingPrograms).omit({ id: true, createdAt: true });
+export type InsertTrainingProgram = z.infer<typeof insertTrainingProgramSchema>;
+export type TrainingProgram = typeof trainingPrograms.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Student Services
+// ─────────────────────────────────────────────────────────────────────────────
+export const studentServices = pgTable("student_services", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 500 }).notNull(),
+  category: varchar("category", { length: 255 }),
+  industrySlug: varchar("industry_slug", { length: 100 }),
+  provider: varchar("provider", { length: 255 }),
+  type: varchar("type", { length: 100 }),
+  duration: varchar("duration", { length: 100 }),
+  stipend: varchar("stipend", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  skills: text("skills"), // JSON array
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertStudentServiceSchema = createInsertSchema(studentServices).omit({ id: true, createdAt: true });
+export type InsertStudentService = z.infer<typeof insertStudentServiceSchema>;
+export type StudentService = typeof studentServices.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Financial Services
+// ─────────────────────────────────────────────────────────────────────────────
+export const financialServices = pgTable("financial_services", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 500 }).notNull(),
+  category: varchar("category", { length: 255 }),
+  industrySlug: varchar("industry_slug", { length: 100 }),
+  provider: varchar("provider", { length: 255 }),
+  type: varchar("type", { length: 100 }),
+  interestRate: varchar("interest_rate", { length: 50 }),
+  amount: varchar("amount", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  features: text("features"), // JSON array
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFinancialServiceSchema = createInsertSchema(financialServices).omit({ id: true, createdAt: true });
+export type InsertFinancialService = z.infer<typeof insertFinancialServiceSchema>;
+export type FinancialService = typeof financialServices.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suppliers (Raw Material Suppliers by Industry)
+// ─────────────────────────────────────────────────────────────────────────────
+export const suppliers = pgTable("suppliers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 500 }).notNull(),
+  industrySlug: varchar("industry_slug", { length: 100 }).notNull(),
+  materialCategory: varchar("material_category", { length: 255 }),
+  location: varchar("location", { length: 255 }),
+  materials: text("materials"), // JSON array
+  rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
+  reviews: integer("reviews").default(0),
+  minOrder: varchar("min_order", { length: 100 }),
+  price: varchar("price", { length: 100 }),
+  certifications: text("certifications"), // JSON array
+  established: varchar("established", { length: 10 }),
+  employees: varchar("employees", { length: 50 }),
+  contact: varchar("contact", { length: 100 }),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Supplier = typeof suppliers.$inferSelect;
