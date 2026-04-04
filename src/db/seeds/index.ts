@@ -1,29 +1,54 @@
 /**
- * Database Seeder
- *
- * Run with: npm run db:seed
- *
- * Seeds all reference data into the database. Safe to run multiple times —
- * uses upsert (insert or ignore on conflict).
+ * Database Seeder — Run with: npm run db:seed
+ * Safe to run multiple times — all seeders use upsert (skip on conflict).
  */
 
 import { db } from "../index";
 import { log, logError } from "../../utils/logger";
+import { seedIndustries } from "./industry.seeder";
+import { seedCategories } from "./category.seeder";
+import { seedManufacturers } from "./manufacturer.seeder";
+import { seedRawMaterials } from "./raw_material.seeder";
+import { seedMachines } from "./machine.seeder";
+import { seedOffers } from "./offer.seeder";
+import { seedCalibrationServices } from "./calibration.seeder";
+import { seedTestingServices } from "./testing.seeder";
+import { seedHrServices } from "./hr.seeder";
+import { seedTrainingPrograms } from "./training.seeder";
+import { seedStudentServices } from "./student.seeder";
+import { seedFinancialServices } from "./financial.seeder";
+import { seedSuppliers } from "./supplier.seeder";
 
 async function runSeeds() {
-  log("Starting database seeding…");
+  log("═══════════════════════════════════════════");
+  log("  Hansetu Database Seeder");
+  log("═══════════════════════════════════════════");
 
   try {
-    // Future seed runners will be imported and called here:
-    // await seedIndustries();
-    // await seedCategories();
-    // await seedMaterials();
-    // await seedManufacturers();
+    await seedIndustries();
+    await seedCategories();
+    await seedManufacturers();
+    await seedRawMaterials();
+    await seedMachines();
+    await seedOffers();
+    await seedCalibrationServices();
+    await seedTestingServices();
+    await seedHrServices();
+    await seedTrainingPrograms();
+    await seedStudentServices();
+    await seedFinancialServices();
+    await seedSuppliers();
 
-    log("Database seeding completed successfully.");
+    log("═══════════════════════════════════════════");
+    log("  All seeds completed successfully.");
+    log("═══════════════════════════════════════════");
   } catch (err) {
     logError(`Seeding failed: ${(err as Error).message}`);
+    console.error(err);
     process.exit(1);
+  } finally {
+    const { pool } = await import("../index");
+    await pool.end();
   }
 }
 

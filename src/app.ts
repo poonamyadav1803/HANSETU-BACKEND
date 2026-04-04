@@ -3,6 +3,20 @@ import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import { AuthRoutes } from "./modules/auth/auth.routes";
 import { UserRoutes } from "./modules/user/user.routes";
+import { IndustryRoutes } from "./modules/industry/industry.routes";
+import { CategoryRoutes } from "./modules/category/category.routes";
+import { ProductRoutes } from "./modules/product/product.routes";
+import { ManufacturerRoutes } from "./modules/manufacturer/manufacturer.routes";
+import { RawMaterialRoutes } from "./modules/raw-material/raw-material.routes";
+import { MachineRoutes } from "./modules/machine/machine.routes";
+import { OfferRoutes } from "./modules/offer/offer.routes";
+import { CalibrationServiceRoutes } from "./modules/calibration-service/calibration-service.routes";
+import { TestingServiceRoutes } from "./modules/testing-service/testing-service.routes";
+import { HrServiceRoutes } from "./modules/hr-service/hr-service.routes";
+import { TrainingProgramRoutes } from "./modules/training-program/training-program.routes";
+import { StudentServiceRoutes } from "./modules/student-service/student-service.routes";
+import { FinancialServiceRoutes } from "./modules/financial-service/financial-service.routes";
+import { SupplierRoutes } from "./modules/supplier/supplier.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerSpec } from "./config/swagger";
 import { log } from "./utils/logger";
@@ -71,6 +85,20 @@ export function createApp() {
   // ─── API Routes ───────────────────────────────────────────────────────────────
   app.use("/api/auth", new AuthRoutes().router);
   app.use("/api/users", new UserRoutes().router);
+  app.use("/api/industries", new IndustryRoutes().router);
+  app.use("/api/categories", new CategoryRoutes().router);
+  app.use("/api/products", new ProductRoutes().router);
+  app.use("/api/manufacturers", new ManufacturerRoutes().router);
+  app.use("/api/raw-materials", new RawMaterialRoutes().router);
+  app.use("/api/machines", new MachineRoutes().router);
+  app.use("/api/offers", new OfferRoutes().router);
+  app.use("/api/calibration-services", new CalibrationServiceRoutes().router);
+  app.use("/api/testing-services", new TestingServiceRoutes().router);
+  app.use("/api/hr-services", new HrServiceRoutes().router);
+  app.use("/api/training-programs", new TrainingProgramRoutes().router);
+  app.use("/api/student-services", new StudentServiceRoutes().router);
+  app.use("/api/financial-services", new FinancialServiceRoutes().router);
+  app.use("/api/suppliers", new SupplierRoutes().router);
 
   // ─── Health Check ─────────────────────────────────────────────────────────────
   /**
