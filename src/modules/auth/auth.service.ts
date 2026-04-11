@@ -8,6 +8,9 @@ import { otpStore, generateOtp } from "./otp.store";
 import { verifyGst } from "../gst/gst.service";
 import { sendOtpEmail } from "../../services/email.service";
 import { sendOtpSms } from "../../services/sms.service";
+import { db } from "../../db";
+import { otpTable } from "../../db/schema";
+import { eq, and } from "drizzle-orm";
 
 // In-memory store for OTP verification tokens (issued after email OTP verified)
 // token → { email, expiresAt }
@@ -15,20 +18,23 @@ const otpTokenStore = new Map<string, { email: string; expiresAt: number }>();
 const OTP_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes to complete registration
 
 function issueOtpToken(email: string): string {
-  const token = crypto.randomBytes(32).toString("hex");
-  otpTokenStore.set(token, { email, expiresAt: Date.now() + OTP_TOKEN_TTL_MS });
-  return token;
+  return jwt.sign(
+    { email, type: "otp" },
+    env.JWT_SECRET,
+    { expiresIn: "30m" }
+  );
 }
 
 export function consumeOtpToken(token: string): { email: string } | null {
-  const entry = otpTokenStore.get(token);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
-    otpTokenStore.delete(token);
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+
+    if (decoded.type !== "otp") return null;
+
+    return { email: decoded.email };
+  } catch {
     return null;
   }
-  otpTokenStore.delete(token);
-  return { email: entry.email };
 }
 
 export class AuthService {
@@ -54,14 +60,46 @@ export class AuthService {
 
   // ─── Email OTP ─────────────────────────────────────────────────────────────
   async sendEmailOtp(email: string): Promise<void> {
-    const otp = generateOtp();
-    otpStore.set("email", email, otp);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await db.delete(otpTable).where(eq(otpTable.email, email));
+
+    await db.insert(otpTable).values({
+      email,
+      otp,
+      expiresAt,
+    });
+
     await sendOtpEmail(email, otp);
+
+    console.log("OTP sent successfully", otp);
   }
 
   async verifyEmailOtp(email: string, otp: string): Promise<string> {
-    const valid = otpStore.verify("email", email, otp);
-    if (!valid) throw new Error("Invalid or expired email OTP");
+    const record = await db.query.otpTable.findFirst({
+      where: (table, { eq, and }) =>
+        and(eq(table.email, email), eq(table.otp, otp)),
+    });
+
+    if (!record) {
+      throw new Error("Invalid OTP");
+    }
+
+    if (record.isUsed) {
+      throw new Error("OTP already used");
+    }
+
+    if (new Date() > record.expiresAt) {
+      throw new Error("OTP expired");
+    }
+
+    await db
+      .update(otpTable)
+      .set({ isUsed: true })
+      .where(eq(otpTable.id, record.id));
+
     return issueOtpToken(email);
   }
 

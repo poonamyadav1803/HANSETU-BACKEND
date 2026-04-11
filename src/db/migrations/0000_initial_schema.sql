@@ -93,6 +93,15 @@ CREATE TABLE IF NOT EXISTS "products" (
   "updated_at"     timestamp     DEFAULT now()
 );
 
+CREATE TABLE otp (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) NOT NULL,
+  otp VARCHAR(10) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  is_used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS "products_category_id_idx"    ON "products" ("category_id");
 CREATE INDEX IF NOT EXISTS "products_subcategory_id_idx" ON "products" ("subcategory_id");
 CREATE INDEX IF NOT EXISTS "products_brand_idx"          ON "products" ("brand");
