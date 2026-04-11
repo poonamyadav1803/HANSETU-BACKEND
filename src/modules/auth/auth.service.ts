@@ -72,7 +72,7 @@ export class AuthService {
       expiresAt,
     });
 
-    // await sendOtpEmail(email, otp);
+    await sendOtpEmail(email, otp);
 
     console.log("OTP sent successfully", otp);
   }
