@@ -1,4 +1,4 @@
-name: Hansetu-Backend -deploy
+name: Hansetu-Backend-deploy
 
 on:
   workflow_dispatch: 
