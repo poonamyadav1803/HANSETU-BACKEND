@@ -21,7 +21,11 @@ export class AuthController {
       const token = await authService.signup(data);
       res.status(201).json({ token });
     } catch (err) {
-      next(err);
+      console.error("Signup error:", err);
+      res.status(500).json({
+        success: false,
+        message: "Something went wrong during signup. Please try again later."
+      });
     }
   }
 
@@ -54,7 +58,11 @@ export class AuthController {
       await authService.sendEmailOtp(email);
       res.json({ success: true, message: "OTP sent to your email" });
     } catch (err) {
-      next(err);
+      console.error("Send OTP email error:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send OTP. Please try again."
+      });
     }
   }
 
@@ -65,7 +73,11 @@ export class AuthController {
       const otpToken = await authService.verifyEmailOtp(email, otp);
       res.json({ success: true, otpToken });
     } catch (err) {
-      next(err);
+      console.error("Verify OTP email error:", err);
+      res.status(500).json({
+        success: false,
+        message: "OTP verification failed. Please try again."
+      });
     }
   }
 
