@@ -36,6 +36,31 @@ export class AuthRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
+    /**
+     * @openapi
+     * /api/auth/check-username/{username}:
+     *   get:
+     *     tags: [Auth]
+     *     summary: Check if a username is available
+     *     parameters:
+     *       - in: path
+     *         name: username
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Returns availability status
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 available:
+     *                   type: boolean
+     */
+    this.router.get("/check-username/:username", this.controller.checkUsername);
+
     this.router.post("/gst-verify", this.controller.gstVerify);
 
     /**

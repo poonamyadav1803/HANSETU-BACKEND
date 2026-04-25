@@ -55,6 +55,16 @@ export class AuthController {
     }
   }
 
+  async checkUsername(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { username } = req.params;
+      const result = await authService.checkUsername(username);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async gstVerify(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { gstNumber } = gstVerifySchema.parse(req.body);
