@@ -106,3 +106,272 @@ CREATE INDEX IF NOT EXISTS "products_category_id_idx"    ON "products" ("categor
 CREATE INDEX IF NOT EXISTS "products_subcategory_id_idx" ON "products" ("subcategory_id");
 CREATE INDEX IF NOT EXISTS "products_brand_idx"          ON "products" ("brand");
 CREATE INDEX IF NOT EXISTS "products_in_stock_idx"       ON "products" ("in_stock");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- GST Info (cache for Masters India API results)
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "gst_info" (
+  "id"                           uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "gst_number"                   varchar(20)  UNIQUE NOT NULL,
+  "legal_name"                   varchar(500),
+  "trade_name"                   varchar(500),
+  "registration_status"          varchar(100),
+  "date_of_registration"         varchar(50),
+  "constitution_of_business"     varchar(255),
+  "principal_place_of_business"  text,
+  "nature_of_business_activities" text,
+  "raw_api_response"             text,
+  "created_at"                   timestamp    DEFAULT now(),
+  "updated_at"                   timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "gst_info_gst_number_idx" ON "gst_info" ("gst_number");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Manufacturers
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "manufacturers" (
+  "id"                  uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "industry_slug"       varchar(100) NOT NULL,
+  "city"                varchar(100) NOT NULL,
+  "state"               varchar(100) NOT NULL,
+  "total_employees"     varchar(50),
+  "turnover"            varchar(100),
+  "year_established"    varchar(10),
+  "certifications"      text,
+  "in_house_testing"    boolean      DEFAULT false,
+  "import_export"       boolean      DEFAULT false,
+  "response_time"       varchar(50),
+  "rating"              numeric(3,1) DEFAULT 0,
+  "machine_capabilities" text,
+  "is_active"           boolean      DEFAULT true,
+  "created_at"          timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "manufacturers_industry_slug_idx" ON "manufacturers" ("industry_slug");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Raw Materials
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "raw_materials" (
+  "id"               uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "industry_slug"    varchar(100) NOT NULL,
+  "name"             varchar(500) NOT NULL,
+  "category"         varchar(255),
+  "price"            varchar(100) NOT NULL,
+  "grade"            varchar(255),
+  "city"             varchar(100),
+  "imported"         boolean      DEFAULT false,
+  "credit_available" boolean      DEFAULT false,
+  "quantity"         varchar(100),
+  "rating"           numeric(3,1) DEFAULT 0,
+  "description"      text,
+  "specifications"   text,
+  "certification"    varchar(255),
+  "delivery_time"    varchar(100),
+  "min_order"        varchar(100),
+  "is_active"        boolean      DEFAULT true,
+  "created_at"       timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "raw_materials_industry_slug_idx" ON "raw_materials" ("industry_slug");
+CREATE INDEX IF NOT EXISTS "raw_materials_category_idx"      ON "raw_materials" ("category");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Machines
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "machines" (
+  "id"          uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"        varchar(500) NOT NULL,
+  "category"    varchar(255) NOT NULL,
+  "type"        varchar(255),
+  "location"    varchar(100),
+  "price"       varchar(100) NOT NULL,
+  "specs"       text,
+  "is_featured" boolean      DEFAULT false,
+  "is_active"   boolean      DEFAULT true,
+  "created_at"  timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "machines_category_idx"    ON "machines" ("category");
+CREATE INDEX IF NOT EXISTS "machines_is_featured_idx" ON "machines" ("is_featured");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Offers
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "offers" (
+  "id"             uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "title"          varchar(500) NOT NULL,
+  "description"    text,
+  "discount"       varchar(20)  NOT NULL,
+  "time_remaining" varchar(100),
+  "category"       varchar(255),
+  "is_featured"    boolean      DEFAULT false,
+  "is_active"      boolean      DEFAULT true,
+  "created_at"     timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "offers_is_featured_idx" ON "offers" ("is_featured");
+CREATE INDEX IF NOT EXISTS "offers_category_idx"    ON "offers" ("category");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Calibration Services
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "calibration_services" (
+  "id"            uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"          varchar(500) NOT NULL,
+  "industry_slug" varchar(100),
+  "city"          varchar(100),
+  "price"         varchar(100),
+  "accreditation" varchar(255),
+  "door_delivery" boolean      DEFAULT false,
+  "visit_services" boolean     DEFAULT false,
+  "response_time" varchar(100),
+  "rating"        numeric(3,1) DEFAULT 0,
+  "instruments"   text,
+  "is_active"     boolean      DEFAULT true,
+  "created_at"    timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "calibration_services_industry_slug_idx" ON "calibration_services" ("industry_slug");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Testing Services
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "testing_services" (
+  "id"             uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"           varchar(500) NOT NULL,
+  "category"       varchar(255),
+  "provider"       varchar(255),
+  "industry_slug"  varchar(100),
+  "price"          varchar(100),
+  "turnaround"     varchar(100),
+  "city"           varchar(100),
+  "rating"         numeric(3,1) DEFAULT 0,
+  "certifications" text,
+  "test_types"     text,
+  "description"    text,
+  "is_active"      boolean      DEFAULT true,
+  "created_at"     timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "testing_services_industry_slug_idx" ON "testing_services" ("industry_slug");
+CREATE INDEX IF NOT EXISTS "testing_services_category_idx"      ON "testing_services" ("category");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- HR Services
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "hr_services" (
+  "id"             uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"           varchar(500) NOT NULL,
+  "category"       varchar(100) NOT NULL,
+  "industry_slug"  varchar(100),
+  "company"        varchar(255),
+  "type"           varchar(100),
+  "experience"     varchar(100),
+  "salary"         varchar(100),
+  "city"           varchar(100),
+  "rating"         numeric(3,1) DEFAULT 0,
+  "skills"         text,
+  "description"    text,
+  "is_active"      boolean      DEFAULT true,
+  "created_at"     timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "hr_services_industry_slug_idx" ON "hr_services" ("industry_slug");
+CREATE INDEX IF NOT EXISTS "hr_services_category_idx"      ON "hr_services" ("category");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Training Programs
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "training_programs" (
+  "id"              uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"            varchar(500) NOT NULL,
+  "category"        varchar(255),
+  "industry_slug"   varchar(100),
+  "provider"        varchar(255),
+  "price"           varchar(100),
+  "duration"        varchar(100),
+  "mode"            varchar(100),
+  "city"            varchar(100),
+  "rating"          numeric(3,1) DEFAULT 0,
+  "capacity"        varchar(100),
+  "certification"   varchar(255),
+  "skills"          text,
+  "description"     text,
+  "is_active"       boolean      DEFAULT true,
+  "created_at"      timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "training_programs_industry_slug_idx" ON "training_programs" ("industry_slug");
+CREATE INDEX IF NOT EXISTS "training_programs_category_idx"      ON "training_programs" ("category");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Student Services
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "student_services" (
+  "id"             uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"           varchar(500) NOT NULL,
+  "category"       varchar(255),
+  "industry_slug"  varchar(100),
+  "provider"       varchar(255),
+  "type"           varchar(100),
+  "duration"       varchar(100),
+  "stipend"        varchar(100),
+  "city"           varchar(100),
+  "rating"         numeric(3,1) DEFAULT 0,
+  "skills"         text,
+  "description"    text,
+  "is_active"      boolean      DEFAULT true,
+  "created_at"     timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "student_services_industry_slug_idx" ON "student_services" ("industry_slug");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Financial Services
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "financial_services" (
+  "id"             uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"           varchar(500) NOT NULL,
+  "category"       varchar(255),
+  "industry_slug"  varchar(100),
+  "provider"       varchar(255),
+  "type"           varchar(100),
+  "interest_rate"  varchar(50),
+  "amount"         varchar(100),
+  "city"           varchar(100),
+  "rating"         numeric(3,1) DEFAULT 0,
+  "features"       text,
+  "description"    text,
+  "is_active"      boolean      DEFAULT true,
+  "created_at"     timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "financial_services_industry_slug_idx" ON "financial_services" ("industry_slug");
+CREATE INDEX IF NOT EXISTS "financial_services_category_idx"      ON "financial_services" ("category");
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Suppliers (Raw Material Suppliers by Industry)
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "suppliers" (
+  "id"                uuid         PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"              varchar(500) NOT NULL,
+  "industry_slug"     varchar(100) NOT NULL,
+  "material_category" varchar(255),
+  "location"          varchar(255),
+  "materials"         text,
+  "rating"            numeric(3,1) DEFAULT 0,
+  "reviews"           integer      DEFAULT 0,
+  "min_order"         varchar(100),
+  "price"             varchar(100),
+  "certifications"    text,
+  "established"       varchar(10),
+  "employees"         varchar(50),
+  "contact"           varchar(100),
+  "is_active"         boolean      DEFAULT true,
+  "created_at"        timestamp    DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS "suppliers_industry_slug_idx"     ON "suppliers" ("industry_slug");
+CREATE INDEX IF NOT EXISTS "suppliers_material_category_idx" ON "suppliers" ("material_category");
