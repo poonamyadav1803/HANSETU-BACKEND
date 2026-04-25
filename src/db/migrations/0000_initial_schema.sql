@@ -17,15 +17,39 @@ CREATE TABLE IF NOT EXISTS "users" (
   "username"         varchar(100) UNIQUE NOT NULL,
   "password"         text        NOT NULL,
   "business_type"    varchar(50) NOT NULL,
+  "role"             varchar(20) NOT NULL DEFAULT 'user',
   "email_verified"   boolean     DEFAULT false,
   "mobile_verified"  boolean     DEFAULT false,
   "is_active"        boolean     DEFAULT true,
+  "profile"          jsonb,
   "created_at"       timestamp   DEFAULT now(),
   "updated_at"       timestamp   DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS "users_email_idx"      ON "users" ("email");
 CREATE INDEX IF NOT EXISTS "users_gst_number_idx" ON "users" ("gst_number");
+
+CREATE TABLE IF NOT EXISTS "roles" (
+  "id"          uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"        varchar(50) UNIQUE NOT NULL,
+  "description" text,
+  "created_at"  timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "permissions" (
+  "id"          uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "name"        varchar(100) UNIQUE NOT NULL,
+  "resource"    varchar(50) NOT NULL,
+  "action"      varchar(50) NOT NULL,
+  "description" text,
+  "created_at"  timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS "role_permissions" (
+  "role_id"       uuid NOT NULL REFERENCES "roles"("id") ON DELETE CASCADE,
+  "permission_id" uuid NOT NULL REFERENCES "permissions"("id") ON DELETE CASCADE,
+  PRIMARY KEY ("role_id", "permission_id")
+);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Industries
