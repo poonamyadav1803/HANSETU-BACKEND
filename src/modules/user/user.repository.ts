@@ -1,7 +1,7 @@
 import { eq, desc } from "drizzle-orm";
 import { db } from "../../db";
 import { users } from "../../db/schema";
-import { IUser, BusinessType } from "./user.entity";
+import { IUser, UserProfile, BusinessType } from "./user.entity";
 
 export class UserRepository {
   async create(data: Partial<IUser>) {
@@ -17,6 +17,7 @@ export class UserRepository {
         emailVerified: data.emailVerified ?? false,
         mobileVerified: data.mobileVerified ?? false,
         isActive: data.isActive ?? true,
+        profile: data.profile ?? null,
       })
       .returning();
 
@@ -47,6 +48,10 @@ export class UserRepository {
     await db.update(users).set({ isActive: false }).where(eq(users.id, id));
   }
 
+  async updateProfile(id: string, profile: UserProfile) {
+    await db.update(users).set({ profile, updatedAt: new Date() }).where(eq(users.id, id));
+  }
+
   private mapRow(row: typeof users.$inferSelect): IUser {
     return {
       id: row.id,
@@ -59,6 +64,7 @@ export class UserRepository {
       emailVerified: row.emailVerified ?? false,
       mobileVerified: row.mobileVerified ?? false,
       isActive: row.isActive ?? true,
+      profile: (row.profile as UserProfile | null) ?? null,
       createdAt: row.createdAt ?? new Date(),
       updatedAt: row.updatedAt ?? new Date(),
     };
