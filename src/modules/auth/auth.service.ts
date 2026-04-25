@@ -179,7 +179,11 @@ export class AuthService {
   }
 
   private generateAuthResponse(user: IUser) {
-    const token = jwt.sign({ userId: user.id }, env.JWT_SECRET, { expiresIn: "1d" });
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
     return { token, user: toSafeUser(user) };
   }
 }

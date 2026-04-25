@@ -3,6 +3,8 @@ export type BusinessType =
   | "raw_material_supplier"
   | "both";
 
+export type UserRole = "user" | "admin";
+
 export interface UserProfile {
   industries?: string[];
   materialTypes?: string[];
@@ -23,6 +25,7 @@ export interface IUser {
   username: string;
   password: string;
   businessType: BusinessType;
+  role: UserRole;
   emailVerified: boolean;
   mobileVerified: boolean;
   isActive: boolean;

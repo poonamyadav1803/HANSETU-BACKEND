@@ -9,6 +9,7 @@ import {
   integer,
   jsonb,
   date,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -34,6 +35,7 @@ export const users = pgTable("users", {
   username: varchar("username", { length: 100 }).unique().notNull(),
   password: text("password").notNull(),
   businessType: varchar("business_type", { length: 50 }).notNull(),
+  role: varchar("role", { length: 20 }).default("user").notNull(),
   emailVerified: boolean("email_verified").default(false),
   mobileVerified: boolean("mobile_verified").default(false),
   isActive: boolean("is_active").default(true),
@@ -50,6 +52,50 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RBAC — Roles
+// ─────────────────────────────────────────────────────────────────────────────
+export const roles = pgTable("roles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 50 }).unique().notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Role = typeof roles.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RBAC — Permissions
+// ─────────────────────────────────────────────────────────────────────────────
+export const permissions = pgTable("permissions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 100 }).unique().notNull(), // e.g. "users:read"
+  resource: varchar("resource", { length: 50 }).notNull(),   // e.g. "users"
+  action: varchar("action", { length: 50 }).notNull(),        // e.g. "read"
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type Permission = typeof permissions.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RBAC — Role → Permission mapping
+// ─────────────────────────────────────────────────────────────────────────────
+export const rolePermissions = pgTable(
+  "role_permissions",
+  {
+    roleId: uuid("role_id")
+      .notNull()
+      .references(() => roles.id, { onDelete: "cascade" }),
+    permissionId: uuid("permission_id")
+      .notNull()
+      .references(() => permissions.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.roleId, table.permissionId] })]
+);
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GST Info (cache for Masters India API results)
