@@ -277,6 +277,46 @@ const options: swaggerJsdoc.Options = {
           },
         },
 
+        CategoryCreateRequest: {
+          type: "object",
+          required: ["slug", "name"],
+          properties: {
+            slug: { type: "string", example: "electrical" },
+            name: { type: "string", example: "Electrical" },
+            description: { type: "string", nullable: true, example: "Electrical equipment and accessories" },
+            primaryColor: { type: "string", nullable: true, example: "from-yellow-500" },
+            secondaryColor: { type: "string", nullable: true, example: "to-amber-600" },
+            gradientColor: { type: "string", nullable: true, example: "bg-gradient-to-r from-yellow-500 to-amber-600" },
+            badgeColor: { type: "string", nullable: true, example: "bg-yellow-100 text-yellow-800" },
+            isActive: { type: "boolean", example: true },
+            subcategories: {
+              type: "array",
+              items: { type: "string", example: "Wires & Cables" },
+              example: ["Wires & Cables", "Switches", "Circuit Breakers"],
+            },
+          },
+        },
+
+        CategoryUpdateRequest: {
+          type: "object",
+          description: "Send only the fields you want to update. If subcategories is sent, existing subcategories are replaced.",
+          properties: {
+            slug: { type: "string", example: "electrical-components" },
+            name: { type: "string", example: "Electrical Components" },
+            description: { type: "string", nullable: true, example: "Updated category description" },
+            primaryColor: { type: "string", nullable: true, example: "from-blue-500" },
+            secondaryColor: { type: "string", nullable: true, example: "to-cyan-600" },
+            gradientColor: { type: "string", nullable: true, example: "bg-gradient-to-r from-blue-500 to-cyan-600" },
+            badgeColor: { type: "string", nullable: true, example: "bg-blue-100 text-blue-800" },
+            isActive: { type: "boolean", example: true },
+            subcategories: {
+              type: "array",
+              items: { type: "string", example: "Control Panels" },
+              example: ["Control Panels", "Relays"],
+            },
+          },
+        },
+
         Subcategory: {
           type: "object",
           properties: {
