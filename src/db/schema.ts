@@ -7,6 +7,8 @@ import {
   timestamp,
   numeric,
   integer,
+  jsonb,
+  date,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -35,6 +37,7 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false),
   mobileVerified: boolean("mobile_verified").default(false),
   isActive: boolean("is_active").default(true),
+  profile: jsonb("profile"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -62,6 +65,13 @@ export const gstInfo = pgTable("gst_info", {
   principalPlaceOfBusiness: text("principal_place_of_business"),
   natureOfBusinessActivities: text("nature_of_business_activities"),
   rawApiResponse: text("raw_api_response"),
+  stateJurisdiction: text("state_jurisdiction"),
+  stateJurisdictionCode: varchar("state_jurisdiction_code", { length: 10 }),
+  dealerType: varchar("dealer_type", { length: 50 }),
+  cancellationDate: date("cancellation_date"),
+  additionalAddresses: jsonb("additional_addresses"),
+  lastUpdatedAtGstn: date("last_updated_at_gstn"),
+  lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
