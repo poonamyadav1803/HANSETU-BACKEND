@@ -327,6 +327,43 @@ const options: swaggerJsdoc.Options = {
           },
         },
 
+        SubcategoryWithCategory: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            categoryId: { type: "string", format: "uuid" },
+            name: { type: "string", example: "Drill Bits" },
+            createdAt: { type: "string", format: "date-time" },
+            category: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: { type: "string", format: "uuid" },
+                slug: { type: "string", example: "industrial-tools" },
+                name: { type: "string", example: "Industrial Tools" },
+              },
+            },
+          },
+        },
+
+        SubcategoryCreateRequest: {
+          type: "object",
+          required: ["categoryId", "name"],
+          properties: {
+            categoryId: { type: "string", format: "uuid" },
+            name: { type: "string", example: "Drill Bits" },
+          },
+        },
+
+        SubcategoryUpdateRequest: {
+          type: "object",
+          description: "Send only the fields you want to update.",
+          properties: {
+            categoryId: { type: "string", format: "uuid" },
+            name: { type: "string", example: "Precision Drill Bits" },
+          },
+        },
+
         Product: {
           type: "object",
           properties: {
