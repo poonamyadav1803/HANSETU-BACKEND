@@ -41,7 +41,7 @@ export function errorMiddleware(
 
   // Plain Error — extract message safely
   if (err instanceof Error) {
-    const msg = safeMessage(err.message) ?? safeMessage(err.cause) ?? err.name;
+    const msg = safeMessage(err.message) ?? safeMessage((err as any).cause) ?? err.name;
     logError(`${err.name}: ${err.message}`);
     return res.status(400).json({ message: msg });
   }
