@@ -90,6 +90,13 @@ export class AuthService {
     return issueOtpToken(email);
   }
 
+  // ─── Username Check ────────────────────────────────────────────────────────
+  async checkUsername(username: string): Promise<{ available: boolean }> {
+    if (username.length < 4) return { available: false };
+    const existing = await this.userRepo.findByUsername(username);
+    return { available: !existing };
+  }
+
   // ─── Current User ───────────────────────────────────────────────────────────
   async me(userId: string) {
     const user = await this.userRepo.findById(userId);

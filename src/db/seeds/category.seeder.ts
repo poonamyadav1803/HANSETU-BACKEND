@@ -101,7 +101,7 @@ export async function seedCategories(): Promise<void> {
         subcategoryId: sub?.id ?? null,
         name: product.name,
         price: String(product.price),
-        originalPrice: product.originalPrice ? String(product.originalPrice) : null,
+        originalPrice: (product as any).originalPrice ? String((product as any).originalPrice) : null,
         rating: String(product.rating),
         reviews: product.reviews,
         brand: product.brand,

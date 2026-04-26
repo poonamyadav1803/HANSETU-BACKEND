@@ -5,6 +5,7 @@ import { AuthRoutes } from "./modules/auth/auth.routes";
 import { UserRoutes } from "./modules/user/user.routes";
 import { IndustryRoutes } from "./modules/industry/industry.routes";
 import { CategoryRoutes } from "./modules/category/category.routes";
+import { SubcategoryRoutes } from "./modules/subcategory/subcategory.routes";
 import { ProductRoutes } from "./modules/product/product.routes";
 import { ManufacturerRoutes } from "./modules/manufacturer/manufacturer.routes";
 import { RawMaterialRoutes } from "./modules/raw-material/raw-material.routes";
@@ -88,6 +89,7 @@ export function createApp() {
   app.use("/api/users", new UserRoutes().router);
   app.use("/api/industries", new IndustryRoutes().router);
   app.use("/api/categories", new CategoryRoutes().router);
+  app.use("/api/subcategories", new SubcategoryRoutes().router);
   app.use("/api/products", new ProductRoutes().router);
   app.use("/api/manufacturers", new ManufacturerRoutes().router);
   app.use("/api/raw-materials", new RawMaterialRoutes().router);
