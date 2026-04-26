@@ -22,9 +22,11 @@ export class MemStorage implements IStorage {
       username: user.username,
       password: user.password,
       businessType: user.businessType,
+      role: user.role ?? "user",
       emailVerified: user.emailVerified ?? false,
       mobileVerified: user.mobileVerified ?? false,
       isActive: user.isActive ?? true,
+      profile: user.profile ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

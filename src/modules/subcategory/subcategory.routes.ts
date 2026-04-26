@@ -1,59 +1,64 @@
 import { Router } from "express";
-import { CategoryController } from "./category.controller";
+import { SubcategoryController } from "./subcategory.controller";
 
-export class CategoryRoutes {
+export class SubcategoryRoutes {
   public router = Router();
-  private controller = new CategoryController();
+  private controller = new SubcategoryController();
   private uuidParam = ":id([0-9a-fA-F-]{36})";
 
   constructor() {
     /**
      * @openapi
-     * /api/categories:
+     * /api/subcategories:
      *   post:
-     *     tags: [Categories]
-     *     summary: Create a category
+     *     tags: [Subcategories]
+     *     summary: Create a subcategory
      *     requestBody:
      *       required: true
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/CategoryCreateRequest'
+     *             $ref: '#/components/schemas/SubcategoryCreateRequest'
      *     responses:
      *       201:
-     *         description: Category created successfully
+     *         description: Subcategory created successfully
      *         content:
      *           application/json:
      *             schema:
-     *               $ref: '#/components/schemas/Category'
+     *               $ref: '#/components/schemas/SubcategoryWithCategory'
      *       400:
-     *         description: Validation failed or slug already exists
+     *         description: Validation failed, category not found, or duplicate name
      *         content:
      *           application/json:
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      *   get:
-     *     tags: [Categories]
-     *     summary: List all active categories with their subcategories
+     *     tags: [Subcategories]
+     *     summary: List subcategories with optional category filter
+     *     parameters:
+     *       - in: query
+     *         name: categoryId
+     *         schema: { type: string, format: uuid }
+     *         description: Filter by category UUID
      *     responses:
      *       200:
-     *         description: Array of category objects (each includes subcategories array)
+     *         description: Array of subcategory objects
      *         content:
      *           application/json:
      *             schema:
      *               type: array
      *               items:
-     *                 $ref: '#/components/schemas/Category'
+     *                 $ref: '#/components/schemas/SubcategoryWithCategory'
      */
     this.router.get("/", this.controller.getAll);
     this.router.post("/", this.controller.create);
 
     /**
      * @openapi
-     * /api/categories/{id}:
+     * /api/subcategories/{id}:
      *   get:
-     *     tags: [Categories]
-     *     summary: Get a category by ID with its subcategories
+     *     tags: [Subcategories]
+     *     summary: Get a subcategory by ID
      *     parameters:
      *       - in: path
      *         name: id
@@ -61,61 +66,26 @@ export class CategoryRoutes {
      *         schema: { type: string, format: uuid }
      *     responses:
      *       200:
-     *         description: Category with subcategories
+     *         description: Subcategory object
      *         content:
      *           application/json:
      *             schema:
-     *               $ref: '#/components/schemas/Category'
+     *               $ref: '#/components/schemas/SubcategoryWithCategory'
      *       404:
-     *         description: Category not found
+     *         description: Subcategory not found
      *         content:
      *           application/json:
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
-     */
-    this.router.get(`/${this.uuidParam}`, this.controller.getById);
-
-    /**
-     * @openapi
-     * /api/categories/slug/{slug}:
-     *   get:
-     *     tags: [Categories]
-     *     summary: Get a category by slug with its subcategories
-     *     parameters:
-     *       - in: path
-     *         name: slug
-     *         required: true
-     *         schema: { type: string }
-     *         example: electrical
-     *     responses:
-     *       200:
-     *         description: Category with subcategories
-     *         content:
-     *           application/json:
-     *             schema:
-     *               $ref: '#/components/schemas/Category'
-     *       404:
-     *         description: Category not found
-     *         content:
-     *           application/json:
-     *             schema:
-     *               $ref: '#/components/schemas/ErrorResponse'
-     */
-    this.router.get("/slug/:slug", this.controller.getBySlug);
-    this.router.get("/:slug", this.controller.getBySlug);
-
-    /**
-     * @openapi
-     * /api/categories/{id}:
      *   patch:
-     *     tags: [Categories]
-     *     summary: Update a category by ID
+     *     tags: [Subcategories]
+     *     summary: Update a subcategory by ID
      *     requestBody:
      *       required: true
      *       content:
      *         application/json:
      *           schema:
-     *             $ref: '#/components/schemas/CategoryUpdateRequest'
+     *             $ref: '#/components/schemas/SubcategoryUpdateRequest'
      *     parameters:
      *       - in: path
      *         name: id
@@ -123,32 +93,26 @@ export class CategoryRoutes {
      *         schema: { type: string, format: uuid }
      *     responses:
      *       200:
-     *         description: Updated category
+     *         description: Updated subcategory
      *         content:
      *           application/json:
      *             schema:
-     *               $ref: '#/components/schemas/Category'
+     *               $ref: '#/components/schemas/SubcategoryWithCategory'
      *       400:
-     *         description: Validation failed or slug already exists
+     *         description: Validation failed, category not found, or duplicate name
      *         content:
      *           application/json:
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      *       404:
-     *         description: Category not found
+     *         description: Subcategory not found
      *         content:
      *           application/json:
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
-     */
-    this.router.patch(`/${this.uuidParam}`, this.controller.update);
-
-    /**
-     * @openapi
-     * /api/categories/{id}:
      *   delete:
-     *     tags: [Categories]
-     *     summary: Delete a category by ID
+     *     tags: [Subcategories]
+     *     summary: Delete a subcategory by ID
      *     parameters:
      *       - in: path
      *         name: id
@@ -156,7 +120,7 @@ export class CategoryRoutes {
      *         schema: { type: string, format: uuid }
      *     responses:
      *       200:
-     *         description: Category deleted
+     *         description: Subcategory deleted
      *         content:
      *           application/json:
      *             schema:
@@ -164,14 +128,16 @@ export class CategoryRoutes {
      *               properties:
      *                 message:
      *                   type: string
-     *                   example: Category deleted successfully
+     *                   example: Subcategory deleted successfully
      *       404:
-     *         description: Category not found
+     *         description: Subcategory not found
      *         content:
      *           application/json:
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
+    this.router.get(`/${this.uuidParam}`, this.controller.getById);
+    this.router.patch(`/${this.uuidParam}`, this.controller.update);
     this.router.delete(`/${this.uuidParam}`, this.controller.delete);
   }
 }

@@ -9,6 +9,7 @@ import { db } from "../../db";
 import { gstInfo } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "../../config/env";
+import { HttpException } from "../../core/HttpException";
 
 export interface GstVerificationResult {
   gstNumber: string;
@@ -17,33 +18,62 @@ export interface GstVerificationResult {
   registrationStatus: string;
   dateOfRegistration: string;
   constitutionOfBusiness: string;
-  principalPlaceOfBusiness: string;
-  natureOfBusinessActivities: string;
+  principalPlaceOfBusiness: Record<string, unknown> | null;
+  natureOfBusinessActivities: string[];
+  stateJurisdiction: string | null;
+  stateJurisdictionCode: string | null;
+  dealerType: string | null;
+  cancellationDate: string | null;
+  additionalAddresses: unknown[] | null;
+  lastUpdatedAtGstn: string | null;
   fromCache: boolean;
 }
 
-/**
- * Masters India sandbox API response shape (simplified).
- * Full schema: https://docs.mastersindia.co/reference/gst-search
- */
 interface MastersIndiaGstResponse {
   data?: {
-    lgnm?: string;     // legal name
-    tradeNam?: string; // trade name
-    sts?: string;      // status
-    rgdt?: string;     // registration date
-    ctb?: string;      // constitution of business
-    pradr?: {
-      adr?: string;    // address
-    };
-    nba?: string[];    // nature of business activities
+    lgnm?: string;
+    tradeNam?: string;
+    sts?: string;
+    rgdt?: string;
+    ctb?: string;
+    pradr?: Record<string, unknown>;   // full address object, not just adr string
+    stj?: string;                       // state jurisdiction
+    stjCd?: string;                     // state jurisdiction code
+    dty?: string;                       // dealer type
+    cxdt?: string;                      // cancellation date
+    adadr?: unknown[];                  // additional addresses
+    lstupdt?: string;                   // last updated at GSTN
+    nba?: string[];
   };
-  error?: string;
+  error?: string | Record<string, unknown>;
+  message?: string;
+  status?: number;
+}
+
+function extractApiErrorMessage(raw: MastersIndiaGstResponse): string {
+  if (typeof raw.error === "string") return raw.error;
+  if (raw.error && typeof raw.error === "object") {
+    const e = raw.error as Record<string, unknown>;
+    if (typeof e.message === "string") return e.message;
+    if (typeof e.error === "string") return e.error;
+    return JSON.stringify(e);
+  }
+  if (typeof raw.message === "string") return raw.message;
+  return "GST number not found or invalid";
+}
+
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
 }
 
 async function fetchFromMastersIndia(gstNumber: string): Promise<GstVerificationResult> {
   if (!env.MASTERS_INDIA_API_KEY) {
-    throw new Error("MASTERS_INDIA_API_KEY not configured");
+    throw new HttpException(503, "GST verification service is not configured");
   }
 
   const url = `https://api.mastersindia.co/mastersindia/v2/gstin?gstin=${gstNumber}`;
@@ -59,10 +89,11 @@ async function fetchFromMastersIndia(gstNumber: string): Promise<GstVerification
   const raw = await response.json() as MastersIndiaGstResponse;
 
   if (!response.ok || raw.error || !raw.data) {
-    throw new Error(raw.error || "GST number not found or invalid");
+    throw new HttpException(400, extractApiErrorMessage(raw));
   }
 
   const d = raw.data;
+
   return {
     gstNumber,
     legalName: d.lgnm ?? "",
@@ -70,8 +101,14 @@ async function fetchFromMastersIndia(gstNumber: string): Promise<GstVerification
     registrationStatus: d.sts ?? "Unknown",
     dateOfRegistration: d.rgdt ?? "",
     constitutionOfBusiness: d.ctb ?? "",
-    principalPlaceOfBusiness: d.pradr?.adr ?? "",
-    natureOfBusinessActivities: Array.isArray(d.nba) ? d.nba.join(", ") : "",
+    principalPlaceOfBusiness: d.pradr ?? null,
+    natureOfBusinessActivities: Array.isArray(d.nba) ? d.nba : [],
+    stateJurisdiction: d.stj ?? null,
+    stateJurisdictionCode: d.stjCd ?? null,
+    dealerType: d.dty ?? null,
+    cancellationDate: d.cxdt ?? null,
+    additionalAddresses: Array.isArray(d.adadr) ? d.adadr : null,
+    lastUpdatedAtGstn: d.lstupdt ?? null,
     fromCache: false,
   };
 }
@@ -94,8 +131,20 @@ export async function verifyGst(gstNumber: string): Promise<GstVerificationResul
       registrationStatus: cached.registrationStatus ?? "Unknown",
       dateOfRegistration: cached.dateOfRegistration ?? "",
       constitutionOfBusiness: cached.constitutionOfBusiness ?? "",
-      principalPlaceOfBusiness: cached.principalPlaceOfBusiness ?? "",
-      natureOfBusinessActivities: cached.natureOfBusinessActivities ?? "",
+      principalPlaceOfBusiness: safeJsonParse<Record<string, unknown> | null>(
+        cached.principalPlaceOfBusiness,
+        null
+      ),
+      natureOfBusinessActivities: safeJsonParse<string[]>(
+        cached.natureOfBusinessActivities,
+        []
+      ),
+      stateJurisdiction: cached.stateJurisdiction ?? null,
+      stateJurisdictionCode: cached.stateJurisdictionCode ?? null,
+      dealerType: cached.dealerType ?? null,
+      cancellationDate: cached.cancellationDate ?? null,
+      additionalAddresses: cached.additionalAddresses as unknown[] | null,
+      lastUpdatedAtGstn: cached.lastUpdatedAtGstn ?? null,
       fromCache: true,
     };
   }
@@ -103,7 +152,7 @@ export async function verifyGst(gstNumber: string): Promise<GstVerificationResul
   // 2. Fetch from Masters India API
   const result = await fetchFromMastersIndia(upper);
 
-  // 3. Save to DB cache
+  // 3. Save to DB cache — text columns get JSON-serialized, new typed columns stored directly
   await db.insert(gstInfo).values({
     gstNumber: upper,
     legalName: result.legalName,
@@ -111,8 +160,17 @@ export async function verifyGst(gstNumber: string): Promise<GstVerificationResul
     registrationStatus: result.registrationStatus,
     dateOfRegistration: result.dateOfRegistration,
     constitutionOfBusiness: result.constitutionOfBusiness,
-    principalPlaceOfBusiness: result.principalPlaceOfBusiness,
-    natureOfBusinessActivities: result.natureOfBusinessActivities,
+    principalPlaceOfBusiness: result.principalPlaceOfBusiness
+      ? JSON.stringify(result.principalPlaceOfBusiness)
+      : null,
+    natureOfBusinessActivities: JSON.stringify(result.natureOfBusinessActivities),
+    stateJurisdiction: result.stateJurisdiction,
+    stateJurisdictionCode: result.stateJurisdictionCode,
+    dealerType: result.dealerType,
+    cancellationDate: result.cancellationDate,
+    additionalAddresses: result.additionalAddresses,
+    lastUpdatedAtGstn: result.lastUpdatedAtGstn,
+    lastVerifiedAt: new Date(),
     rawApiResponse: JSON.stringify(result),
   });
 
