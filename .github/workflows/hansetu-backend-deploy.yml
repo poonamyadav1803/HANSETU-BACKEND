@@ -38,12 +38,12 @@ jobs:
       # 7. Build Docker image
       - name: Build Docker image
         run: |
-          docker build -t hansetu-backend .
+          docker build -t hansetu/backend .
 
       # 8. Run container for testing
       - name: Test container
         run: |
-          docker run -d -p 3000:3000 --name hansetu hansetu-backend
+          docker run -d -p 3000:3000 --name hansetu hansetu/backend
           sleep 10
           docker logs hansetu   
           curl http://localhost:3000/api-docs
@@ -51,9 +51,9 @@ jobs:
       # 9. Tag image
       - name: Tag image
         run: |
-          docker tag hansetu-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
+          docker tag hansetu/backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
 
       # 10. Push image to ECR
       - name: Push image
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
