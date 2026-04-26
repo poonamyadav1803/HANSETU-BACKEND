@@ -51,14 +51,9 @@ jobs:
       # 9. Tag image
       - name: Tag image
         run: |
-          docker tag hansetu-backend:latest \
-          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:${{ steps.vars.outputs.TAG }}
-
-          docker tag hansetu-backend:latest \
-          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
+          docker tag hansetu-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
 
       # 10. Push image to ECR
       - name: Push image
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:${{ steps.vars.outputs.TAG }}
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
