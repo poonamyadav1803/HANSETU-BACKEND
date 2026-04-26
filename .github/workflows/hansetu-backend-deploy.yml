@@ -34,16 +34,6 @@ jobs:
           docker login --username AWS --password-stdin \
           ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      # 5. Create ECR repo if not exists
-      - name: Create ECR repository if not exists
-        run: |
-          aws ecr describe-repositories --repository-names hansetu-backend || \
-          aws ecr create-repository --repository-name hansetu-backend
-
-      # 6. Set image tag (commit SHA)
-      - name: Set image tag
-        id: vars
-        run: echo "TAG=${GITHUB_SHA}" >> $GITHUB_OUTPUT
 
       # 7. Build Docker image
       - name: Build Docker image
@@ -53,11 +43,10 @@ jobs:
       # 8. Run container for testing
       - name: Test container
         run: |
-          docker rm -f hansetu || true
-          docker run -d -p 5000:5000 --name hansetu hansetu-backend
+          docker run -d -p 3000:3000 --name hansetu hansetu-backend
           sleep 10
-          docker logs hansetu
-          curl --fail http://localhost:5000
+          docker logs hansetu   
+          curl http://localhost:3000/api-docs
 
       # 9. Tag image
       - name: Tag image
@@ -73,26 +62,3 @@ jobs:
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:${{ steps.vars.outputs.TAG }}
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
-
-      # 11. Deploy to EC2
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Login to ECR from EC2
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-            docker login --username AWS --password-stdin \
-            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-
-            # Pull latest image
-            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
-
-            # Stop old container
-            docker rm -f hansetu || true
-
-            # Run new container
-            docker run -d -p 5000:5000 --name hansetu \
-              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu-backend:latest
