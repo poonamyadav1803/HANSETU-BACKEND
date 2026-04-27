@@ -18,7 +18,9 @@ export class UserRepository {
         emailVerified: data.emailVerified ?? false,
         mobileVerified: data.mobileVerified ?? false,
         isActive: data.isActive ?? true,
+        registrationComplete: data.registrationComplete ?? false,
         profile: data.profile ?? null,
+        profileCompletedAt: data.profileCompletedAt ?? null,
       })
       .returning();
 
@@ -53,8 +55,20 @@ export class UserRepository {
     await db.update(users).set({ isActive: true, updatedAt: new Date() }).where(eq(users.id, id));
   }
 
-  async updateProfile(id: string, profile: UserProfile) {
-    await db.update(users).set({ profile, updatedAt: new Date() }).where(eq(users.id, id));
+  async updateProfile(
+    id: string,
+    profile: UserProfile,
+    options?: { registrationComplete?: boolean; profileCompletedAt?: Date | null }
+  ) {
+    await db
+      .update(users)
+      .set({
+        profile,
+        registrationComplete: options?.registrationComplete,
+        profileCompletedAt: options?.profileCompletedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
   }
 
   async updateRole(id: string, role: UserRole) {
@@ -74,7 +88,9 @@ export class UserRepository {
       emailVerified: row.emailVerified ?? false,
       mobileVerified: row.mobileVerified ?? false,
       isActive: row.isActive ?? true,
+      registrationComplete: row.registrationComplete ?? false,
       profile: (row.profile as UserProfile | null) ?? null,
+      profileCompletedAt: row.profileCompletedAt ?? null,
       createdAt: row.createdAt ?? new Date(),
       updatedAt: row.updatedAt ?? new Date(),
     };
