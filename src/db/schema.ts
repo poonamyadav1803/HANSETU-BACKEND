@@ -39,7 +39,9 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false),
   mobileVerified: boolean("mobile_verified").default(false),
   isActive: boolean("is_active").default(true),
+  registrationComplete: boolean("registration_complete").default(false).notNull(),
   profile: jsonb("profile"),
+  profileCompletedAt: timestamp("profile_completed_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -52,6 +54,92 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const wizardBusinessServices = pgTable("wizard_business_services", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: varchar("slug", { length: 100 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 100 }),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WizardBusinessService = typeof wizardBusinessServices.$inferSelect;
+
+export const wizardRawMaterialCategories = pgTable("wizard_raw_material_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: varchar("slug", { length: 100 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  subcategories: jsonb("subcategories").default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WizardRawMaterialCategory = typeof wizardRawMaterialCategories.$inferSelect;
+
+export const wizardIndustryRawMaterialMap = pgTable("wizard_industry_raw_material_map", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  industrySlug: varchar("industry_slug", { length: 100 }).unique().notNull(),
+  rawCategorySlugs: jsonb("raw_category_slugs").default([]).notNull(),
+  emoji: varchar("emoji", { length: 50 }),
+  sampleTags: jsonb("sample_tags").default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WizardIndustryRawMaterialMap = typeof wizardIndustryRawMaterialMap.$inferSelect;
+
+export const wizardManufacturingCapabilities = pgTable("wizard_manufacturing_capabilities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: varchar("slug", { length: 100 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  parameters: jsonb("parameters").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WizardManufacturingCapability = typeof wizardManufacturingCapabilities.$inferSelect;
+
+export const wizardManufacturingProductCategories = pgTable("wizard_manufacturing_product_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  industrySlug: varchar("industry_slug", { length: 100 }).unique().notNull(),
+  categories: jsonb("categories").default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WizardManufacturingProductCategory = typeof wizardManufacturingProductCategories.$inferSelect;
+
+export const wizardIndustryCategories = pgTable("wizard_industry_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  industrySlug: varchar("industry_slug", { length: 100 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  emoji: varchar("emoji", { length: 50 }),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  categories: jsonb("categories").default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WizardIndustryCategory = typeof wizardIndustryCategories.$inferSelect;
+
+export const wizardIndustryPartsFilters = pgTable("wizard_industry_parts_filters", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  industrySlug: varchar("industry_slug", { length: 100 }).unique().notNull(),
+  item: jsonb("item").default([]).notNull(),
+  grade: jsonb("grade").default([]).notNull(),
+  shape: jsonb("shape").default([]).notNull(),
+  fabrication: jsonb("fabrication").default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type WizardIndustryPartsFilter = typeof wizardIndustryPartsFilters.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RBAC — Roles
@@ -133,6 +221,7 @@ export const industries = pgTable("industries", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   iconUrl: varchar("icon_url", { length: 500 }),
+  icon: varchar("icon", { length: 100 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -144,6 +233,35 @@ export const insertIndustrySchema = createInsertSchema(industries).omit({
 
 export type InsertIndustry = z.infer<typeof insertIndustrySchema>;
 export type Industry = typeof industries.$inferSelect;
+
+export const navRawMaterialCategories = pgTable("nav_raw_material_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: varchar("slug", { length: 100 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  icon: varchar("icon", { length: 100 }),
+  groupName: varchar("group_name", { length: 255 }).notNull(),
+  subcategories: jsonb("subcategories").default([]).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type NavRawMaterialCategory = typeof navRawMaterialCategories.$inferSelect;
+
+export const customProducts = pgTable("custom_products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  categoryType: varchar("category_type", { length: 50 }).notNull(),
+  parentSlug: varchar("parent_slug", { length: 100 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 150 }).notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CustomProduct = typeof customProducts.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Categories
