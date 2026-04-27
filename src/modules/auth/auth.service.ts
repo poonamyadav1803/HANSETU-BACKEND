@@ -35,6 +35,38 @@ function toSafeUser(user: IUser) {
   return safe;
 }
 
+function normalizeCertifications(value?: string | string[]) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildLegacyProfile(profile: UserProfile): UserProfile {
+  return {
+    ...profile,
+    industries: profile.industries ?? profile.industriesServed ?? profile.manufacturerIndustries ?? [],
+    materialTypes:
+      profile.materialTypes ??
+      [
+        ...(profile.rawMaterialCategories ?? []),
+        ...Object.values(profile.materialCategories ?? {}).flat(),
+      ],
+    manufacturingProcesses:
+      profile.manufacturingProcesses ??
+      (profile.manufacturingCapabilities ?? []).join(", "),
+    targetIndustries:
+      profile.targetIndustries ??
+      profile.industriesServed ??
+      profile.manufacturerIndustries ??
+      [],
+    rawMaterialProducts:
+      profile.rawMaterialProducts ?? Object.values(profile.materialCategories ?? {}).flat(),
+  };
+}
+
 export class AuthService {
   constructor(private userRepo: UserRepository) {}
 
@@ -108,7 +140,11 @@ export class AuthService {
   async updateProfile(userId: string, profile: UserProfile) {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new HttpException(404, "User not found.");
-    await this.userRepo.updateProfile(userId, profile);
+    const normalizedProfile = buildLegacyProfile(profile);
+    await this.userRepo.updateProfile(userId, normalizedProfile, {
+      registrationComplete: normalizedProfile.profileComplete === true,
+      profileCompletedAt: normalizedProfile.profileComplete ? new Date() : null,
+    });
     const updated = await this.userRepo.findById(userId);
     return toSafeUser(updated!);
   }
@@ -141,7 +177,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const profile: UserProfile = {
+    const profile = buildLegacyProfile({
       industries: data.industries ?? [],
       materialTypes: data.materialTypes ?? [],
       machinesAvailable: data.machinesAvailable ?? "",
@@ -149,9 +185,9 @@ export class AuthService {
       manufacturingProcesses: data.manufacturingProcesses ?? "",
       productionCapacity: data.productionCapacity ?? "",
       supplyCapacity: data.supplyCapacity ?? "",
-      certifications: data.certifications ?? "",
+      certifications: normalizeCertifications(data.certifications),
       existingClients: data.existingClients ?? "",
-    };
+    });
 
     const user = await this.userRepo.create({
       gstNumber: data.gstNumber,
@@ -162,6 +198,7 @@ export class AuthService {
       businessType: data.businessType,
       emailVerified: true,
       mobileVerified: false,
+      registrationComplete: false,
       profile,
     });
 

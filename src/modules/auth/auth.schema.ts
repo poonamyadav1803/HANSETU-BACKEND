@@ -8,7 +8,6 @@ export const signupSchema = z.object({
   password: z.string().min(8),
   businessType: z.enum(["manufacturer", "raw_material_supplier", "both"]),
   otpToken: z.string().min(1),
-  // Business profile data (optional, stored in profile JSONB column)
   industries: z.array(z.string()).optional(),
   materialTypes: z.array(z.string()).optional(),
   machinesAvailable: z.string().optional(),
@@ -16,7 +15,7 @@ export const signupSchema = z.object({
   manufacturingProcesses: z.string().optional(),
   productionCapacity: z.string().optional(),
   supplyCapacity: z.string().optional(),
-  certifications: z.string().optional(),
+  certifications: z.union([z.string(), z.array(z.string())]).optional(),
   existingClients: z.string().optional(),
 });
 
@@ -56,16 +55,49 @@ export const verifyEmailOtpSchema = z.object({
   otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must be digits only"),
 });
 
+const wizardAddressSchema = z.object({
+  label: z.string().optional(),
+  street: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+});
+
 export const updateProfileSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  designation: z.string().optional(),
+  phone: z.string().optional(),
+  companyName: z.string().optional(),
+  yearEstablished: z.string().optional(),
+  totalEmployees: z.string().optional(),
+  website: z.string().optional(),
+  addresses: z.array(wizardAddressSchema).optional(),
+  description: z.string().optional(),
+  service: z.enum(["manufacturing", "raw_material_supply"]).optional(),
+  industriesServed: z.array(z.string()).optional(),
+  materialCategories: z.record(z.array(z.string())).optional(),
+  capabilitySpecs: z.record(z.record(z.unknown())).optional(),
+  manufacturerIndustries: z.array(z.string()).optional(),
+  industryPartsPrefs: z.record(z.record(z.unknown())).optional(),
+  manufacturingCapabilities: z.array(z.string()).optional(),
+  productionCapacity: z.string().optional(),
+  rawMaterialCategories: z.array(z.string()).optional(),
+  supplyCapacity: z.string().optional(),
+  industrySelections: z.record(z.array(z.string())).optional(),
+  certifications: z.union([z.string(), z.array(z.string())]).optional(),
+  existingClients: z.string().optional(),
+  profileComplete: z.boolean().optional(),
+  wizardCompletedAt: z.string().optional(),
   industries: z.array(z.string()).optional(),
   materialTypes: z.array(z.string()).optional(),
   machinesAvailable: z.string().optional(),
   machineSpecs: z.string().optional(),
   manufacturingProcesses: z.string().optional(),
-  productionCapacity: z.string().optional(),
-  supplyCapacity: z.string().optional(),
-  certifications: z.string().optional(),
-  existingClients: z.string().optional(),
+  rawMaterialProducts: z.array(z.string()).optional(),
+  targetIndustries: z.array(z.string()).optional(),
+  services: z.array(z.string()).optional(),
+  manufacturingProducts: z.array(z.string()).optional(),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
