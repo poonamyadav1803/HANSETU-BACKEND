@@ -1,0 +1,411 @@
+// ─── Wizard Reference Data ─────────────────────────────────────────────────
+// Static data served by /api/wizard/* endpoints (no DB required)
+
+export const BUSINESS_SERVICES = [
+  { id: "manufacturing", name: "Manufacturing", description: "Produce finished goods and components", icon: "Factory", sort_order: 0 },
+  { id: "raw_material_supply", name: "Raw Material Supply", description: "Supply industrial raw materials", icon: "Package", sort_order: 1 },
+];
+
+export const RAW_MATERIAL_CATEGORIES = [
+  { id: 'steel', name: 'Steel & Iron', sort_order: 0, subcategories: ['Hot Rolled Steel', 'Cold Rolled Steel', 'Stainless Steel', 'Galvanized Steel', 'TMT Bars', 'Structural Steel', 'Tool Steel', 'Alloy Steel', 'Carbon Steel', 'Mild Steel', 'Spring Steel', 'Cast Iron', 'Pig Iron', 'Steel Pipes', 'Steel Tubes', 'Steel Plates', 'Steel Angles', 'Steel Channels', 'I-Beams', 'Steel Wire Rods'] },
+  { id: 'aluminum', name: 'Aluminum', sort_order: 1, subcategories: ['Aluminum Sheets', 'Aluminum Coils', 'Aluminum Extrusions', 'Aluminum Foil', 'Aluminum Ingots', 'Aluminum Bars', 'Aluminum Tubes', 'Aluminum Wires', 'Aluminum Profiles', 'Aluminum Castings', 'Aluminum Billets', 'Aluminum Powder', 'Aluminum Circles', 'Aluminum Channels'] },
+  { id: 'copper', name: 'Copper & Alloys', sort_order: 2, subcategories: ['Copper Wire', 'Copper Sheets', 'Brass Rods', 'Bronze Products', 'Copper Tubes', 'Copper Cathodes', 'Copper Strips', 'Copper Coils', 'Copper Pipes', 'Brass Sheets', 'Brass Wire', 'Bronze Bushings', 'Phosphor Bronze', 'Beryllium Copper', 'Copper Powder', 'Copper Ingots'] },
+  { id: 'plastics', name: 'Plastics & Polymers', sort_order: 3, subcategories: ['Polypropylene (PP)', 'ABS Plastic', 'PVC Compounds', 'HDPE', 'LDPE', 'Polyurethane', 'Nylon 6/66', 'Polycarbonate', 'Polyethylene', 'Polystyrene', 'PTFE/Teflon', 'Acrylic Sheets', 'PET/PETG', 'Engineering Plastics', 'Thermoplastics', 'Thermosets', 'Masterbatches', 'Plastic Granules', 'Recycled Plastics'] },
+  { id: 'chemicals', name: 'Chemicals', sort_order: 4, subcategories: ['Industrial Chemicals', 'Paints & Coatings', 'Adhesives & Sealants', 'Lubricants & Oils', 'Solvents', 'Acids (Sulfuric, Hydrochloric, Nitric)', 'Alkalis (Caustic Soda, Soda Ash)', 'Specialty Chemicals', 'Petrochemicals', 'Agrochemicals', 'Water Treatment Chemicals', 'Textile Chemicals', 'Construction Chemicals', 'Cleaning Chemicals', 'Dyes & Pigments', 'Resins', 'Flame Retardants', 'Plasticizers', 'Surfactants'] },
+  { id: 'rubber', name: 'Rubber', sort_order: 5, subcategories: ['Natural Rubber', 'Synthetic Rubber', 'Rubber Sheets', 'Rubber Compounds', 'EPDM Rubber', 'Silicone Rubber', 'Nitrile Rubber (NBR)', 'Neoprene', 'Butyl Rubber', 'Reclaimed Rubber', 'Rubber Gaskets', 'Rubber Belts', 'Rubber Hoses', 'Rubber Seals', 'Foam Rubber'] },
+  { id: 'glass', name: 'Glass & Ceramics', sort_order: 6, subcategories: ['Float Glass', 'Tempered Glass', 'Laminated Glass', 'Ceramic Tiles', 'Refractories', 'Toughened Glass', 'Borosilicate Glass', 'Glass Wool', 'Optical Glass', 'Industrial Ceramics', 'Sanitary Ware', 'Porcelain', 'Earthenware', 'Stoneware', 'Glass Fiber'] },
+  { id: 'textiles', name: 'Textiles & Fabrics', sort_order: 7, subcategories: ['Raw Cotton', 'Cotton Yarn', 'Polyester Staple Fiber', 'Polyester Filament Yarn', 'Nylon Yarn', 'Viscose Staple Fiber', 'Acrylic Fiber', 'Spandex/Lycra', 'Aramid Fiber', 'Carbon Fiber', 'Glass Fiber Roving', 'Cotton Fabric', 'Polyester Fabric', 'Nylon Fabric', 'Canvas', 'Denim', 'Coated Fabrics'] },
+  { id: 'electronics', name: 'Electronics Components', sort_order: 8, subcategories: ['PCBs', 'Semiconductors', 'Connectors', 'Capacitors', 'Resistors', 'Diodes', 'Transistors', 'ICs/Chips', 'LEDs', 'Sensors', 'Relays', 'Transformers', 'Inductors', 'Switches', 'Cables & Wires', 'Battery Cells', 'LCD/LED Panels', 'Microcontrollers'] },
+  { id: 'construction', name: 'Construction Materials', sort_order: 9, subcategories: ['Cement (OPC, PPC, Slag)', 'Ready Mix Concrete', 'Aggregates (Sand, Gravel)', 'Bricks & Blocks', 'Tiles (Ceramic, Vitrified, Marble)', 'Pipes (PVC, HDPE, RCC)', 'Structural Steel', 'Reinforcement Bars', 'Roofing Materials', 'Waterproofing Materials', 'Insulation Materials', 'Plywood & Laminates', 'AAC Blocks', 'Fly Ash Bricks', 'Gypsum Products', 'Marble & Granite'] },
+  { id: 'wood', name: 'Wood & Timber', sort_order: 10, subcategories: ['Hardwood', 'Softwood', 'Plywood', 'MDF', 'Particle Board', 'Veneer', 'Bamboo', 'Timber Logs', 'Treated Wood', 'Wood Pulp', 'Wood Pellets'] },
+  { id: 'paper', name: 'Paper & Packaging', sort_order: 11, subcategories: ['Kraft Paper', 'Corrugated Boxes', 'Paperboard', 'Tissue Paper', 'Printing Paper', 'Packaging Films', 'Bubble Wrap', 'Foam Sheets', 'Cardboard', 'Labels & Tapes'] },
+  { id: 'minerals', name: 'Minerals & Ores', sort_order: 12, subcategories: ['Iron Ore', 'Coal', 'Limestone', 'Silica Sand', 'Bauxite', 'Manganese', 'Chromite', 'Gypsum', 'Mica', 'Talc', 'Kaolin', 'Bentonite', 'Feldspar', 'Dolomite', 'Graphite'] },
+  { id: 'metals', name: 'Non-Ferrous Metals', sort_order: 13, subcategories: ['Zinc', 'Lead', 'Tin', 'Nickel', 'Titanium', 'Magnesium', 'Cobalt', 'Tungsten', 'Molybdenum', 'Chromium', 'Precious Metals (Gold, Silver, Platinum)'] },
+  { id: 'energy', name: 'Energy Materials', sort_order: 14, subcategories: ['Solar Panels', 'Battery Materials', 'Wind Turbine Components', 'Fuel Cells', 'Biomass', 'Petroleum Products', 'LPG', 'Natural Gas Equipment', 'Electrical Cables', 'Transformers'] },
+  { id: 'agro', name: 'Agricultural Raw Materials', sort_order: 15, subcategories: ['Rice', 'Wheat & Wheat Flour', 'Maize / Corn', 'Pulses (Chana, Tur, Urad, Moong)', 'Soybean', 'Groundnut / Peanuts', 'Sesame Seeds', 'Sunflower Seeds', 'Mustard Seeds', 'Cotton (Raw / Ginned)', 'Jute Fiber', 'Sugarcane', 'Sugar (Raw & Refined)', 'Coconut & Coconut Products', 'Tea', 'Coffee Beans', 'Tobacco Leaves', 'Rubber (Natural Latex)'] },
+  { id: 'pharma', name: 'Pharmaceutical Raw Materials', sort_order: 16, subcategories: ['Active Pharmaceutical Ingredients (APIs)', 'Bulk Drug Intermediates', 'Excipients (Binders, Fillers)', 'Microcrystalline Cellulose (MCC)', 'Lactose (Pharmaceutical Grade)', 'Gelatin (Pharmaceutical)', 'HPMC / HPC / CMC', 'Pharmaceutical Solvents', 'Capsule Shells', 'Coating Materials', 'Nutraceutical Ingredients', 'Herbal Extracts', 'Vitamins & Minerals (Bulk)', 'Amino Acids'] },
+  { id: 'food-ingredients', name: 'Food Processing Ingredients', sort_order: 17, subcategories: ['Edible Oils (Palm, Soybean, Sunflower)', 'Starch (Corn, Potato, Tapioca)', 'Modified Starch', 'Glucose & Dextrose', 'Citric Acid', 'Sodium Bicarbonate', 'Yeast', 'Salt (Iodized, Industrial)', 'Food Colors', 'Food Flavors & Essences', 'Emulsifiers', 'Thickeners & Gums', 'Preservatives', 'Sweeteners', 'Milk Powder', 'Cocoa Powder'] },
+  { id: 'petrochemicals', name: 'Petroleum & Petrochemicals', sort_order: 18, subcategories: ['Crude Oil', 'Naphtha', 'Benzene', 'Toluene', 'Xylene', 'Ethylene', 'Propylene', 'Butadiene', 'Styrene', 'Methanol', 'Ethanol (Industrial)', 'Formaldehyde', 'Acetone', 'Isopropyl Alcohol (IPA)', 'Ethylene Glycol', 'Paraffin Wax', 'Bitumen / Asphalt', 'Base Oil', 'LPG'] },
+  { id: 'paints-pigments', name: 'Paints, Pigments & Coatings', sort_order: 19, subcategories: ['Titanium Dioxide (TiO2)', 'Carbon Black', 'Iron Oxide Pigments', 'Zinc Oxide', 'Phthalocyanine Blue & Green', 'Organic Pigments', 'Acrylic Resins', 'Alkyd Resins', 'Epoxy Resins & Hardeners', 'Polyurethane (PU) Resins', 'Solvents (Mineral Turpentine, Xylene)', 'Metallic Pigments', 'Corrosion Inhibitors'] },
+  { id: 'adhesives', name: 'Adhesives, Sealants & Bonding', sort_order: 20, subcategories: ['Epoxy Adhesives', 'Cyanoacrylate (Super Glue)', 'Polyurethane (PU) Adhesives', 'Acrylic Adhesives', 'Silicone Sealants', 'MS Polymer Sealants', 'Hot Melt Adhesives', 'Pressure Sensitive Adhesives', 'Structural Adhesives', 'Anaerobic Adhesives', 'UV-Curable Adhesives', 'PVA Adhesives', 'Foam Sealants'] },
+  { id: 'welding-gases', name: 'Welding Consumables & Industrial Gases', sort_order: 21, subcategories: ['MIG / MAG Welding Wire', 'TIG / GTAW Welding Rods', 'Welding Electrodes', 'Flux-Cored Wires', 'Brazing Rods & Pastes', 'Soldering Wire & Flux', 'Oxygen (Industrial)', 'Acetylene', 'Argon', 'CO2 (Welding Grade)', 'Nitrogen (Industrial)', 'Hydrogen (Industrial)', 'Mixed Gases'] },
+  { id: 'abrasives', name: 'Abrasives & Grinding Materials', sort_order: 22, subcategories: ['Silicon Carbide Grain', 'Aluminum Oxide Grain', 'Zirconia Alumina', 'Diamond Abrasive Powder', 'Garnet Abrasive', 'Glass Beads', 'Steel Grit & Steel Shot', 'Corundum', 'Sandpaper', 'Flap Discs', 'Grinding Wheels', 'Cutting Discs', 'Polishing Compounds'] },
+  { id: 'composites', name: 'Composite & Advanced Materials', sort_order: 23, subcategories: ['Carbon Fiber (Woven, UD, Chopped)', 'Carbon Fiber Prepreg', 'E-Glass Fiber', 'S-Glass Fiber', 'Basalt Fiber', 'Aramid Fiber (Kevlar)', 'Fiberglass Reinforced Plastic (FRP)', 'Carbon Fiber Reinforced Plastic (CFRP)', 'Epoxy Matrix Resins', 'Vinyl Ester Resins', 'Honeycomb Core', 'Foam Core (PVC, PET)', 'Sandwich Panels'] },
+];
+
+export const INDUSTRY_RAW_MATERIAL_MAP: Record<string, { rawCatIds: string[]; emoji: string; sampleTags: string[] }> = {
+  automobile:         { emoji: '🚗', rawCatIds: ['steel','aluminum','copper','plastics','rubber','chemicals','paints-pigments','adhesives','welding-gases','composites'], sampleTags: ['Steel & Aluminum','Rubber & Polymers','Paints & Adhesives'] },
+  aerospace:          { emoji: '✈️', rawCatIds: ['aluminum','composites','metals','chemicals','adhesives','abrasives'], sampleTags: ['Composites & CFRP','Aerospace Alloys','Adhesives & Sealants'] },
+  marine:             { emoji: '🚢', rawCatIds: ['steel','aluminum','rubber','chemicals','plastics','paints-pigments','welding-gases','composites'], sampleTags: ['Marine Steel','Rubber Seals','Anti-Fouling Coatings'] },
+  electronics:        { emoji: '💻', rawCatIds: ['copper','plastics','chemicals','electronics','adhesives','metals'], sampleTags: ['Copper & PCB','Engineering Plastics','Electrical Insulation'] },
+  electrical:         { emoji: '⚡', rawCatIds: ['copper','aluminum','steel','plastics','chemicals','metals'], sampleTags: ['Copper Wire & Strips','Aluminum Conductors','Insulation Compounds'] },
+  construction:       { emoji: '🏗️', rawCatIds: ['steel','aluminum','plastics','chemicals','minerals','wood','paper','adhesives','paints-pigments'], sampleTags: ['TMT Bars & Structural Steel','Cement & Aggregates','Waterproofing Chemicals'] },
+  'energy-power':     { emoji: '🔋', rawCatIds: ['steel','aluminum','copper','composites','chemicals','metals','minerals'], sampleTags: ['Boiler Steels','Refractories','High-Temp Alloys'] },
+  healthcare:         { emoji: '🏥', rawCatIds: ['chemicals','pharma','plastics','glass','adhesives','metals'], sampleTags: ['Pharma Chemicals','Medical Polymers','Sterile Packaging'] },
+  railways:           { emoji: '🚆', rawCatIds: ['steel','aluminum','rubber','chemicals','plastics','welding-gases','abrasives','composites'], sampleTags: ['Rail Steel & TMT','Rubber Vibration Pads','Electrical Insulation'] },
+  'oil-gas':          { emoji: '🛢️', rawCatIds: ['steel','aluminum','copper','chemicals','rubber','composites','welding-gases','abrasives'], sampleTags: ['Pipeline Steels','Corrosion Chemicals','Rubber Seals'] },
+  pharmaceutical:     { emoji: '💊', rawCatIds: ['pharma','chemicals','plastics','glass','food-ingredients','paper'], sampleTags: ['APIs & Excipients','Pharma Solvents','Blister Packaging'] },
+  chemical:           { emoji: '⚗️', rawCatIds: ['chemicals','minerals','petrochemicals','rubber','plastics','metals'], sampleTags: ['Basic Chemicals','Petrochemicals','Water Treatment'] },
+  polymer:            { emoji: '🧪', rawCatIds: ['chemicals','petrochemicals','plastics','minerals','paints-pigments','adhesives'], sampleTags: ['Polymer Resins','Petrochemical Feedstock','Polymer Additives'] },
+  'medical-devices':  { emoji: '🩺', rawCatIds: ['plastics','steel','aluminum','copper','chemicals','pharma','metals'], sampleTags: ['Medical-Grade Polymers','Surgical Steel','Sterile Packaging'] },
+  space:              { emoji: '🚀', rawCatIds: ['composites','aluminum','metals','chemicals','adhesives'], sampleTags: ['CFRP & Composites','Space-Grade Alloys','Thermal Protection'] },
+  defence:            { emoji: '🛡️', rawCatIds: ['steel','aluminum','composites','chemicals','rubber','metals','plastics','paints-pigments'], sampleTags: ['Armor Steel & Alloys','Ballistic Composites','Protective Coatings'] },
+  textile:            { emoji: '🧵', rawCatIds: ['textiles','chemicals'], sampleTags: ['Natural & Synthetic Fibers','Reactive & Disperse Dyes','Textile Auxiliaries'] },
+  'food-processing':  { emoji: '🍱', rawCatIds: ['agro','food-ingredients','chemicals','paper','plastics'], sampleTags: ['Agro Commodities','Food Additives','Food-Grade Packaging'] },
+  agriculture:        { emoji: '🌾', rawCatIds: ['agro','chemicals','plastics'], sampleTags: ['NPK Fertilizers','Crop Chemicals','Agro Packaging'] },
+  'mining-minerals':  { emoji: '⛏️', rawCatIds: ['steel','chemicals','minerals','abrasives','metals'], sampleTags: ['Mining Chemicals','Grinding Media','Wear-Resistant Steel'] },
+  'rubber-elastomers':{ emoji: '🔩', rawCatIds: ['rubber','chemicals','petrochemicals','minerals','metals','agro'], sampleTags: ['Natural & Synthetic Rubber','Vulcanization Chemicals','Carbon Black'] },
+  'paints-coatings':  { emoji: '🎨', rawCatIds: ['paints-pigments','chemicals','petrochemicals','minerals','metals'], sampleTags: ['Pigments & Resins','Solvents','Additives & Extenders'] },
+  packaging:          { emoji: '📦', rawCatIds: ['plastics','paper','chemicals','adhesives','metals'], sampleTags: ['Flexible Films','Corrugated Packaging','Rigid Packaging'] },
+};
+
+export const MANUFACTURING_CAPABILITIES = [
+  { id: 'cnc', name: 'CNC Machining', description: 'Precision CNC turning, milling, and drilling', sort_order: 0, parameters: { sections: [
+    { title: 'Machine Types', params: [
+      { id: 'machineTypes', label: 'CNC Machine Types', type: 'multiselect', options: ['3-Axis CNC', '4-Axis CNC', '5-Axis CNC', 'CNC Lathe', 'CNC Mill', 'CNC Router', 'Swiss-Type CNC', 'VMC', 'HMC', 'CNC Grinding'] },
+      { id: 'materials', label: 'Materials Processed', type: 'multiselect', options: ['Mild Steel', 'Stainless Steel', 'Aluminum', 'Brass', 'Copper', 'Titanium', 'Inconel', 'Plastic/Nylon', 'Cast Iron', 'Tool Steel', 'Carbon Steel', 'Alloy Steel'] },
+    ]},
+    { title: 'Size & Precision', params: [
+      { id: 'maxSizeLength', label: 'Max Part Length', type: 'text', unit: 'mm', placeholder: 'e.g. 1500' },
+      { id: 'maxSizeDiameter', label: 'Max Part Diameter', type: 'text', unit: 'mm', placeholder: 'e.g. 500' },
+      { id: 'tolerance', label: 'Tolerance Achievable', type: 'multiselect', options: ['±0.01 mm', '±0.02 mm', '±0.05 mm', '±0.1 mm', '±0.5 mm'] },
+      { id: 'surfaceFinish', label: 'Surface Finish', type: 'multiselect', options: ['Ra 0.4', 'Ra 0.8', 'Ra 1.6', 'Ra 3.2', 'Ra 6.3', 'Mirror Finish'] },
+    ]},
+  ]}},
+  { id: 'casting', name: 'Casting', description: 'Die casting, sand casting, investment casting', sort_order: 1, parameters: { sections: [
+    { title: 'Casting Methods', params: [
+      { id: 'castingTypes', label: 'Casting Types', type: 'multiselect', options: ['Sand Casting', 'Die Casting', 'Investment Casting', 'Centrifugal Casting', 'Shell Moulding', 'Gravity Die Casting', 'Pressure Die Casting', 'Lost Wax Casting', 'Continuous Casting', 'Squeeze Casting'] },
+      { id: 'materials', label: 'Materials Cast', type: 'multiselect', options: ['Grey Cast Iron', 'Ductile Iron', 'Aluminum Alloy', 'Brass', 'Bronze', 'Steel', 'Stainless Steel', 'Zinc Alloy', 'Copper Alloy', 'Magnesium Alloy', 'Lead', 'Tin'] },
+    ]},
+    { title: 'Size & Weight', params: [
+      { id: 'minWeight', label: 'Min Casting Weight', type: 'text', unit: 'kg', placeholder: 'e.g. 0.1' },
+      { id: 'maxWeight', label: 'Max Casting Weight', type: 'text', unit: 'kg', placeholder: 'e.g. 5000' },
+      { id: 'shapes', label: 'Shapes & Forms', type: 'multiselect', options: ['Round/Cylindrical', 'Rectangular/Block', 'Complex Geometry', 'Hollow Sections', 'Thin Wall', 'Flanges', 'Housings', 'Impellers', 'Valves', 'Pump Bodies', 'Gear Blanks', 'Pulleys'] },
+      { id: 'maxDimension', label: 'Max Part Dimension', type: 'text', unit: 'mm', placeholder: 'e.g. 2000' },
+    ]},
+  ]}},
+  { id: 'forging', name: 'Forging', description: 'Hot forging, cold forging, press forging', sort_order: 2, parameters: { sections: [
+    { title: 'Forging Methods', params: [
+      { id: 'forgingTypes', label: 'Forging Types', type: 'multiselect', options: ['Open Die Forging', 'Closed Die Forging', 'Hot Forging', 'Cold Forging', 'Warm Forging', 'Press Forging', 'Drop Forging', 'Upset Forging', 'Roll Forging'] },
+      { id: 'materials', label: 'Materials Forged', type: 'multiselect', options: ['Carbon Steel', 'Alloy Steel', 'Stainless Steel', 'Aluminum', 'Brass', 'Copper', 'Titanium', 'Inconel', 'Tool Steel', 'Spring Steel'] },
+    ]},
+    { title: 'Size & Shape', params: [
+      { id: 'minWeight', label: 'Min Forging Weight', type: 'text', unit: 'kg', placeholder: 'e.g. 0.5' },
+      { id: 'maxWeight', label: 'Max Forging Weight', type: 'text', unit: 'kg', placeholder: 'e.g. 3000' },
+      { id: 'shapes', label: 'Shapes Produced', type: 'multiselect', options: ['Shafts', 'Flanges', 'Rings', 'Discs', 'Blocks', 'Bars', 'Crankshafts', 'Connecting Rods', 'Gears', 'Bolts/Fasteners', 'Custom Shapes'] },
+      { id: 'pressCapacity', label: 'Press Capacity', type: 'text', unit: 'Tons', placeholder: 'e.g. 2500' },
+    ]},
+  ]}},
+  { id: 'stamping', name: 'Metal Stamping', description: 'Progressive die stamping, deep drawing', sort_order: 3, parameters: { sections: [
+    { title: 'Stamping Methods', params: [
+      { id: 'stampingTypes', label: 'Stamping Types', type: 'multiselect', options: ['Progressive Die', 'Transfer Die', 'Deep Drawing', 'Blanking', 'Piercing', 'Bending', 'Coining', 'Embossing', 'Fine Blanking', 'Hot Stamping'] },
+      { id: 'materials', label: 'Sheet Materials', type: 'multiselect', options: ['Mild Steel', 'Stainless Steel', 'Aluminum', 'Brass', 'Copper', 'Galvanized Steel', 'Spring Steel', 'CRCA', 'HRCA', 'Phosphor Bronze'] },
+    ]},
+    { title: 'Size & Thickness', params: [
+      { id: 'minThickness', label: 'Min Sheet Thickness', type: 'text', unit: 'mm', placeholder: 'e.g. 0.3' },
+      { id: 'maxThickness', label: 'Max Sheet Thickness', type: 'text', unit: 'mm', placeholder: 'e.g. 12' },
+      { id: 'maxPartSize', label: 'Max Part Size', type: 'text', unit: 'mm', placeholder: 'e.g. 600x400' },
+      { id: 'pressCapacity', label: 'Press Tonnage', type: 'text', unit: 'Tons', placeholder: 'e.g. 400' },
+    ]},
+  ]}},
+  { id: 'welding', name: 'Welding & Fabrication', description: 'MIG, TIG, spot welding, robotic welding', sort_order: 4, parameters: { sections: [
+    { title: 'Welding Processes', params: [
+      { id: 'weldingTypes', label: 'Welding Types', type: 'multiselect', options: ['MIG/MAG Welding', 'TIG Welding', 'Arc Welding (SMAW)', 'Spot Welding', 'Seam Welding', 'Submerged Arc (SAW)', 'Laser Welding', 'Robotic Welding', 'Plasma Welding', 'Friction Welding'] },
+      { id: 'materials', label: 'Materials Welded', type: 'multiselect', options: ['Mild Steel', 'Stainless Steel', 'Aluminum', 'Copper', 'Inconel', 'Titanium', 'Cast Iron', 'Galvanized Steel', 'Duplex Steel'] },
+    ]},
+    { title: 'Fabrication Details', params: [
+      { id: 'maxThickness', label: 'Max Weld Thickness', type: 'text', unit: 'mm', placeholder: 'e.g. 50' },
+      { id: 'maxLength', label: 'Max Assembly Length', type: 'text', unit: 'mm', placeholder: 'e.g. 6000' },
+      { id: 'certifications', label: 'Welding Certifications', type: 'multiselect', options: ['ASME', 'AWS D1.1', 'ISO 3834', 'EN 15085', 'IBR Approved', 'NACE', 'API'] },
+    ]},
+  ]}},
+  { id: 'injection', name: 'Injection Molding', description: 'Plastic injection molding, overmolding', sort_order: 5, parameters: { sections: [
+    { title: 'Molding Types', params: [
+      { id: 'moldingTypes', label: 'Molding Methods', type: 'multiselect', options: ['Standard Injection', 'Insert Molding', 'Overmolding', 'Gas-Assist Molding', 'Micro Molding', 'Multi-Shot Molding', 'Structural Foam', 'Thin Wall Molding'] },
+      { id: 'materials', label: 'Plastics Used', type: 'multiselect', options: ['PP', 'ABS', 'Nylon (PA6/PA66)', 'PC', 'POM (Acetal)', 'HDPE', 'LDPE', 'PET', 'PBT', 'TPU', 'PEEK', 'PPS', 'Silicone'] },
+    ]},
+    { title: 'Machine & Part Specs', params: [
+      { id: 'clampForce', label: 'Clamping Force Range', type: 'text', unit: 'Tons', placeholder: 'e.g. 50-1500' },
+      { id: 'shotWeight', label: 'Max Shot Weight', type: 'text', unit: 'grams', placeholder: 'e.g. 3000' },
+      { id: 'shapes', label: 'Part Types', type: 'multiselect', options: ['Housings/Enclosures', 'Caps/Closures', 'Gears', 'Connectors', 'Automotive Parts', 'Medical Components', 'Consumer Products', 'Industrial Components'] },
+    ]},
+  ]}},
+  { id: 'extrusion', name: 'Extrusion', description: 'Aluminum, plastic, rubber extrusion', sort_order: 6, parameters: { sections: [
+    { title: 'Extrusion Types', params: [
+      { id: 'extrusionTypes', label: 'Extrusion Methods', type: 'multiselect', options: ['Direct Extrusion', 'Indirect Extrusion', 'Hot Extrusion', 'Cold Extrusion', 'Co-Extrusion', 'Profile Extrusion', 'Tube Extrusion', 'Film Extrusion'] },
+      { id: 'materials', label: 'Materials Extruded', type: 'multiselect', options: ['Aluminum', 'PVC', 'HDPE', 'PP', 'ABS', 'Rubber/EPDM', 'Silicone', 'Copper', 'Brass', 'Nylon', 'TPE/TPU'] },
+    ]},
+    { title: 'Profile & Size', params: [
+      { id: 'profileTypes', label: 'Profile Shapes', type: 'multiselect', options: ['Solid Profiles', 'Hollow Profiles', 'T-Profiles', 'L-Angles', 'U-Channels', 'Round Tubes', 'Square/Rectangular Tubes', 'Custom Profiles'] },
+      { id: 'maxCCD', label: 'Max CCD', type: 'text', unit: 'mm', placeholder: 'e.g. 350' },
+      { id: 'maxLength', label: 'Max Extrusion Length', type: 'text', unit: 'mm', placeholder: 'e.g. 7000' },
+    ]},
+  ]}},
+  { id: 'sheetmetal', name: 'Sheet Metal', description: 'Laser cutting, bending, punching', sort_order: 7, parameters: { sections: [
+    { title: 'Processes', params: [
+      { id: 'processes', label: 'Sheet Metal Processes', type: 'multiselect', options: ['Laser Cutting', 'CNC Punching', 'Bending/Press Brake', 'Shearing', 'Turret Punching', 'Plasma Cutting', 'Waterjet Cutting', 'Roll Forming', 'Spinning'] },
+      { id: 'materials', label: 'Sheet Materials', type: 'multiselect', options: ['Mild Steel', 'Stainless Steel (SS304/316)', 'Aluminum', 'Galvanized Steel', 'Copper', 'Brass', 'Spring Steel'] },
+    ]},
+    { title: 'Sheet Specifications', params: [
+      { id: 'minThickness', label: 'Min Thickness', type: 'text', unit: 'mm', placeholder: 'e.g. 0.5' },
+      { id: 'maxThickness', label: 'Max Thickness', type: 'text', unit: 'mm', placeholder: 'e.g. 25' },
+      { id: 'maxSheetSize', label: 'Max Sheet Size', type: 'text', unit: 'mm', placeholder: 'e.g. 3000x1500' },
+    ]},
+  ]}},
+  { id: 'assembly', name: 'Assembly', description: 'Manual and automated assembly lines', sort_order: 8, parameters: { sections: [
+    { title: 'Assembly Types', params: [
+      { id: 'assemblyTypes', label: 'Assembly Methods', type: 'multiselect', options: ['Manual Assembly', 'Semi-Automated', 'Fully Automated', 'Robotic Assembly', 'Conveyor Assembly', 'Clean Room Assembly', 'Electromechanical Assembly', 'PCB Assembly'] },
+      { id: 'industries', label: 'Assembly For Industries', type: 'multiselect', options: ['Automotive', 'Electronics', 'White Goods', 'Industrial Equipment', 'Medical Devices', 'Consumer Products', 'Switchgear', 'Pumps & Motors'] },
+    ]},
+    { title: 'Capacity', params: [
+      { id: 'monthlyVolume', label: 'Monthly Volume Capacity', type: 'text', unit: 'units', placeholder: 'e.g. 50000' },
+      { id: 'testingCapabilities', label: 'Testing & QC', type: 'multiselect', options: ['Functional Testing', 'Leak Testing', 'Electrical Testing', 'Visual Inspection', 'CMM Measurement', 'Torque Testing', 'Pressure Testing'] },
+    ]},
+  ]}},
+  { id: 'coating', name: 'Surface Treatment', description: 'Powder coating, plating, painting', sort_order: 9, parameters: { sections: [
+    { title: 'Coating Types', params: [
+      { id: 'coatingTypes', label: 'Surface Treatments', type: 'multiselect', options: ['Powder Coating', 'Electroplating', 'Anodizing', 'Zinc Plating', 'Chrome Plating', 'Nickel Plating', 'Painting (Wet)', 'E-Coating', 'Phosphating', 'Hot Dip Galvanizing', 'PVD Coating', 'Passivation'] },
+      { id: 'substrates', label: 'Base Materials', type: 'multiselect', options: ['Steel', 'Stainless Steel', 'Aluminum', 'Copper', 'Brass', 'Zinc Die Cast', 'Plastic', 'Cast Iron'] },
+    ]},
+    { title: 'Specifications', params: [
+      { id: 'maxPartSize', label: 'Max Part Size', type: 'text', unit: 'mm', placeholder: 'e.g. 2000x1000x800' },
+      { id: 'colors', label: 'Finishes Available', type: 'multiselect', options: ['RAL Standard Colors', 'Custom Colors', 'Metallic Finish', 'Matte Finish', 'Gloss Finish', 'Textured Finish', 'Clear/Transparent'] },
+    ]},
+  ]}},
+  { id: 'heattreatment', name: 'Heat Treatment', description: 'Hardening, tempering, annealing', sort_order: 10, parameters: { sections: [
+    { title: 'Treatment Types', params: [
+      { id: 'treatmentTypes', label: 'Heat Treatment Processes', type: 'multiselect', options: ['Hardening', 'Tempering', 'Annealing', 'Normalizing', 'Case Hardening', 'Carburizing', 'Nitriding', 'Induction Hardening', 'Quenching', 'Stress Relieving'] },
+      { id: 'materials', label: 'Materials Treated', type: 'multiselect', options: ['Carbon Steel', 'Alloy Steel', 'Tool Steel', 'Stainless Steel', 'Cast Iron', 'Spring Steel', 'Bearing Steel', 'Die Steel'] },
+    ]},
+    { title: 'Furnace & Size', params: [
+      { id: 'furnaceTypes', label: 'Furnace Types', type: 'multiselect', options: ['Box Furnace', 'Pit Furnace', 'Continuous Furnace', 'Vacuum Furnace', 'Salt Bath', 'Atmosphere Controlled', 'Induction Coil'] },
+      { id: 'maxPartWeight', label: 'Max Part Weight', type: 'text', unit: 'kg', placeholder: 'e.g. 500' },
+      { id: 'hardnessRange', label: 'Hardness Range Achievable', type: 'text', placeholder: 'e.g. 20-65 HRC' },
+    ]},
+  ]}},
+  { id: '3dprinting', name: '3D Printing', description: 'Additive manufacturing, prototyping', sort_order: 11, parameters: { sections: [
+    { title: 'Printing Technologies', params: [
+      { id: 'printingTypes', label: '3D Printing Methods', type: 'multiselect', options: ['FDM/FFF', 'SLA', 'SLS', 'DMLS', 'SLM', 'MJF', 'Binder Jetting', 'PolyJet', 'DLP'] },
+      { id: 'materials', label: 'Print Materials', type: 'multiselect', options: ['PLA', 'ABS', 'PETG', 'Nylon', 'TPU', 'Resin', 'Stainless Steel', 'Aluminum', 'Titanium', 'Carbon Fiber Composite'] },
+    ]},
+    { title: 'Build Specifications', params: [
+      { id: 'maxBuildVolume', label: 'Max Build Volume', type: 'text', unit: 'mm', placeholder: 'e.g. 300x300x400' },
+      { id: 'layerResolution', label: 'Min Layer Thickness', type: 'text', unit: 'microns', placeholder: 'e.g. 25' },
+      { id: 'applications', label: 'Applications', type: 'multiselect', options: ['Rapid Prototyping', 'Functional Parts', 'Tooling/Jigs', 'End-Use Production', 'Medical Models', 'Architectural Models'] },
+    ]},
+  ]}},
+];
+
+export const MANUFACTURING_PRODUCT_CATEGORIES = [
+  { id: 'fasteners', name: 'Fasteners & Hardware', sort_order: 0, subcategories: ['Hex Bolts', 'Nuts (Hex, Lock, Wing)', 'Screws (Self-tapping, Machine)', 'Washers (Flat, Spring, Star)', 'Rivets (Pop, Solid, Blind)', 'Anchors (Wall, Expansion)', 'Studs & Threaded Rods', 'Pins (Dowel, Split, Cotter)', 'Circlips & Retaining Rings', 'Clamps & Clips', 'Turnbuckles', 'Eye Bolts', 'U-Bolts', 'Foundation Bolts', 'High Tensile Fasteners'] },
+  { id: 'bearings', name: 'Bearings & Bushings', sort_order: 1, subcategories: ['Ball Bearings', 'Roller Bearings', 'Needle Bearings', 'Thrust Bearings', 'Taper Roller Bearings', 'Pillow Block Bearings', 'Sleeve Bearings', 'Bronze Bushings', 'Nylon Bushings', 'Self-Lubricating Bushings', 'Linear Bearings', 'Cam Followers'] },
+  { id: 'gears', name: 'Gears & Power Transmission', sort_order: 2, subcategories: ['Spur Gears', 'Helical Gears', 'Bevel Gears', 'Worm Gears', 'Rack & Pinion', 'Sprockets', 'Pulleys', 'Timing Pulleys', 'V-Belt Pulleys', 'Couplings (Jaw, Flexible, Rigid)', 'Chains (Roller, Leaf)', 'Timing Belts', 'V-Belts', 'Flywheels', 'Keyways & Keys'] },
+  { id: 'pipes-fittings', name: 'Pipes & Fittings', sort_order: 3, subcategories: ['MS Pipes', 'SS Pipes', 'GI Pipes', 'HDPE Pipes', 'PVC Pipes', 'Copper Pipes', 'Pipe Elbows', 'Pipe Tees', 'Pipe Reducers', 'Flanges (Slip-On, Weld Neck, Blind)', 'Pipe Nipples', 'Unions', 'Couplings', 'Valves (Gate, Globe, Ball, Check)', 'Pipe Clamps'] },
+  { id: 'springs', name: 'Springs', sort_order: 4, subcategories: ['Compression Springs', 'Extension Springs', 'Torsion Springs', 'Leaf Springs', 'Disc/Belleville Springs', 'Wave Springs', 'Gas Springs', 'Constant Force Springs', 'Clock Springs', 'Wire Forms', 'Custom Springs'] },
+  { id: 'seals-gaskets', name: 'Seals & Gaskets', sort_order: 5, subcategories: ['O-Rings', 'Oil Seals', 'Gaskets (Spiral Wound, Ring Joint)', 'Mechanical Seals', 'Hydraulic Seals', 'Pneumatic Seals', 'V-Seals', 'Lip Seals', 'Rubber Grommets', 'PTFE Seals', 'Cork Gaskets', 'Metal Gaskets', 'Silicone Gaskets'] },
+  { id: 'tools-dies', name: 'Tools & Dies', sort_order: 6, subcategories: ['Cutting Tools', 'Drill Bits', 'End Mills', 'Taps & Dies', 'Reamers', 'Boring Tools', 'Press Dies', 'Injection Molds', 'Jigs & Fixtures', 'Gauges (Plug, Ring, Snap)', 'Carbide Inserts', 'Tool Holders', 'Collets', 'Mandrels'] },
+  { id: 'electrical-components', name: 'Electrical Components', sort_order: 7, subcategories: ['Terminal Blocks', 'Cable Lugs', 'Cable Glands', 'Junction Boxes', 'Panel Boards', 'MCBs & MCCBs', 'Contactors', 'Relay Modules', 'Push Buttons & Switches', 'Indicator Lights', 'Control Panels', 'Bus Bars', 'Wire Connectors', 'DIN Rails'] },
+  { id: 'hydraulic-pneumatic', name: 'Hydraulic & Pneumatic Parts', sort_order: 8, subcategories: ['Hydraulic Cylinders', 'Pneumatic Cylinders', 'Hydraulic Pumps', 'Hydraulic Valves', 'Pneumatic Valves', 'FRL Units (Filter-Regulator-Lubricator)', 'Hydraulic Hoses', 'Quick Couplings', 'Solenoid Valves', 'Pressure Gauges', 'Hydraulic Power Packs', 'Air Compressor Parts'] },
+  { id: 'auto-spare', name: 'Automobile Spare Parts', sort_order: 9, subcategories: ['Brake Pads & Shoes', 'Clutch Plates', 'Filters (Oil, Air, Fuel)', 'Spark Plugs', 'Wiper Blades', 'Headlight Assemblies', 'Radiator Parts', 'Exhaust Components', 'Suspension Bushings', 'Engine Mounts', 'Fuel Pumps', 'Alternators', 'Starter Motors', 'Door Handles & Hinges'] },
+  { id: 'castings-forgings', name: 'Castings & Forgings', sort_order: 10, subcategories: ['CI Castings', 'SG Iron Castings', 'Aluminum Castings', 'Brass Castings', 'Steel Forgings', 'Aluminum Forgings', 'Flanges', 'Valve Bodies', 'Pump Housings', 'Manhole Covers', 'Impellers', 'Gear Blanks', 'Crank Shafts'] },
+  { id: 'rubber-plastic', name: 'Rubber & Plastic Products', sort_order: 11, subcategories: ['Rubber Moulded Parts', 'Rubber Extruded Profiles', 'Rubber Sheets & Rolls', 'Silicone Products', 'Plastic Moulded Parts', 'Plastic Containers', 'PVC Products', 'HDPE Products', 'Nylon Components', 'Acrylic Products', 'Polycarbonate Parts', 'Teflon (PTFE) Products'] },
+  { id: 'sheet-metal-products', name: 'Sheet Metal Products', sort_order: 12, subcategories: ['Enclosures & Cabinets', 'Brackets & Angles', 'Panels & Covers', 'Trays & Shelves', 'Ducting', 'Chutes & Hoppers', 'Guards & Shields', 'Frames & Racks', 'Stamped Components', 'Deep Drawn Parts', 'Laser Cut Parts', 'Pressed Components'] },
+  { id: 'machined-parts', name: 'Precision Machined Parts', sort_order: 13, subcategories: ['CNC Turned Parts', 'CNC Milled Parts', 'Bushes & Sleeves', 'Shafts & Spindles', 'Studs & Spacers', 'Adapters & Connectors', 'Nozzles', 'Collets', 'Rollers', 'Precision Pins', 'Custom Machined Components'] },
+  { id: 'packaging-materials', name: 'Packaging Products', sort_order: 14, subcategories: ['Corrugated Boxes', 'Plastic Crates', 'Wooden Pallets', 'Stretch Film', 'Strapping (PP, Steel)', 'Bubble Wrap', 'Foam Packaging', 'Shrink Wrap', 'Carton Boxes', 'Labels & Stickers', 'Tape (BOPP, Masking)', 'Bags (PP, HDPE, Jute)'] },
+];
+
+export const INDUSTRY_CATEGORIES = [
+  { id: 'automobile', name: 'Automobile', emoji: '🚗', sort_order: 0, categories: [
+    { name: 'Engine & Powertrain', subcategories: ['Piston', 'Crankshaft', 'Camshaft', 'Cylinder Head', 'Cylinder Block', 'Connecting Rod', 'Valve', 'Rocker Arm', 'Timing Chain', 'Oil Pump', 'Water Pump', 'Turbocharger', 'Fuel Injector', 'Engine Mount', 'Intake Manifold', 'Exhaust Manifold'] },
+    { name: 'Transmission & Drivetrain', subcategories: ['Gearbox Housing', 'Gear Shaft', 'Clutch Plate', 'Flywheel', 'Synchronizer', 'Differential', 'Propeller Shaft', 'CV Joint', 'Torque Converter', 'Axle Shaft', 'Drive Shaft'] },
+    { name: 'Suspension & Steering', subcategories: ['Leaf Spring', 'Coil Spring', 'Shock Absorber', 'Axle', 'Control Arm', 'Ball Joint', 'Stabilizer Bar', 'Bushings', 'Steering Rack', 'Tie Rod', 'Knuckle', 'Wheel Hub', 'Wheel Bearing'] },
+    { name: 'Brakes & Safety', subcategories: ['Brake Disc', 'Brake Drum', 'Brake Pad', 'Brake Shoe', 'Master Cylinder', 'Brake Caliper', 'ABS Sensor', 'Brake Line', 'Brake Hose', 'ABS Module'] },
+    { name: 'Body & Chassis', subcategories: ['Chassis Frame', 'Cross Member', 'Bumper', 'Fender', 'Door Panel', 'Hood', 'Roof Panel', 'Floor Pan', 'Sill Plate', 'Quarter Panel', 'Body Mount'] },
+    { name: 'Electrical & Battery', subcategories: ['Alternator', 'Starter Motor', 'Battery Tray', 'Wiring Harness', 'Fuse Box', 'Relay', 'Ground Strap', 'EV Battery Pack', 'Battery Management System', 'Charging Port'] },
+    { name: 'Sealing & Gaskets', subcategories: ['Head Gasket', 'Exhaust Gasket', 'Oil Pan Gasket', 'Door Seal', 'Window Seal', 'Windshield Seal', 'O-Ring Kit', 'Valve Cover Gasket'] },
+    { name: 'Tyres & Rubber', subcategories: ['Tyre (Truck/Bus/PC)', 'Inner Tube', 'Rim', 'Rubber Bush', 'Engine Mount Rubber', 'Bump Stop', 'Anti-Vibration Pad'] },
+    { name: 'Exhaust & Emission', subcategories: ['Exhaust Manifold', 'Catalytic Converter', 'DPF (Diesel Particulate Filter)', 'EGR Valve', 'Oxygen Sensor', 'Muffler', 'Exhaust Pipe', 'SCR System'] },
+    { name: 'Paints & Coatings', subcategories: ['Primer Coat', 'Basecoat', 'Clearcoat', 'ED Coating', 'Anti-Chip Coating', 'Under-Body Coating', 'Cavity Wax', 'Sound Deadener'] },
+    { name: 'Fasteners & Bearings', subcategories: ['High-Tensile Bolts', 'Wheel Nut', 'Engine Stud', 'Ball Bearing', 'Tapered Roller Bearing', 'Needle Bearing', 'Thrust Bearing', 'Hub Bearing Assembly'] },
+    { name: 'HVAC & Air Conditioning', subcategories: ['Compressor', 'Condenser', 'Evaporator', 'Blower Motor', 'Expansion Valve', 'Receiver Drier', 'AC Hose', 'Heater Core'] },
+    { name: 'Interior & Trim', subcategories: ['Dashboard', 'Door Trim Panel', 'Seat Frame', 'Seat Foam', 'Headliner', 'Carpet Assembly', 'Center Console', 'Armrest', 'Sun Visor'] },
+    { name: 'Glass & Lighting', subcategories: ['Windshield (Laminated)', 'Rear Glass (Tempered)', 'Side Glass', 'Headlamp Assembly', 'LED DRL', 'Tail Lamp Assembly', 'Turn Signal', 'Mirror Glass'] },
+    { name: 'Fuel System', subcategories: ['Fuel Tank', 'Fuel Pump', 'Fuel Filter', 'Fuel Rail', 'EVAP Canister', 'Fuel Cap'] },
+    { name: 'Electronic Control Units', subcategories: ['Engine ECU', 'ABS ECU', 'Airbag ECU', 'Body Control Module', 'Transmission ECU', 'ADAS ECU', 'Infotainment ECU'] },
+  ]},
+  { id: 'aerospace', name: 'Aerospace & Defense', emoji: '✈️', sort_order: 1, categories: [
+    { name: 'Aerospace Aluminium', subcategories: ['Aluminium 7075-T6 (Wing Spar)', 'Aluminium 2024-T3 (Fuselage)', 'Aluminium 6061-T6', 'Aluminium 2219 (Cryogenic)', 'Al Honeycomb Core', 'Al Sheet (AMS 2024)', 'Al Extrusion (6061/7075)'] },
+    { name: 'Titanium Alloys', subcategories: ['Titanium Ti-6Al-4V', 'Titanium CP Grade 2', 'Titanium CP Grade 4', 'Ti-3Al-2.5V (Tubing)', 'Titanium Bar/Billet', 'Titanium Sheet (AMS 4911)', 'Titanium Forging (AMS 4928)'] },
+    { name: 'Superalloys', subcategories: ['Inconel 718', 'Inconel 625', 'Waspaloy', 'Hastelloy X', 'René 41', 'Haynes 230', 'Nimonic 80A'] },
+    { name: 'Composites', subcategories: ['Carbon Fiber Prepreg (T700/T800)', 'Aluminium Honeycomb', 'Aramid Fiber (Kevlar)', 'Glass Fiber Prepreg', 'CFRP Sheet', 'Woven Carbon Fabric (3K/6K)', 'Unidirectional Carbon Tape'] },
+    { name: 'High-Strength Steels', subcategories: ['Maraging Steel 250', 'Alloy Steel 4340', '300M Steel', '17-4 PH Stainless', '15-5 PH Stainless', 'A286 (High Temp)', 'D6AC Steel'] },
+    { name: 'Aerospace Fasteners', subcategories: ['Titanium Bolt (Hi-Lite)', 'Hi-Lok Fastener', 'Lockbolt (Huckbolt)', 'Nut Plates (PEM)', 'Solid Rivets Al 2117', 'Blind Rivets (Cherry)', 'A286 Nut/Bolt'] },
+    { name: 'Seals & Bearings', subcategories: ['Viton O-Rings (Aerospace)', 'PTFE Back-up Rings', 'Angular Contact Bearing', 'Spherical Rod End Bearing', 'Cylindrical Roller Bearing', 'Lip Seals (Hydraulic)', 'Metal Face Seal'] },
+    { name: 'Airframe & Structures', subcategories: ['Fuselage Panels', 'Wings & Spars', 'Empennage', 'Bulkheads', 'Frames & Stringers', 'Nacelles', 'Thrust Reversers', 'Doors & Hatches', 'Landing Gear Assemblies'] },
+    { name: 'Avionics & Systems', subcategories: ['Flight Control Computers', 'Navigation Units (INS/GPS)', 'Radars & Transponders', 'Autopilot Systems', 'Fly-by-Wire Components', 'Hydraulic Pumps & Actuators'] },
+  ]},
+  { id: 'marine', name: 'Marine', emoji: '🚢', sort_order: 2, categories: [
+    { name: 'Hull & Structural Systems', subcategories: ['Hull Plates', 'Frames', 'Bulkheads', 'Decks', 'Corrosion Protection', 'Marine-Grade Fasteners', 'Coatings', 'Sealing Systems'] },
+    { name: 'Marine Propulsion', subcategories: ['Marine Engines', 'Propeller Shafts', 'Gearboxes', 'Propellers', 'Thrusters', 'Stern Tubes', 'Bearings'] },
+    { name: 'Navigation & Communication', subcategories: ['Marine Radar', 'GPS', 'AIS', 'Sonar Systems', 'Communication Radios', 'Antennas', 'Bridge Electronics'] },
+    { name: 'Electrical & Power Systems', subcategories: ['Marine Generators', 'Switchboards', 'Power Distribution Panels', 'Cables', 'Lighting', 'Battery Systems'] },
+    { name: 'Pumps & Fluid Handling', subcategories: ['Bilge Pumps', 'Ballast Pumps', 'Valves', 'Piping', 'Fuel Transfer Systems', 'Filtration Systems'] },
+    { name: 'Deck Machinery', subcategories: ['Winches', 'Cranes', 'Anchoring Systems', 'Mooring Equipment'] },
+    { name: 'Safety & Compliance', subcategories: ['Fire Suppression Systems', 'Life Rafts', 'Alarms', 'Safety Sensors'] },
+  ]},
+  { id: 'electronics', name: 'Electronics', emoji: '💻', sort_order: 3, categories: [
+    { name: 'PCB Materials', subcategories: ['Copper Foil (PCB)', 'FR-4 Substrate', 'Copper Clad Laminate (CCL)', 'Prepreg Sheet', 'Solder Mask Ink', 'Rogers High-Frequency Laminate', 'Flexible PCB (FPC) Material'] },
+    { name: 'Soldering Materials', subcategories: ['Solder Paste SAC305', 'Solder Bar SAC305', 'Soldering Flux', 'Solder Wire Sn60/Pb40', 'Lead-Free Solder Wire SAC305', 'No-Clean Flux', 'Wave Solder Flux'] },
+    { name: 'Semiconductors & ICs', subcategories: ['Silicon Wafer 6-inch', 'IC Encapsulation Epoxy (EMC)', 'Logic ICs (TTL/CMOS)', 'Microcontrollers (MCU)', 'Memory ICs (Flash/SRAM)', 'Power Management ICs', 'RF ICs & Transceivers'] },
+    { name: 'Cables & Wire', subcategories: ['ETP Copper Rod (Winding/Cable)', 'XLPE Cable Insulation Compound', 'PVC Cable Insulation Compound', 'Single Mode Optical Fibre', 'Hook-up Wire (UL1007)', 'Coaxial Cable', 'Ribbon Cable'] },
+    { name: 'Connectors & Terminals', subcategories: ['Board-to-Board Connectors', 'Edge Connectors (PCIe)', 'Terminal Blocks', 'RJ45 Connectors', 'USB Connectors', 'RF Connectors (SMA/BNC)', 'Crimp Terminals'] },
+    { name: 'Enclosures & Housings', subcategories: ['ABS (Enclosure)', 'Polycarbonate (Covers)', 'Aluminium Enclosure', 'CRCA Steel Sheet', 'Die Cast Zinc Housing', 'IP65 Enclosures', 'DIN Rail Enclosures'] },
+    { name: 'Thermal Management', subcategories: ['Aluminium Heatsink', 'Thermal Interface Material', 'Thermal Pad', 'Thermal Grease', 'Heat Pipes', 'Cooling Fans'] },
+    { name: 'Sensors & Transducers', subcategories: ['Temperature Sensors (NTC/PTC)', 'Pressure Sensors (MEMS)', 'Hall Effect Sensors', 'Gyroscope (IMU)', 'Accelerometer', 'Ultrasonic Sensors', 'Current Sensors'] },
+    { name: 'Power Electronics', subcategories: ['MOSFET (Power)', 'IGBT Modules', 'Diodes (Schottky/Zener)', 'Power Inductors', 'Electrolytic Capacitors', 'Film Capacitors', 'SMPS Transformers', 'Power Modules (GaN/SiC)'] },
+  ]},
+  { id: 'electrical', name: 'Electrical', emoji: '⚡', sort_order: 4, categories: [
+    { name: 'Power Generation & Distribution', subcategories: ['Transformers', 'Generators', 'Switchgear', 'Distribution Boards', 'Circuit Breakers', 'Contactors', 'Relays', 'Busbars'] },
+    { name: 'Cables & Wiring', subcategories: ['Power Cables', 'Control Cables', 'Cable Trays', 'Lugs', 'Glands', 'Harnesses & Wiring Assemblies'] },
+    { name: 'Motors & Drives', subcategories: ['AC/DC Motors', 'Servo Motors', 'VFD Drives', 'Motor Starters'] },
+    { name: 'Industrial Control & Automation', subcategories: ['PLCs', 'HMIs', 'SCADA Components', 'Control Panels', 'Sensors', 'Limit Switches', 'Industrial Connectors'] },
+    { name: 'Lighting Systems', subcategories: ['Industrial Lighting', 'LED Fixtures', 'Emergency Lights'] },
+    { name: 'Energy & Renewable', subcategories: ['Solar Inverters', 'Batteries', 'Charge Controllers', 'EV Charging Components'] },
+  ]},
+  { id: 'construction', name: 'Construction', emoji: '🏗️', sort_order: 5, categories: [
+    { name: 'Structural Steel', subcategories: ['TMT Bars Fe 500D', 'TMT Bars Fe 550', 'MS Angles', 'MS Channels', 'I-Beams (ISMB)', 'H-Beams (ISWB)', 'HR Plates IS 2062', 'Chequered Plates', 'Wire Mesh Fabric', 'Pre-Fabricated Structures'] },
+    { name: 'Cement & Concrete', subcategories: ['OPC 53 Grade Cement', 'OPC 43 Grade Cement', 'PPC Cement', 'Ready Mix Concrete', 'White Cement', 'Fly Ash', 'Admixtures', 'Dry Mortar Mix'] },
+    { name: 'Aggregates & Sand', subcategories: ['Coarse Aggregate 20mm', 'Coarse Aggregate 12mm', 'M-Sand (Manufactured)', 'River Sand', 'Crushed Stone', 'Gravel', 'Quarry Dust'] },
+    { name: 'Pipes & Fittings', subcategories: ['ERW Steel Pipes', 'Seamless Pipes', 'GI Pipes', 'HDPE Pipes', 'PVC SWR Pipes', 'uPVC Pressure Pipes', 'Ductile Iron Pipes', 'MS Flanges', 'Pipe Fittings'] },
+    { name: 'Bricks & Blocks', subcategories: ['Red Clay Bricks', 'Fly Ash Bricks', 'AAC Blocks', 'Hollow Concrete Blocks', 'Paver Blocks', 'Refractory Bricks', 'Fire Bricks'] },
+    { name: 'Waterproofing & Chemicals', subcategories: ['SBS Waterproofing Membrane', 'Crystalline Waterproofing', 'Acrylic Coating', 'Epoxy Grouting', 'Joint Sealant', 'Curing Compound'] },
+    { name: 'Electrical & MEP', subcategories: ['PVC Conduit', 'GI Conduit', 'Cable Trays', 'MCB', 'Distribution Board', 'Power Cable', 'Control Cable', 'GI Wire', 'Switches & Sockets'] },
+    { name: 'Roofing & Insulation', subcategories: ['GI Corrugated Sheets', 'Color Coated Sheets (PPGI)', 'Aluminium Roofing', 'Glass Wool Insulation', 'Rock Wool Insulation', 'XPS Board', 'EPS Board', 'PUF Panel', 'Roof Tiles'] },
+    { name: 'Flooring & Tiles', subcategories: ['Vitrified Tiles', 'Ceramic Tiles', 'Marble Slabs', 'Granite Slabs', 'Wooden Flooring', 'Epoxy Flooring', 'Industrial Flooring'] },
+    { name: 'Heavy Equipment Parts', subcategories: ['Excavator Bucket', 'Bucket Teeth', 'Crane Hook', 'Hydraulic Cylinder', 'Boom Arm', 'Track Shoe', 'Roller Assembly', 'Idler', 'Sprocket'] },
+  ]},
+  { id: 'energy-power', name: 'Energy & Power', emoji: '🔋', sort_order: 6, categories: [
+    { name: 'Power Plant Materials', subcategories: ['SA 516 Gr 70 (Boiler Plates)', 'SA 213 T22 (Boiler Tubes)', 'SA 335 P91 (Superheater)', 'Inconel 600 (High Temp)', 'SS 304 / SS 316L', 'Heat Exchanger Tubes', 'Condenser Tubes', 'Refractory Lining', 'Steam Turbine Blades'] },
+    { name: 'Oil & Gas', subcategories: ['API 5L X52 (Pipeline)', 'API 5L X65 (Pipeline)', 'Duplex SS 2205', 'Super Duplex 2507', 'OCTG Pipes (Casing & Tubing)', 'Flanges (ANSI/ASME)', 'Pressure Vessel Plates', 'Valve Bodies'] },
+    { name: 'Renewable Energy', subcategories: ['Solar Frame Aluminium', 'Solar Glass (Tempered 3.2mm)', 'Wind Tower Steel (S355)', 'Wind Turbine Blade (GFRP/CFRP)', 'Solar Backsheet', 'Solar Encapsulant (EVA)', 'Solar Mounting Structures'] },
+    { name: 'Transmission & Distribution', subcategories: ['ACSR Conductor', 'XLPE Cable 11kV', 'XLPE Cable 33kV', 'Transformer Oil', 'Transformer Core (CRGO Steel)', 'Insulator (Glass/Porcelain)', 'Earthing Materials', 'HV Switchgear'] },
+    { name: 'Battery & Storage', subcategories: ['LFP Cathode Powder', 'NMC 811 Cathode', 'Graphite Anode Powder', 'LiPF6 Electrolyte', 'Battery Separator Film', 'Copper Foil (Battery Anode)', 'Aluminum Foil (Cathode)', 'Battery Cell Casing', 'BMS Components'] },
+    { name: 'Hydrogen & Green Energy', subcategories: ['Platinum Catalyst (Fuel Cell)', 'Nafion Membrane (PEM)', 'Titanium Bipolar Plate', 'SS 316L Bipolar Plate', 'Electrolyzer Stack Components', 'H2 Storage Cylinder (Type-IV)'] },
+  ]},
+  { id: 'healthcare', name: 'Healthcare', emoji: '🏥', sort_order: 7, categories: [
+    { name: 'Implant Metals', subcategories: ['SS 316L Surgical Grade', 'Titanium CP Grade 4', 'Ti-6Al-4V ELI', 'Cobalt-Chrome-Moly (CoCrMo)', 'Nitinol Wire (Shape Memory)', 'Tantalum Metal (Implant)', 'Zirconia (Dental)', 'Alumina Ceramic (Dental)'] },
+    { name: 'Medical Polymers', subcategories: ['PEEK Implant Grade', 'UHMWPE (Hip/Knee)', 'Medical Grade PVC', 'Medical Silicone', 'Medical PTFE', 'Medical Grade PP', 'Polysulfone (Dialysis)', 'PETG (Medical)'] },
+    { name: 'Surgical Instruments Materials', subcategories: ['SS 420 (Instruments)', 'SS 440C (Cutting)', 'Tungsten Carbide', 'Titanium Grade 5 (Surgical)', 'Ceramic Blade Material', 'Electrosurgical Accessories'] },
+    { name: 'Disposables Materials', subcategories: ['PP (Syringe Grade)', 'LDPE (IV Tubing)', 'Natural Rubber Latex', 'Nitrile Rubber (Gloves)', 'Medical Grade PVC (Blood Bag)', 'Non-Woven Fabric (SMS)', 'Meltblown Fabric (BFE 99%)'] },
+    { name: 'Healthcare Packaging', subcategories: ['Blister Aluminium Foil', 'Rigid PVC Film (Blister)', 'Borosilicate Glass Vials', 'Glass Ampoules', 'HDPE Pharma Drum', 'Tyvek Sterilization Pouch', 'PETG Bottles (Pharma)'] },
+    { name: 'Diagnostic Materials', subcategories: ['Nitrocellulose Membrane', 'Latex Beads (Diagnostic)', 'Colloidal Gold (Test Kits)', 'PCR Tube Polypropylene', 'Agarose (Electrophoresis)', 'Microplate (96-well)'] },
+    { name: 'Wound Care & Dressings', subcategories: ['Absorbent Gauze (Cotton)', 'Absorbent Cotton Wool', 'Calcium Alginate Fiber', 'Hydrogel Dressing Polymer', 'PU Foam Wound Dressing', 'Bandage Adhesive'] },
+  ]},
+  { id: 'railways', name: 'Railways', emoji: '🚆', sort_order: 8, categories: [
+    { name: 'Rolling Stock', subcategories: ['Bogies', 'Wheels', 'Axles', 'Couplers', 'Brake Systems', 'Coach Body Panels'] },
+    { name: 'Track & Infrastructure', subcategories: ['Rails', 'Sleepers', 'Fishplates', 'Track Clips', 'Points & Crossings'] },
+  ]},
+  { id: 'oil-gas', name: 'Oil & Gas', emoji: '🛢️', sort_order: 9, categories: [
+    { name: 'Upstream', subcategories: ['Drill Bits', 'Casing Pipes', 'Wellhead Equipment', 'BOP Components', 'Mud Pumps'] },
+    { name: 'Downstream', subcategories: ['Pressure Vessels', 'Piping Systems', 'Valves', 'Flanges', 'Heat Exchangers', 'Storage Tanks'] },
+  ]},
+  { id: 'pharmaceutical', name: 'Pharmaceutical', emoji: '💊', sort_order: 10, categories: [
+    { name: 'Excipients', subcategories: ['Lactose Monohydrate', 'Maize Starch', 'Microcrystalline Cellulose (MCC)', 'HPMC (Hydroxypropyl Methylcellulose)', 'Croscarmellose Sodium', 'Titanium Dioxide (Pharma)', 'PVP K30', 'Gelatin', 'Dicalcium Phosphate', 'Mannitol'] },
+    { name: 'Coating Materials', subcategories: ['Shellac', 'Film Coating Premix (Opadry)', 'Eudragit (Enteric Coating)', 'HPMC Phthalate (HP-55)', 'Cellulose Acetate Phthalate', 'PVA Film', 'Carnauba Wax'] },
+    { name: 'Binders & Fillers', subcategories: ['Polyvinylpyrrolidone (PVP K30/K90)', 'Hydroxypropyl Cellulose (HPC-SSL)', 'Microcrystalline Cellulose (PH101/PH102)', 'Maize Starch (Binder Grade)', 'Pre-gelatinized Starch', 'Gum Acacia'] },
+    { name: 'Lubricants & Glidants', subcategories: ['Magnesium Stearate', 'Talc (Pharma Grade)', 'Glycerin', 'Colloidal Silicon Dioxide', 'Stearic Acid', 'Hydrogenated Castor Oil', 'Calcium Stearate'] },
+    { name: 'API & Active Ingredients', subcategories: ['Paracetamol API', 'Ibuprofen API', 'Amoxicillin Trihydrate', 'Metformin HCl', 'Ascorbic Acid (Vitamin C)', 'Aspirin', 'Atorvastatin API', 'Amlodipine API', 'Metronidazole', 'Cetirizine HCl'] },
+    { name: 'Pharma Packaging', subcategories: ['Blister Aluminium Foil (20μm)', 'PVDC Coated PVC (Blister)', 'HDPE Container (Pharma)', 'LDPE Strip Pack', 'Hard Gelatin Capsule Shell', 'Glass Vials (Borosilicate)', 'Glass Ampoules', 'HDPE Tablet Bottles'] },
+    { name: 'Biotech & Cell Culture', subcategories: ['DMEM Cell Culture Medium', 'Fetal Bovine Serum (FBS)', 'Agarose (Electrophoresis)', 'Trypsin (Cell Dissociation)', 'L-Glutamine', 'Penicillin-Streptomycin', 'RPMI 1640 Medium'] },
+    { name: 'Pharma Manufacturing Equipment', subcategories: ['Tablet Press (Punches & Dies)', 'Fluid Bed Processor', 'Capsule Filling Machine', 'Blister Packing Machine', 'Coating Pan', 'HPLC System', 'Autoclave (Pharma)', 'Laminar Air Flow (LAF)'] },
+  ]},
+  { id: 'chemical', name: 'Chemical', emoji: '⚗️', sort_order: 11, categories: [
+    { name: 'Basic Chemicals', subcategories: ['Caustic Soda Flakes (98%)', 'Caustic Soda Lye (48%)', 'Sodium Carbonate (Soda Ash)', 'Sodium Bicarbonate', 'Hydrogen Peroxide (50%)', 'Sodium Hypochlorite (10%)', 'Formaldehyde (37%)', 'Urea (Industrial Grade)', 'Ammonia (Liquefied)', 'Calcium Chloride'] },
+    { name: 'Industrial Acids', subcategories: ['Sulfuric Acid (98%)', 'Hydrochloric Acid (33%)', 'Nitric Acid (68%)', 'Phosphoric Acid (85%)', 'Acetic Acid (Glacial)', 'Formic Acid (85%)', 'Citric Acid (Industrial)', 'Hydrofluoric Acid (40%)', 'Oxalic Acid'] },
+    { name: 'Solvents', subcategories: ['Methanol', 'Industrial Ethanol (95%)', 'Isopropyl Alcohol (IPA)', 'Acetone', 'Toluene', 'Ethyl Acetate', 'Butyl Acetate', 'MEK (Methyl Ethyl Ketone)', 'n-Hexane', 'Xylene (Mixed)', 'DMF (Dimethylformamide)'] },
+    { name: 'Water Treatment Chemicals', subcategories: ['Poly Aluminium Chloride (PAC)', 'Alum (Aluminium Sulphate)', 'Anionic Polyacrylamide (Flocculant)', 'Sodium Hypochlorite 10%', 'Antiscalant (RO Membrane)', 'Activated Carbon (Water)', 'Ferric Chloride', 'Lime (Quick/Slaked)'] },
+    { name: 'Surfactants & Detergents', subcategories: ['LAB (Linear Alkyl Benzene)', 'SLES 70%', 'SLS (Sodium Lauryl Sulphate)', 'Cocamidopropyl Betaine', 'Fatty Alcohol (C12-C18)', 'APG (Alkyl Polyglucoside)', 'Lauryl Glucoside', 'Dimethicone'] },
+    { name: 'Chemical Process Equipment', subcategories: ['Chemical Reactors', 'Pressure Vessels', 'Distillation Columns', 'Evaporators', 'Heat Exchangers', 'Chemical Pumps', 'Agitators', 'Spray Dryers', 'Centrifuges', 'Filter Presses'] },
+  ]},
+  { id: 'polymer', name: 'Polymer', emoji: '🧪', sort_order: 12, categories: [
+    { name: 'Polyolefins', subcategories: ['HDPE Granules', 'LDPE Granules', 'LLDPE Granules', 'Polypropylene (Homopolymer)', 'PP Copolymer (Impact)', 'PP Random Copolymer', 'EVA Copolymer'] },
+    { name: 'Engineering Plastics', subcategories: ['ABS Resin', 'Polycarbonate (PC)', 'Nylon 6 Chips', 'Nylon 66', 'POM (Acetal/Delrin)', 'PBT Resin', 'PEEK', 'PPS Resin', 'PPO/PPE Resin', 'LCP (Liquid Crystal Polymer)'] },
+    { name: 'Vinyl Polymers', subcategories: ['PVC Resin (Suspension Grade)', 'CPVC Resin', 'PVDF Resin', 'PET Resin (Bottle Grade)', 'PET Resin (Film Grade)', 'PETG', 'PVOH (Polyvinyl Alcohol)', 'PVAc Emulsion', 'PVC Plasticizer (DOP/DINP)', 'PVC Stabilizer'] },
+    { name: 'Specialty Polymers', subcategories: ['PTFE Resin', 'PVDF Resin', 'FEP (Fluoropolymer)', 'PFA (Fluoropolymer)', 'Polyimide (PI)', 'PSU (Polysulfone)', 'PPSU', 'PEI (Ultem)', 'PAEK (PEEK/PEK)'] },
+    { name: 'Thermosets & Resins', subcategories: ['Liquid Epoxy Resin (LER)', 'Epoxy Hardener (Amine)', 'Phenol Formaldehyde Resin', 'Urea Formaldehyde Resin', 'Unsaturated Polyester Resin (UPR)', 'Vinyl Ester Resin', 'Polyurethane Resin (MDI/TDI)', 'Melamine Formaldehyde'] },
+    { name: 'Polymer Additives', subcategories: ['Antioxidant 1010', 'UV Stabilizer HALS 770', 'Brominated Flame Retardant', 'DOP Plasticizer', 'PE Wax (Lubricant)', 'Nucleating Agent (PP)', 'Slip Agent', 'Anti-blocking Agent', 'Carbon Black (Masterbatch)'] },
+    { name: 'Polymer Processing Equipment', subcategories: ['Single Screw Extruder', 'Twin Screw Extruder', 'Injection Molding Machine', 'Blow Molding Machine', 'Thermoforming Machine', 'Compounding Line', 'Pelletizer', 'Banbury Mixer', 'Film Extrusion Line'] },
+  ]},
+  { id: 'medical-devices', name: 'Medical Devices', emoji: '🩺', sort_order: 13, categories: [
+    { name: 'Surgical Instruments', subcategories: ['Forceps', 'Scissors', 'Retractors', 'Needle Holders', 'Scalpels', 'Clamps', 'Trocars', 'Suction Instruments'] },
+    { name: 'Implants & Prosthetics', subcategories: ['Orthopedic Implants', 'Dental Implants', 'Cardiac Stents', 'Spinal Implants', 'Joint Replacements', 'Bone Plates & Screws'] },
+    { name: 'Diagnostic Equipment', subcategories: ['X-Ray Machines', 'Ultrasound Systems', 'CT Scanners', 'MRI Components', 'ECG Machines', 'Patient Monitors'] },
+    { name: 'Disposable Devices', subcategories: ['Syringes', 'IV Cannulas', 'Catheters', 'Blood Bags', 'Surgical Gloves', 'Face Masks', 'Wound Dressings'] },
+    { name: 'Hospital Furniture', subcategories: ['Hospital Beds', 'OT Tables', 'Examination Tables', 'ICU Beds', 'Stretchers', 'Medical Trolleys', 'Instrument Cabinets'] },
+    { name: 'Sterilization Equipment', subcategories: ['Autoclaves', 'ETO Sterilizers', 'Plasma Sterilizers', 'UV Sterilizers', 'Sterilization Pouches', 'Biological Indicators'] },
+  ]},
+  { id: 'space', name: 'Space', emoji: '🚀', sort_order: 14, categories: [
+    { name: 'Satellite Materials', subcategories: ['Aluminium-Lithium Alloy (Al-Li)', 'Aluminium Honeycomb (Satellite)', 'CFRP (Satellite Panels)', 'MLI (Multi-Layer Insulation) Blankets', 'Beryllium Metal (Optics)', 'Invar 36 (Low CTE)', 'Titanium Grade 5 (Structural)'] },
+    { name: 'Rocket Engine Materials', subcategories: ['Inconel 718 (Engine)', 'René 41', 'Niobium Alloy C103', 'Cu-Cr-Zr (Combustion Chamber)', 'Haynes 188', 'Carbon-Carbon Composite (Nozzle)', 'Molybdenum Nozzle Throat Insert'] },
+    { name: 'Thermal Protection', subcategories: ['Silica Tiles (STS-Grade)', 'Carbon-Carbon Composite', 'Ablative Material (PICA)', 'Cork Ablative', 'Ceramic Fiber Blanket', 'RCC (Reinforced Carbon-Carbon)', 'FRCI Insulation'] },
+    { name: 'Space Systems (Manufactured)', subcategories: ['Launch Vehicle Structures', 'Satellite Bus', 'Payload Fairings', 'Reaction Wheels', 'Star Trackers', 'Antenna Reflectors', 'Thrust Chambers', 'Ground Control Equipment'] },
+  ]},
+  { id: 'defence', name: 'Defence', emoji: '🛡️', sort_order: 15, categories: [
+    { name: 'Armor Materials', subcategories: ['RHA Steel (Armor Grade)', 'Hardox 450', 'AR500 Steel', 'Alumina Ceramic (Armor)', 'Boron Carbide (B4C)', 'Silicon Carbide (SiC Armor)', 'Aluminium 5083 (Armor)', 'Titanium Grade 5 (Armor)'] },
+    { name: 'Ballistic Protection', subcategories: ['Kevlar (Para-Aramid Fabric)', 'Dyneema (UHMWPE Fiber)', 'Spectra Shield', 'Twaron Fabric', 'Carbon Fiber Ballistic Plate', 'Ceramic Tile (SiC/Al2O3)', 'Helmets (UHMWPE/Kevlar Composite)', 'SAPI Plate Material'] },
+    { name: 'High-Strength Alloys', subcategories: ['Maraging Steel 300', 'Maraging Steel 250', 'HSS M2 (High-Speed Steel)', 'Tungsten Heavy Alloy', 'Titanium Grade 23 (ELI)', 'Beryllium Copper', 'Stellite 6 (Wear Resistant)'] },
+    { name: 'Defence Systems (Manufactured)', subcategories: ['Armored Vehicle Parts', 'Weapon System Components', 'Tactical Radios', 'Radar Systems', 'Night Vision Devices', 'UAV Airframes', 'Missile Structures', 'Ammunition Components', 'Ballistic Helmets'] },
+  ]},
+  { id: 'textile', name: 'Textile & Apparel', emoji: '🧵', sort_order: 16, categories: [
+    { name: 'Natural Fibers & Yarns', subcategories: ['Raw Cotton (Shankar-6)', 'Cotton Yarn 40s Combed', 'Cotton Yarn 20s Carded', 'Raw Silk (Mulberry)', 'Merino Wool', 'Raw Jute (TD-4)', 'Linen Fiber', 'Cashmere Fiber', 'Bamboo Fiber', 'Hemp Fiber', 'Sisal Fiber', 'Coir Fiber'] },
+    { name: 'Synthetic Fibers & Yarns', subcategories: ['Polyester Staple Fiber (1.4D)', 'Polyester Filament Yarn FDY', 'Nylon 6 Yarn', 'Spandex/Lycra', 'Viscose Staple Fiber', 'Acrylic Fiber', 'Polypropylene Yarn', 'Blended Yarns (PC/CVC)', 'High-Tenacity Polyester', 'Sewing Thread'] },
+    { name: 'Dyes & Textile Chemicals', subcategories: ['Reactive Dyes', 'Disperse Dyes', 'Vat Dyes (Indigo)', 'Acid Dyes', 'Direct Dyes', 'Sulfur Dyes', 'Optical Brightening Agent', 'Fabric Softener', 'Sizing Agent (PVA)', 'Bleaching Agent', 'Scouring Agent', 'Wetting Agent'] },
+    { name: 'Technical Textiles', subcategories: ['Aramid Fiber (Para-Aramid)', 'Carbon Fiber 12K', 'Glass Fiber Roving (E-Glass)', 'Geotextile Fabric', 'Basalt Fiber', 'UHMWPE Fiber', 'Metallic Yarn', 'Conductive Fiber', 'FR Fabric (Flame Retardant)', 'UV Stabilized Fabric'] },
+    { name: 'Woven & Knitted Fabrics', subcategories: ['Grey Cotton Fabric', 'Processed Cotton Fabric', 'Polyester Fabric', 'Nylon Fabric', 'Canvas', 'Denim', 'Twill Fabric', 'Satin Fabric', 'Velvet', 'Jersey Knit', 'Rib Knit', 'Interlock Knit'] },
+  ]},
+  { id: 'food-processing', name: 'Food Processing', emoji: '🍱', sort_order: 17, categories: [
+    { name: 'Edible Oils & Fats', subcategories: ['RBD Palmolein', 'Refined Soybean Oil', 'Refined Sunflower Oil', 'Refined Mustard Oil', 'Coconut Oil (RBD)', 'Groundnut Oil', 'Rice Bran Oil', 'Vanaspati (Hydrogenated)', 'Shortening', 'Margarine'] },
+    { name: 'Grains & Pulses', subcategories: ['Wheat (FAQ Grade)', 'Raw Rice (Sona Masuri)', 'Basmati Rice', 'Yellow Maize', 'Chana Dal', 'Toor/Arhar Dal', 'Urad Dal', 'Moong Dal', 'Masur Dal', 'Rajma', 'Kabuli Chana', 'Soybean Seeds'] },
+    { name: 'Food Additives', subcategories: ['Refined Iodized Salt', 'Sugar S-30', 'Citric Acid Monohydrate', 'MSG (Monosodium Glutamate)', 'Sodium Benzoate', 'Potassium Sorbate', 'Aspartame', 'Stevia Extract', 'Sucralose', 'Xanthan Gum', 'Guar Gum', 'Carrageenan', 'Lecithin'] },
+    { name: 'Dairy Ingredients', subcategories: ['Skimmed Milk Powder (SMP)', 'Whole Milk Powder (WMP)', 'Whey Protein Concentrate (WPC80)', 'White Butter (Unsalted)', 'Pure Ghee', 'Casein', 'Lactose', 'Cream Powder'] },
+    { name: 'Spices & Condiments', subcategories: ['Red Chili Powder (S334)', 'Turmeric (Erode)', 'Cumin Seeds (Rajasthan)', 'Coriander Seeds', 'Dry Ginger (Sonth)', 'Black Pepper (MG1)', 'Green Cardamom', 'Cloves', 'Cinnamon', 'Star Anise', 'Fenugreek', 'Mustard Seeds'] },
+    { name: 'Food Processing Equipment', subcategories: ['Flour Mill', 'Oil Expeller', 'Pulverizer', 'Mixing Tank', 'Homogenizer', 'Pasteurizer', 'Spray Dryer', 'Tunnel Dryer', 'Filling Machine', 'Sealing Machine', 'Packaging Machine', 'Conveyor', 'Metal Detector'] },
+  ]},
+  { id: 'agriculture', name: 'Agriculture & Agro-Processing', emoji: '🌾', sort_order: 18, categories: [
+    { name: 'Crop Cultivation Inputs', subcategories: ['Seeds (Hybrid/Foundation)', 'Urea Fertilizer', 'DAP Fertilizer', 'NPK Fertilizer', 'Micronutrient Mix', 'Organic Compost', 'Vermicompost', 'Bio-fertilizers', 'Drip Irrigation Pipes', 'Sprinkler System', 'Greenhouse Film', 'Mulch Film'] },
+    { name: 'Crop Protection', subcategories: ['Herbicides (Glyphosate, 2,4-D)', 'Insecticides (Chlorpyrifos, Imidacloprid)', 'Fungicides (Mancozeb, Carbendazim)', 'Neem-based Pesticides', 'Plant Growth Regulators', 'Rodenticides', 'Bio-pesticides'] },
+    { name: 'Agro-Processing Machinery', subcategories: ['Tractor', 'Harvester', 'Rice Thresher', 'Wheat Thresher', 'Seed Drill', 'Rotavator', 'Power Tiller', 'Sugarcane Harvester', 'Cotton Picker', 'Dryer (Grain)', 'Storage Silo'] },
+    { name: 'Agro Commodities', subcategories: ['Cotton (Ginned)', 'Jute (Raw)', 'Sugarcane', 'Groundnut (Raw)', 'Soybean', 'Sesame Seeds', 'Castor Seeds', 'Coconut (Copra)', 'Rubber Latex', 'Bamboo (Raw)', 'Tobacco Leaves'] },
+    { name: 'Post-Harvest & Cold Chain', subcategories: ['Cold Storage', 'Refrigerated Transport', 'Sorting Machine', 'Grading Machine', 'Washing Machine', 'Ripening Chamber', 'Packaging Material', 'Crates & Bins'] },
+  ]},
+  { id: 'mining-minerals', name: 'Mining & Minerals', emoji: '⛏️', sort_order: 19, categories: [
+    { name: 'Iron Ore & Coal', subcategories: ['Iron Ore Lumps (63%)', 'Iron Ore Fines (62%)', 'Thermal Coal', 'Coking Coal (Prime)', 'Metallurgical Coke', 'Sinter Fines', 'Pellets', 'HBI/DRI', 'Coal Tar'] },
+    { name: 'Non-Ferrous Ores', subcategories: ['Bauxite (55% Al2O3)', 'Chromite Ore (48%)', 'Manganese Ore (44%)', 'Copper Concentrate', 'Zinc Concentrate', 'Lead Concentrate', 'Nickel Ore', 'Cobalt Ore', 'Tin Ore'] },
+    { name: 'Industrial Minerals', subcategories: ['Limestone (Cement Grade)', 'Dolomite', 'Silica Sand (Glass Grade)', 'Feldspar', 'Kaolin (China Clay)', 'Bentonite', 'Talc Powder', 'Mica Powder', 'Barytes (Barite)', 'Fluorite (Fluorspar)', 'Gypsum', 'Vermiculite'] },
+    { name: 'Mining Equipment Parts', subcategories: ['Grinding Media (Steel Balls)', 'Mill Liners', 'Jaw Crusher Plates', 'Cone Crusher Liners', 'Vibrating Screen Mesh', 'Conveyor Belts', 'Wear Plates (AR400/AR500)', 'Pump Impellers', 'Drill Bits (PDC/DTH)', 'Rock Drill Rods'] },
+  ]},
+  { id: 'rubber-elastomers', name: 'Rubber & Elastomers', emoji: '🔩', sort_order: 20, categories: [
+    { name: 'Natural Rubber', subcategories: ['RSS-4 (Ribbed Smoked Sheet)', 'RSS-3', 'ISNR-20 (Block Rubber)', 'Centrifuged Latex (60% DRC)', 'TSR 10/20', 'Pale Crepe', 'Brown Crepe', 'Skim Rubber'] },
+    { name: 'Synthetic Rubber', subcategories: ['SBR (Styrene Butadiene)', 'NBR (Nitrile Butadiene)', 'EPDM', 'Neoprene (CR)', 'Butyl Rubber (IIR)', 'Silicone Rubber (VMQ)', 'Fluoroelastomer (FKM/Viton)', 'HNBR', 'ACM (Polyacrylate)'] },
+    { name: 'Rubber Chemicals', subcategories: ['Sulfur (Rubber Grade)', 'Zinc Oxide (Rubber Grade)', 'Stearic Acid', 'Accelerators (CBS, MBTS, TMTD)', 'Antioxidants (IPPD, 6PPD)', 'Carbon Black (N220, N330, N550)', 'Silica (Precipitated)', 'Coupling Agent (Si-69)'] },
+    { name: 'High Performance Elastomers', subcategories: ['Perfluoroelastomer (FFKM)', 'Polyurethane Elastomer (PU)', 'Thermoplastic Elastomer (TPE)', 'TPV (Thermoplastic Vulcanizate)', 'SEBS/SBS Block Copolymer', 'Chlorinated Polyethylene (CM/CSM)'] },
+  ]},
+  { id: 'paints-coatings', name: 'Paints & Coatings', emoji: '🎨', sort_order: 21, categories: [
+    { name: 'Pigments', subcategories: ['Titanium Dioxide (Rutile R-902)', 'Titanium Dioxide (Anatase)', 'Iron Oxide Red', 'Iron Oxide Yellow', 'Iron Oxide Black', 'Carbon Black (Pigment)', 'Phthalocyanine Blue (Beta)', 'Zinc Phosphate (Anti-Corrosive)', 'Organic Pigments', 'Metallic Pigments (Al/Bronze)', 'Pearlescent Pigments'] },
+    { name: 'Resins & Binders', subcategories: ['Alkyd Resin (Long Oil 60%)', 'Acrylic Emulsion (50%)', 'Epoxy Resin (DGEBA)', 'Polyurethane Resin', 'PVAc Emulsion', 'Rosin Ester', 'Phenolic Resin', 'Melamine Resin', 'Vinyl Resin', 'Silicone Resin', 'Water-Based Acrylic'] },
+    { name: 'Solvents', subcategories: ['Toluene', 'Xylene (Mixed)', 'Butyl Acetate', 'Butyl Cellosolve', 'MEK (Methyl Ethyl Ketone)', 'Mineral Turpentine Oil (MTO)', 'Ethyl Acetate', 'Isopropyl Alcohol (IPA)', 'n-Butanol', 'Cyclohexanone'] },
+    { name: 'Additives & Extenders', subcategories: ['Calcium Carbonate (GCC 10 Micron)', 'Talc (Paint Grade)', 'Barytes Powder (4.2 SG)', 'China Clay (Calcined)', 'Metal Driers (Cobalt 6%)', 'Cellulose Thickener (HEC)', 'Silica Matting Agent', 'Dispersing Agent', 'Defoamer', 'Wetting Agent', 'UV Stabilizer'] },
+    { name: 'Powder Coatings', subcategories: ['Epoxy Powder Coating', 'Polyester Powder Coating (TGIC)', 'Epoxy-Polyester Hybrid Powder', 'PU Powder Coating', 'Super Durable Polyester', 'Wrinkle Powder Coating', 'Textured Powder Coating', 'Metallic Powder Coating'] },
+    { name: 'Industrial & Marine Coatings', subcategories: ['Zinc-Rich Primer (90% Zn)', 'Epoxy Coal Tar Coating', 'Anti-Fouling Paint (Marine)', 'Intumescent Fire Retardant Paint', 'Chlorinated Rubber Primer', 'Epoxy Mastic', 'High-Build Epoxy', 'Polysiloxane Topcoat', 'Bituminous Coating'] },
+  ]},
+  { id: 'packaging', name: 'Packaging', emoji: '📦', sort_order: 22, categories: [
+    { name: 'Flexible Packaging Films', subcategories: ['BOPP Film (Plain/Metallized)', 'BOPET Film (Polyester 12 Micron)', 'CPP Film (Cast PP)', 'LDPE Film', 'LLDPE Stretch Film', 'Nylon Film (BOPA)', 'Aluminium Foil', 'Barrier Films (EVOH/PA/PVDC)', 'Shrink Films (PVC/POF/PE)', 'Co-extruded Films'] },
+    { name: 'Corrugated Packaging', subcategories: ['Corrugated Boxes (3-Ply)', 'Corrugated Boxes (5-Ply)', 'Corrugated Boxes (7-Ply)', 'Corrugated Sheets', 'Honeycomb Boards', 'Flute Board', 'Duplex Board', 'Kraft Liner', 'Test Liner'] },
+    { name: 'Rigid Packaging', subcategories: ['PET Bottles', 'HDPE Bottles', 'PP Containers', 'PVC Blister', 'Aluminum Cans', 'Glass Bottles', 'Tin Cans', 'Aerosol Cans', 'Jars (PP/PET/Glass)', 'Trays (PET/PP)', 'Clamshells'] },
+    { name: 'Industrial Bags', subcategories: ['PP Woven Bags', 'HDPE Woven Bags', 'FIBC (Jumbo Bags)', 'Kraft Paper Bags', 'Multiwall Paper Bags', 'PE Bags', 'Anti-static Bags', 'Vacuum Bags', 'Laminated Bags', 'Jute Bags'] },
+    { name: 'Printing Inks & Adhesives', subcategories: ['Flexo Inks (Water-Based)', 'Gravure Inks (Solvent-Based)', 'Offset Inks', 'Digital Printing Inks', 'Hot Melt Adhesive (Packaging)', 'Water-Based Adhesive', 'Lacquers & Varnishes', 'OPP Tape'] },
+    { name: 'Sealing & Strapping', subcategories: ['PP Strapping Band', 'PET Strapping Band', 'Steel Strapping', 'Stretch Wrap (Hand/Machine)', 'Shrink Wrap', 'Sealing Wire', 'Metal Clips', 'Buckles', 'Hot Melt Glue', 'Sealing Tape'] },
+  ]},
+];
+
+export const INDUSTRY_PARTS_FILTERS: Record<string, { item: string[]; grade: string[]; shape: string[]; fabrication: string[] }> = {};
