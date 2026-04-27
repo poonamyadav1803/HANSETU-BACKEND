@@ -18,6 +18,7 @@ import { seedTrainingPrograms } from "./training.seeder";
 import { seedStudentServices } from "./student.seeder";
 import { seedFinancialServices } from "./financial.seeder";
 import { seedSuppliers } from "./supplier.seeder";
+import { seedWizardNavigationData } from "./wizard-navigation.seeder";
 
 async function runSeeds() {
   log("═══════════════════════════════════════════");
@@ -38,6 +39,7 @@ async function runSeeds() {
     await seedStudentServices();
     await seedFinancialServices();
     await seedSuppliers();
+    await seedWizardNavigationData();
 
     log("═══════════════════════════════════════════");
     log("  All seeds completed successfully.");
