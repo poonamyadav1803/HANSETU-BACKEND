@@ -1,4 +1,4 @@
-name: Hansetu-Backend-deploy
+name: Hansetu Backend Deploy
 
 on:
   workflow_dispatch:
@@ -11,15 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
+      # 1. Checkout
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Setup Docker Buildx
+      # 2. Setup Docker
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
-      # 3. Configure AWS credentials
+      # 3. Configure AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -28,32 +28,84 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # 4. Login to ECR
-      - name: Login to Amazon ECR
+      - name: Login to ECR
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
           docker login --username AWS --password-stdin \
           ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-
-      # 7. Build Docker image
+      # 5. Build Image
       - name: Build Docker image
         run: |
-          docker build -t hansetu/backend .
+          docker build -t hansetu/backend:latest .
 
-      # 8. Run container for testing
+      # 6. Test Image (LOCAL)
       - name: Test container
         run: |
-          docker run -d -p 3000:3000 --name hansetu hansetu/backend
-          sleep 10
-          docker logs hansetu   
-          curl http://localhost:3000/api-docs
+          docker run -d \
+            -p 3000:3000 \
+            --name test-backend \
+            -e PORT=3000 \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -e SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            -e SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            -e SMTP_USER="${{ secrets.SMTP_USER }}" \
+            -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            hansetu/backend:latest
 
-      # 9. Tag image
+            sleep 15
+
+            docker logs test-backend
+
+            curl --fail http://localhost:3000/api/health
+
+            docker stop test-backend
+            docker rm test-backend
+
+      #        -e TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID }}" \
+      #        -e TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
+      #        -e TWILIO_PHONE_NUMBER="${{ secrets.TWILIO_PHONE_NUMBER }}" \
+      #        -e FRONTEND_URL="${{ secrets.FRONTEND_URL }}" \
+      #        -e MASTERS_INDIA_API_KEY="${{ secrets.MASTERS_INDIA_API_KEY }}" \
+
+      # 7. Tag Image
       - name: Tag image
         run: |
-          docker tag hansetu/backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
+          docker tag hansetu/backend:latest \
+          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
 
-      # 10. Push image to ECR
+      # 8. Push Image
       - name: Push image
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
+          docker push \
+          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
+
+      # 9. Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
+
+            docker stop hansetu-backend || true
+            docker rm hansetu-backend || true
+            docer rmi
+
+            docker run -d \
+              -p 3000:3000 \
+              --name hansetu-backend \
+              -e PORT=3000 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+              -e SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+              -e SMTP_USER="${{ secrets.SMTP_USER }}" \
+              -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+              -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hansetu/backend:latest
