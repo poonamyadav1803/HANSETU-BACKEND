@@ -59,7 +59,7 @@ jobs:
 
             docker logs test-backend
 
-            curl --fail http://localhost:3000/api/health
+            curl --fail http://localhost:3000/api-docs
 
             docker stop test-backend
             docker rm test-backend
