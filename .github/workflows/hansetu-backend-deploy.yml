@@ -95,7 +95,6 @@ jobs:
 
             docker stop hansetu-backend || true
             docker rm hansetu-backend || true
-            docer rmi
 
             docker run -d \
               -p 3000:3000 \
