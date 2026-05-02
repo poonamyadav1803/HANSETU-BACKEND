@@ -68,7 +68,7 @@ async function ensureRbacSchema() {
   `);
 }
 
-async function seed() {
+export async function seedRbac() {
   console.log("Seeding RBAC roles and permissions...");
   await ensureRbacSchema();
 
@@ -138,10 +138,14 @@ async function seed() {
   }
 
   console.log("Seeding complete.");
-  process.exit(0);
 }
 
-seed().catch((err) => {
-  console.error("Seed failed:", err);
-  process.exit(1);
-});
+// Standalone entry point
+if (require.main === module) {
+  seedRbac()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error("Seed failed:", err);
+      process.exit(1);
+    });
+}
