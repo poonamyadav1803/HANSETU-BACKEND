@@ -231,6 +231,37 @@ export class AuthRoutes {
 
     /**
      * @openapi
+     * /api/auth/complete-registration:
+     *   post:
+     *     tags: [Auth]
+     *     summary: Complete contact/address registration step
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [firstName, lastName, phone]
+     *             properties:
+     *               firstName: { type: string }
+     *               lastName: { type: string }
+     *               designation: { type: string }
+     *               phone: { type: string }
+     *               addresses: { type: array }
+     *               yearEstablished: { type: string }
+     *               totalEmployees: { type: string }
+     *               website: { type: string }
+     *               description: { type: string }
+     *     responses:
+     *       200:
+     *         description: Registration completed — updated user returned
+     */
+    this.router.post("/complete-registration", authMiddleware, this.controller.completeRegistration);
+
+    /**
+     * @openapi
      * /api/auth/send-phone-otp:
      *   post:
      *     tags: [Auth]
