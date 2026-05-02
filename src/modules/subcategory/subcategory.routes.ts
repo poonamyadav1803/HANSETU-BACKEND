@@ -1,10 +1,10 @@
-import { Router } from "express";
-import { SubcategoryController } from "./subcategory.controller";
+import { Router } from 'express';
+import { SubcategoryController } from './subcategory.controller';
 
 export class SubcategoryRoutes {
   public router = Router();
   private controller = new SubcategoryController();
-  private uuidParam = ":id([0-9a-fA-F-]{36})";
+  private uuidParam = ':id([0-9a-fA-F-]{36})';
 
   constructor() {
     /**
@@ -50,8 +50,8 @@ export class SubcategoryRoutes {
      *               items:
      *                 $ref: '#/components/schemas/SubcategoryWithCategory'
      */
-    this.router.get("/", this.controller.getAll);
-    this.router.post("/", this.controller.create);
+    this.router.get('/', this.controller.getAll);
+    this.router.post('/', this.controller.create);
 
     /**
      * @openapi

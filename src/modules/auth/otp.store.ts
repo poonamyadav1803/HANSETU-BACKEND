@@ -12,19 +12,19 @@ interface OtpEntry {
 const store = new Map<string, OtpEntry>();
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-function makeKey(type: "phone" | "email", identifier: string): string {
+function makeKey(type: 'phone' | 'email', identifier: string): string {
   return `${type}:${identifier}`;
 }
 
 export const otpStore = {
-  set(type: "phone" | "email", identifier: string, code: string): void {
+  set(type: 'phone' | 'email', identifier: string, code: string): void {
     store.set(makeKey(type, identifier), {
       code,
       expiresAt: Date.now() + OTP_TTL_MS,
     });
   },
 
-  verify(type: "phone" | "email", identifier: string, code: string): boolean {
+  verify(type: 'phone' | 'email', identifier: string, code: string): boolean {
     const key = makeKey(type, identifier);
     const entry = store.get(key);
     if (!entry) return false;
@@ -37,7 +37,7 @@ export const otpStore = {
     return true;
   },
 
-  has(type: "phone" | "email", identifier: string): boolean {
+  has(type: 'phone' | 'email', identifier: string): boolean {
     const key = makeKey(type, identifier);
     const entry = store.get(key);
     if (!entry) return false;

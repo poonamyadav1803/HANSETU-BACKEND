@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from "express";
-import { CategoryService } from "./category.service";
-import { CategoryRepository } from "./category.repository";
-import { createCategorySchema, updateCategorySchema } from "./category.schema";
+import { Request, Response, NextFunction } from 'express';
+import { CategoryService } from './category.service';
+import { CategoryRepository } from './category.repository';
+import { createCategorySchema, updateCategorySchema } from './category.schema';
 
 const service = new CategoryService(new CategoryRepository());
 
@@ -52,7 +52,7 @@ export class CategoryController {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       await service.delete(req.params.id);
-      res.json({ message: "Category deleted successfully" });
+      res.json({ message: 'Category deleted successfully' });
     } catch (err) {
       next(err);
     }

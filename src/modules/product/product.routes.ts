@@ -1,5 +1,5 @@
-import { Router } from "express";
-import { ProductController } from "./product.controller";
+import { Router } from 'express';
+import { ProductController } from './product.controller';
 
 export class ProductRoutes {
   public router = Router();
@@ -29,7 +29,7 @@ export class ProductRoutes {
      *       200:
      *         description: Array of product objects
      */
-    this.router.get("/", this.controller.getAll);
+    this.router.get('/', this.controller.getAll);
 
     /**
      * @openapi
@@ -48,6 +48,6 @@ export class ProductRoutes {
      *       404:
      *         description: Product not found
      */
-    this.router.get("/:id", this.controller.getById);
+    this.router.get('/:id', this.controller.getById);
   }
 }
