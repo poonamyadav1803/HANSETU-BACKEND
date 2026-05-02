@@ -1,15 +1,15 @@
 /**
  * GST Verification Service
  * - Checks DB cache first
- * - Falls back to Masters India sandbox API
+ * - Falls back to WhiteBooks public GST API
  * - Saves result to gst_info table
  */
 
-import { db } from "../../db";
-import { gstInfo } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "../../config/env";
 import { HttpException } from "../../core/HttpException";
+import { db } from "../../db";
+import { gstInfo } from "../../db/schema";
 
 export interface GstVerificationResult {
   gstNumber: string;
@@ -29,36 +29,42 @@ export interface GstVerificationResult {
   fromCache: boolean;
 }
 
-interface MastersIndiaGstResponse {
-  data?: {
-    lgnm?: string;
-    tradeNam?: string;
-    sts?: string;
-    rgdt?: string;
-    ctb?: string;
-    pradr?: Record<string, unknown>;   // full address object, not just adr string
-    stj?: string;                       // state jurisdiction
-    stjCd?: string;                     // state jurisdiction code
-    dty?: string;                       // dealer type
-    cxdt?: string;                      // cancellation date
-    adadr?: unknown[];                  // additional addresses
-    lstupdt?: string;                   // last updated at GSTN
-    nba?: string[];
-  };
-  error?: string | Record<string, unknown>;
-  message?: string;
-  status?: number;
+interface WhiteBooksGstPayload {
+  stjCd?: string;
+  lgnm?: string;
+  stj?: string;
+  dty?: string;
+  adadr?: unknown[];
+  cxdt?: string;
+  gstin?: string;
+  nba?: string[];
+  lstupdt?: string;
+  rgdt?: string;
+  ctb?: string;
+  pradr?: Record<string, unknown>;
+  sts?: string;
+  tradeNam?: string;
+  ctjCd?: string;
+  ctj?: string;
+  einvoiceStatus?: string;
 }
 
-function extractApiErrorMessage(raw: MastersIndiaGstResponse): string {
+interface WhiteBooksGstResponse {
+  data?: WhiteBooksGstPayload;
+  status_cd?: string;
+  status_desc?: string;
+  error?: string | Record<string, unknown>;
+}
+
+function extractApiErrorMessage(raw: WhiteBooksGstResponse): string {
   if (typeof raw.error === "string") return raw.error;
   if (raw.error && typeof raw.error === "object") {
-    const e = raw.error as Record<string, unknown>;
-    if (typeof e.message === "string") return e.message;
-    if (typeof e.error === "string") return e.error;
-    return JSON.stringify(e);
+    const errorObject = raw.error as Record<string, unknown>;
+    if (typeof errorObject.message === "string") return errorObject.message;
+    if (typeof errorObject.error === "string") return errorObject.error;
+    return JSON.stringify(errorObject);
   }
-  if (typeof raw.message === "string") return raw.message;
+  if (typeof raw.status_desc === "string") return raw.status_desc;
   return "GST number not found or invalid";
 }
 
@@ -71,52 +77,64 @@ function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   }
 }
 
-async function fetchFromMastersIndia(gstNumber: string): Promise<GstVerificationResult> {
-  if (!env.MASTERS_INDIA_API_KEY) {
+async function fetchFromWhiteBooks(
+  gstNumber: string
+): Promise<{ result: GstVerificationResult; rawResponse: WhiteBooksGstResponse }> {
+  if (
+    !env.WHITEBOOKS_GST_API_URL ||
+    !env.WHITEBOOKS_GST_EMAIL ||
+    !env.WHITEBOOKS_CLIENT_ID ||
+    !env.WHITEBOOKS_CLIENT_SECRET
+  ) {
     throw new HttpException(503, "GST verification service is not configured");
   }
 
-  const url = `https://api.mastersindia.co/mastersindia/v2/gstin?gstin=${gstNumber}`;
+  const url = new URL(env.WHITEBOOKS_GST_API_URL);
+  url.searchParams.set("email", env.WHITEBOOKS_GST_EMAIL);
+  url.searchParams.set("gstin", gstNumber);
 
-  const response = await fetch(url, {
+  const response = await fetch(url.toString(), {
     method: "GET",
     headers: {
-      "Authorization": `Bearer ${env.MASTERS_INDIA_API_KEY}`,
-      "Content-Type": "application/json",
+      accept: "*/*",
+      client_id: env.WHITEBOOKS_CLIENT_ID,
+      client_secret: env.WHITEBOOKS_CLIENT_SECRET,
     },
   });
 
-  const raw = await response.json() as MastersIndiaGstResponse;
+  const raw = (await response.json()) as WhiteBooksGstResponse;
 
-  if (!response.ok || raw.error || !raw.data) {
+  if (!response.ok || raw.status_cd !== "1" || !raw.data) {
     throw new HttpException(400, extractApiErrorMessage(raw));
   }
 
-  const d = raw.data;
+  const payload = raw.data;
 
   return {
-    gstNumber,
-    legalName: d.lgnm ?? "",
-    tradeName: d.tradeNam ?? "",
-    registrationStatus: d.sts ?? "Unknown",
-    dateOfRegistration: d.rgdt ?? "",
-    constitutionOfBusiness: d.ctb ?? "",
-    principalPlaceOfBusiness: d.pradr ?? null,
-    natureOfBusinessActivities: Array.isArray(d.nba) ? d.nba : [],
-    stateJurisdiction: d.stj ?? null,
-    stateJurisdictionCode: d.stjCd ?? null,
-    dealerType: d.dty ?? null,
-    cancellationDate: d.cxdt ?? null,
-    additionalAddresses: Array.isArray(d.adadr) ? d.adadr : null,
-    lastUpdatedAtGstn: d.lstupdt ?? null,
-    fromCache: false,
+    result: {
+      gstNumber: payload.gstin ?? gstNumber,
+      legalName: payload.lgnm ?? "",
+      tradeName: payload.tradeNam ?? "",
+      registrationStatus: payload.sts ?? "Unknown",
+      dateOfRegistration: payload.rgdt ?? "",
+      constitutionOfBusiness: payload.ctb ?? "",
+      principalPlaceOfBusiness: payload.pradr ?? null,
+      natureOfBusinessActivities: Array.isArray(payload.nba) ? payload.nba : [],
+      stateJurisdiction: payload.stj ?? null,
+      stateJurisdictionCode: payload.stjCd ?? null,
+      dealerType: payload.dty ?? null,
+      cancellationDate: payload.cxdt ?? null,
+      additionalAddresses: Array.isArray(payload.adadr) ? payload.adadr : null,
+      lastUpdatedAtGstn: payload.lstupdt ?? null,
+      fromCache: false,
+    },
+    rawResponse: raw,
   };
 }
 
 export async function verifyGst(gstNumber: string): Promise<GstVerificationResult> {
   const upper = gstNumber.toUpperCase().trim();
 
-  // 1. Check DB cache
   const [cached] = await db
     .select()
     .from(gstInfo)
@@ -149,10 +167,8 @@ export async function verifyGst(gstNumber: string): Promise<GstVerificationResul
     };
   }
 
-  // 2. Fetch from Masters India API
-  const result = await fetchFromMastersIndia(upper);
+  const { result, rawResponse } = await fetchFromWhiteBooks(upper);
 
-  // 3. Save to DB cache — text columns get JSON-serialized, new typed columns stored directly
   await db.insert(gstInfo).values({
     gstNumber: upper,
     legalName: result.legalName,
@@ -171,7 +187,7 @@ export async function verifyGst(gstNumber: string): Promise<GstVerificationResul
     additionalAddresses: result.additionalAddresses,
     lastUpdatedAtGstn: result.lastUpdatedAtGstn,
     lastVerifiedAt: new Date(),
-    rawApiResponse: JSON.stringify(result),
+    rawApiResponse: JSON.stringify(rawResponse),
   });
 
   return result;
