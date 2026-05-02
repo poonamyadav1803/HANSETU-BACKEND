@@ -5,7 +5,12 @@ export const env = {
   PORT: process.env.PORT || "3000",
   DATABASE_URL: process.env.DATABASE_URL!,
   JWT_SECRET: process.env.JWT_SECRET || 'hansetu-secret',
-  MASTERS_INDIA_API_KEY: process.env.MASTERS_INDIA_API_KEY || '',
+  WHITEBOOKS_GST_API_URL:
+    process.env.WHITEBOOKS_GST_API_URL ||
+    'https://apisandbox.whitebooks.in/public/search',
+  WHITEBOOKS_GST_EMAIL: process.env.WHITEBOOKS_GST_EMAIL || '',
+  WHITEBOOKS_CLIENT_ID: process.env.WHITEBOOKS_CLIENT_ID || '',
+  WHITEBOOKS_CLIENT_SECRET: process.env.WHITEBOOKS_CLIENT_SECRET || '',
   // Nodemailer
   SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587'),

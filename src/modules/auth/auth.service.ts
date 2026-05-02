@@ -185,13 +185,21 @@ export class AuthService {
   }
 
   // ─── Update Profile ─────────────────────────────────────────────────────────
-  async updateProfile(userId: string, profile: UserProfile) {
+  async updateProfile(userId: string, incoming: UserProfile) {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new HttpException(404, 'User not found.');
-    const normalizedProfile = buildLegacyProfile(profile);
-    await this.userRepo.updateProfile(userId, normalizedProfile, {
-      registrationComplete: normalizedProfile.profileComplete === true,
-      profileCompletedAt: normalizedProfile.profileComplete ? new Date() : null,
+
+    // Merge: existing profile ← new fields (new data wins on overlapping keys)
+    const merged: UserProfile = buildLegacyProfile({
+      ...(user.profile ?? {}),
+      ...incoming,
+    });
+
+    await this.userRepo.updateProfile(userId, merged, {
+      registrationComplete: merged.profileComplete === true
+        ? true
+        : (user.registrationComplete ?? false),
+      profileCompletedAt: merged.profileComplete ? new Date() : (user.profileCompletedAt ?? null),
     });
     const updated = await this.userRepo.findById(userId);
     return toSafeUser(updated!);

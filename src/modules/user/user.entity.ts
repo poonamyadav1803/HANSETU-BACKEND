@@ -13,7 +13,15 @@ export interface WizardAddress {
   postalCode?: string;
 }
 
+export interface WizardPartsSel {
+  item: string[];
+  grade: string[];
+  shape: string[];
+  fabrication: string[];
+}
+
 export interface UserProfile {
+  // ── Contact & Company ──────────────────────────────────────────────────────
   firstName?: string;
   lastName?: string;
   designation?: string;
@@ -24,31 +32,49 @@ export interface UserProfile {
   website?: string;
   addresses?: WizardAddress[];
   description?: string;
-  service?: "manufacturing" | "raw_material_supply";
-  industriesServed?: string[];
-  rawMaterialCategories?: string[];
-  materialCategories?: Record<string, string[]>;
-  supplyCapacity?: string;
-  manufacturingCapabilities?: string[];
-  capabilitySpecs?: Record<string, Record<string, unknown>>;
-  manufacturerIndustries?: string[];
-  industrySelections?: Record<string, string[]>;
-  industryPartsPrefs?: Record<string, Record<string, unknown>>;
-  productionCapacity?: string;
   certifications?: string[] | string;
   existingClients?: string;
+
+  // ── Services ───────────────────────────────────────────────────────────────
+  services?: string[];
+
+  // ── Manufacturing ──────────────────────────────────────────────────────────
+  manufacturingCapabilities?: string[];
+  capabilitySpecs?: Record<string, Record<string, string | string[]>>;
+  manufacturingProducts?: Record<string, Record<string, string[]>>;
+  manufacturingProductsFlat?: string[];
+  productionCapacity?: string;
+
+  // ── Manufacturing target industries ───────────────────────────────────────
+  targetIndustries?: string[];
+  industryPartsSelections?: Record<string, WizardPartsSel>;
+
+  // ── Raw Material Supply ────────────────────────────────────────────────────
+  rawMaterialCategories?: string[];
+  rawMaterialSelections?: Record<string, string[]>;
+  rawMaterialProducts?: string[];
+  supplyCapacity?: string;
+
+  // ── Raw supply target industries ───────────────────────────────────────────
+  rawTargetIndustries?: string[];
+  rawIndustrySelections?: Record<string, Record<string, string[]>>;
+
+  // ── Wizard metadata ────────────────────────────────────────────────────────
   profileComplete?: boolean;
   wizardCompletedAt?: string;
 
-  // Backward-compatible fields still read by some older pages.
+  // ── Legacy / backward-compatible fields ───────────────────────────────────
+  service?: "manufacturing" | "raw_material_supply";
+  industriesServed?: string[];
+  materialCategories?: Record<string, string[]>;
+  manufacturerIndustries?: string[];
+  industrySelections?: Record<string, string[]>;
+  industryPartsPrefs?: Record<string, Record<string, unknown>>;
   industries?: string[];
   materialTypes?: string[];
   machinesAvailable?: string;
   machineSpecs?: string;
   manufacturingProcesses?: string;
-  rawMaterialProducts?: string[];
-  targetIndustries?: string[];
-  manufacturingProducts?: string[];
 }
 
 export interface IUser {

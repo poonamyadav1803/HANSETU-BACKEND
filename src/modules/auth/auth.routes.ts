@@ -14,7 +14,7 @@ export class AuthRoutes {
      *     tags: [Auth]
      *     summary: Verify a GSTIN and fetch business details
      *     description: |
-     *       Checks the DB cache first. If not cached, calls the Masters India API,
+     *       Checks the DB cache first. If not cached, calls the WhiteBooks GST API,
      *       stores the result, and returns it.
      *     requestBody:
      *       required: true
