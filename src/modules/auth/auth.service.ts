@@ -136,6 +136,49 @@ export class AuthService {
     return toSafeUser(user);
   }
 
+  // ─── Complete Registration (contact / address step) ────────────────────────
+  async completeRegistration(
+    userId: string,
+    input: {
+      firstName: string;
+      lastName: string;
+      designation?: string;
+      phone: string;
+      addresses?: UserProfile["addresses"];
+      yearEstablished?: string;
+      totalEmployees?: string;
+      website?: string;
+      description?: string;
+    }
+  ) {
+    const user = await this.userRepo.findById(userId);
+    if (!user) throw new HttpException(404, "User not found.");
+
+    const profile: UserProfile = buildLegacyProfile({
+      ...(user.profile ?? {}),
+      firstName: input.firstName,
+      lastName: input.lastName,
+      designation: input.designation ?? user.profile?.designation,
+      phone: input.phone,
+      addresses: input.addresses?.length ? input.addresses : user.profile?.addresses,
+      yearEstablished: input.yearEstablished ?? user.profile?.yearEstablished,
+      totalEmployees: input.totalEmployees ?? user.profile?.totalEmployees,
+      website: input.website ?? user.profile?.website,
+      description: input.description ?? user.profile?.description,
+      profileComplete: true,
+      wizardCompletedAt: new Date().toISOString(),
+    });
+
+    await this.userRepo.updateProfile(userId, profile, {
+      registrationComplete: true,
+      profileCompletedAt: new Date(),
+    });
+
+    const updated = await this.userRepo.findById(userId);
+    if (!updated) throw new HttpException(404, "User not found.");
+    return toSafeUser(updated);
+  }
+
   // ─── Update Profile ─────────────────────────────────────────────────────────
   async updateProfile(userId: string, profile: UserProfile) {
     const user = await this.userRepo.findById(userId);
@@ -165,7 +208,7 @@ export class AuthService {
     manufacturingProcesses?: string;
     productionCapacity?: string;
     supplyCapacity?: string;
-    certifications?: string;
+    certifications?: string | string[];
     existingClients?: string;
   }) {
     const verified = consumeOtpToken(data.otpToken);
