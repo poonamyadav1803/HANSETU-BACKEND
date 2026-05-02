@@ -66,7 +66,7 @@ export class ProfileService {
       materialCategories: input.materialCategories ?? {},
       supplyCapacity: input.supplyCapacity ?? "",
       manufacturingCapabilities: input.manufacturingCapabilities ?? [],
-      capabilitySpecs: input.capabilitySpecs ?? {},
+      capabilitySpecs: (input.capabilitySpecs ?? {}) as Record<string, Record<string, string | string[]>>,
       manufacturerIndustries: input.manufacturerIndustries ?? [],
       industrySelections: input.industrySelections ?? {},
       industryPartsPrefs: input.industryPartsPrefs ?? {},
@@ -87,7 +87,7 @@ export class ProfileService {
         input.service === "raw_material_supply"
           ? input.industriesServed ?? []
           : input.manufacturerIndustries ?? [],
-      manufacturingProducts: Object.values(input.industrySelections ?? {}).flat(),
+      manufacturingProductsFlat: Object.values(input.industrySelections ?? {}).flat(),
     };
 
     await this.userRepo.updateProfile(userId, profile, {
