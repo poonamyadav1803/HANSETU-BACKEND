@@ -16,7 +16,6 @@ import {
   INDUSTRY_PARTS_FILTERS,
   INDUSTRY_RAW_MATERIAL_MAP,
   MANUFACTURING_CAPABILITIES,
-  MANUFACTURING_PRODUCT_CATEGORIES,
   RAW_MATERIAL_CATEGORIES,
 } from "../../data/wizardData";
 import { log } from "../../utils/logger";
@@ -170,7 +169,8 @@ export async function seedWizardNavigationData() {
       });
   }
 
-  for (const item of MANUFACTURING_PRODUCT_CATEGORIES) {
+  // wizardManufacturingProductCategories is keyed by industrySlug — use INDUSTRY_CATEGORIES
+  for (const item of INDUSTRY_CATEGORIES) {
     await db
       .insert(wizardManufacturingProductCategories)
       .values({

@@ -109,6 +109,19 @@ export const updateProfileSchema = z.object({
   manufacturingProducts: z.array(z.string()).optional(),
 });
 
+export const completeRegistrationSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  designation: z.string().optional(),
+  phone: z.string().min(1, "Phone is required"),
+  addresses: z.array(wizardAddressSchema).optional(),
+  yearEstablished: z.string().optional(),
+  totalEmployees: z.string().optional(),
+  website: z.string().optional(),
+  description: z.string().optional(),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type CompleteRegistrationInput = z.infer<typeof completeRegistrationSchema>;

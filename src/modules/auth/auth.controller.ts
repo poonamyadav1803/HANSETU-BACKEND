@@ -11,6 +11,7 @@ import {
   sendEmailOtpSchema,
   verifyEmailOtpSchema,
   updateProfileSchema,
+  completeRegistrationSchema,
 } from "./auth.schema";
 
 const authService = new AuthService(new UserRepository());
@@ -40,6 +41,16 @@ export class AuthController {
     try {
       const user = await authService.me(req.userId!);
       res.json(user);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async completeRegistration(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const data = completeRegistrationSchema.parse(req.body);
+      const user = await authService.completeRegistration(req.userId!, data);
+      res.json({ user });
     } catch (err) {
       next(err);
     }
