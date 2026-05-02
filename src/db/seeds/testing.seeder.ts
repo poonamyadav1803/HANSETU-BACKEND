@@ -88,6 +88,35 @@ const data: InsertTestingService[] = [
     description: "Advanced chemical analysis and quality control testing",
     isActive: true,
   },
+  // ── From GGI seed data ───────────────────────────────────────────────────
+  {
+    name: "Non-Destructive Testing (NDT)",
+    category: "aerospace",
+    provider: "Aerospace NDT Solutions",
+    industrySlug: "aerospace",
+    price: "₹20,000 - ₹40,000",
+    turnaround: "2-3 days",
+    city: "Bangalore",
+    rating: "4.8",
+    certifications: JSON.stringify(["Nadcap", "AS9100D", "ISO 17025"]),
+    testTypes: JSON.stringify(["Ultrasonic Testing", "X-Ray Radiography", "Dye Penetrant Inspection", "Magnetic Particle Testing"]),
+    description: "Specialised non-destructive testing for aerospace components without causing damage. Level 3 NDT certified technicians.",
+    isActive: true,
+  },
+  {
+    name: "Raw Material Testing Services",
+    category: "automobile",
+    provider: "Industrial Material Labs",
+    industrySlug: "automobile",
+    price: "₹5,000 - ₹15,000",
+    turnaround: "3-5 days",
+    city: "Pune",
+    rating: "4.7",
+    certifications: JSON.stringify(["NABL", "ISO/IEC 17025"]),
+    testTypes: JSON.stringify(["Tensile Strength", "Hardness Testing", "Metallography", "Chemical Composition"]),
+    description: "Comprehensive testing services for raw materials including tensile, compression, and fatigue testing.",
+    isActive: true,
+  },
 ];
 
 export async function seedTestingServices(): Promise<void> {
