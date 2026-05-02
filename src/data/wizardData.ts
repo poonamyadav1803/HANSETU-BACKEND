@@ -408,4 +408,149 @@ export const INDUSTRY_CATEGORIES = [
   ]},
 ];
 
-export const INDUSTRY_PARTS_FILTERS: Record<string, { item: string[]; grade: string[]; shape: string[]; fabrication: string[] }> = {};
+export const INDUSTRY_PARTS_FILTERS: Record<string, { item: string[]; grade: string[]; shape: string[]; fabrication: string[] }> = {
+  automobile: {
+    item: ["Piston", "Crankshaft", "Brake Disc", "Gear Shaft", "Connecting Rod", "Clutch Plate", "Camshaft", "CV Joint"],
+    grade: ["OEM Standard", "IATF 16949", "IS 9900", "ISO 9001", "AIS-062", "Euro 6 Compliant"],
+    shape: ["Cylindrical", "Disc / Circular", "Flat / Sheet", "Ring / Annular", "L-Bracket", "Custom Profile"],
+    fabrication: ["Forged", "Cast", "CNC Machined", "Stamped / Pressed", "Welded", "Sintered", "Injection Moulded"],
+  },
+  aerospace: {
+    item: ["Fuselage Panel", "Wing Spar", "Turbine Blade", "Landing Gear Strut", "Bulkhead", "Nacelle Component"],
+    grade: ["AS9100D", "NADCAP", "AMS 2750", "MIL-SPEC", "FAA/EASA PMA", "DGCA Approved"],
+    shape: ["Aerofoil / Airfoil", "Sheet / Panel", "Ring / Disk", "Tubular / Hollow", "Complex Geometry", "Honeycomb"],
+    fabrication: ["CNC 5-Axis Milling", "Forged (Closed Die)", "Laser Cut", "Composite Layup", "EDM", "Hot Isostatic Pressed (HIP)"],
+  },
+  electronics: {
+    item: ["PCB Assembly", "Heatsink", "IC Package", "Connector Housing", "Capacitor Bank", "Transformer Core"],
+    grade: ["IPC-A-610 Class 3", "IPC-A-600", "RoHS Compliant", "UL Listed", "CE Marked", "MIL-PRF-55342"],
+    shape: ["Flat / PCB", "Cylindrical / Through-hole", "SMD / Chip", "BGA Package", "DIP Package", "Custom Enclosure"],
+    fabrication: ["SMT Assembly", "Through-hole Soldering", "Injection Moulded", "Die Cast", "CNC Machined", "Stamped"],
+  },
+  electrical: {
+    item: ["Busbar", "Transformer Core", "Motor Winding", "Cable Lug", "Distribution Panel", "Switchgear Component"],
+    grade: ["IS 8623", "IEC 61439", "IS 13947", "BIS Certified", "UL 508A", "CE/CB Certified"],
+    shape: ["Flat / Bar", "Cylindrical / Round", "U-Channel", "Laminated / Stack", "Coil / Wound", "Custom Profile"],
+    fabrication: ["Extruded", "Rolled / Drawn", "Cast", "Stamped", "CNC Machined", "Wound / Coiled"],
+  },
+  construction: {
+    item: ["TMT Bar", "Structural Beam", "Precast Column", "Pipe Fitting", "Anchor Bolt", "Rebar Assembly"],
+    grade: ["Fe 500D IS 1786", "Fe 550 CRS", "IS 2062 E250", "IS 4923", "IS 1239", "Grade 8.8 Bolt"],
+    shape: ["Rebar / Rod", "Beam / Channel", "Flat / Plate", "Hollow Section / Tube", "Angle / L-Shape", "Mesh / Weld"],
+    fabrication: ["Hot Rolled", "Cold Drawn", "Welded / Fabricated", "Precast Concrete", "Galvanized", "Coated / Painted"],
+  },
+  healthcare: {
+    item: ["Surgical Instrument", "Implant Body", "Device Housing", "Catheter Component", "Valve Body", "Sensor Assembly"],
+    grade: ["ISO 13485", "FDA 21 CFR Part 820", "CE MDR 2017/745", "ISO 10993 Biocompatible", "GMP Compliant"],
+    shape: ["Cylindrical / Rod", "Flat / Sheet", "Curved / Contoured", "Hollow / Tube", "Complex Geometry", "Custom"],
+    fabrication: ["CNC Machined", "Injection Moulded (Medical Grade)", "Laser Cut", "Electropolished", "Stamped", "3D Printed (SLS/SLA)"],
+  },
+  pharmaceutical: {
+    item: ["API Bulk Drug", "Tablet Excipient", "Capsule Shell", "Packaging Film", "Vial / Ampoule Component", "Blister Foil"],
+    grade: ["IP / BP / USP Grade", "GMP / WHO-GMP", "EU GMP Annex 1", "ICH Q7 Compliant", "USFDA Approved Site"],
+    shape: ["Granular / Powder", "Pellet / Bead", "Sheet / Film", "Tubular / Vial", "Tablet / Compressed", "Liquid / Solution"],
+    fabrication: ["Milled / Micronized", "Granulated (Wet/Dry)", "Spray Dried", "Extruded", "Compression Moulded", "Sterile Filtered"],
+  },
+  chemical: {
+    item: ["Reactor Vessel", "Heat Exchanger", "Pump Impeller", "Valve Body", "Agitator Shaft", "Piping Assembly"],
+    grade: ["ASME Sec VIII Div 1", "IS 2825", "ATEX Certified", "IBR Approved", "ISO 9001", "OSHA Compliant"],
+    shape: ["Cylindrical / Vessel", "Tubular / Pipe", "Flat / Sheet", "Disc / Impeller", "Custom Fitment", "Flanged End"],
+    fabrication: ["Welded (SAW/TIG)", "Forged", "CNC Machined", "Glass Lined", "Rubber Lined", "Cast"],
+  },
+  defence: {
+    item: ["Armour Plate", "Ballistic Shell Casing", "Optical Housing", "Structural Frame", "Gear Box Component", "Actuator"],
+    grade: ["MIL-STD-810G", "DEF STAN 00-35", "NATO STANAG", "BIS / DRDO Approved", "AQAP 2110"],
+    shape: ["Flat / Plate", "Cylindrical / Shell", "Contoured / Armour", "Tubular / Barrel", "Complex Geometry", "Forged Block"],
+    fabrication: ["Forged (Press/Drop)", "CNC Precision Machined", "Laser Hardened", "Composite Layup", "Welded (Certified)", "Shot Peened"],
+  },
+  space: {
+    item: ["Propellant Tank", "Nozzle Assembly", "Solar Panel Frame", "Structural Bracket", "Thermal Shield", "Deployment Hinge"],
+    grade: ["ECSS-Q-ST-70 (ESA)", "NASA-STD-5009", "AS9100D", "MIL-HDBK-5J", "ISRO QCI Level"],
+    shape: ["Dome / Spherical", "Cylindrical / Tank", "Flat Panel", "Truss / Lattice", "Curved Shell", "Complex Geometry"],
+    fabrication: ["Spin Formed", "CNC 5-Axis Milled", "Forged (Near-net)", "Composite Filament Wound", "EDM", "Friction Stir Welded"],
+  },
+  textile: {
+    item: ["Yarn / Fiber Spool", "Fabric Roll", "Loom Component", "Needles & Sinkers", "Shuttle", "Warp Beam"],
+    grade: ["IS 1954 (Cotton)", "ISO 105 (Colour Fastness)", "OEKO-TEX Standard 100", "Bluesign Certified", "GOTS Certified"],
+    shape: ["Filament / Yarn", "Woven / Knit Sheet", "Non-woven Roll", "Tubular / Circular", "Fibre / Staple", "Pellet / Chip"],
+    fabrication: ["Spun", "Drawn / Texturized", "Woven", "Knitted", "Non-woven (Spunbond)", "Dyed & Finished"],
+  },
+  'oil-gas': {
+    item: ["Pipeline Pipe", "Wellhead Component", "Valve Body", "Flange", "Pressure Vessel", "Sucker Rod"],
+    grade: ["API 5L (Line Pipe)", "API 6A (Wellhead)", "ASME B31.3", "NACE MR0175 (H2S)", "ISO 15156", "DNV GL"],
+    shape: ["Tubular / Pipe", "Flanged", "Disc / Seat", "Cylindrical Vessel", "Forged Block", "Custom Forging"],
+    fabrication: ["Seamless Drawn", "LSAW / SSAW Welded", "Forged (Open/Closed Die)", "CNC Machined", "Clad / Lined", "Hydro Tested"],
+  },
+  railways: {
+    item: ["Wheel & Axle", "Bogie Frame", "Brake Disc", "Rail Fastener", "Coupler", "Traction Motor Component"],
+    grade: ["IRS-R-17 (Wheel)", "UIC 510-5", "EN 13979-1", "RDSO Approved", "IS 1875 (Forged Steel)", "AAR M-107"],
+    shape: ["Disc / Wheel Profile", "Box Section / Bogie", "Cylindrical / Axle", "L / T / Angle Section", "Flat / Plate", "Complex Forging"],
+    fabrication: ["Forged (Close Die)", "Cast Steel", "CNC Machined", "Welded (EN 15085)", "Heat Treated", "Shot Blasted"],
+  },
+  marine: {
+    item: ["Propeller", "Shaft Seal", "Hull Plate", "Anchor Chain", "Valve Body", "Bilge Pump Impeller"],
+    grade: ["DNV GL Class", "Lloyd's Register", "BV (Bureau Veritas)", "ABS Certified", "IMO MARPOL Compliant"],
+    shape: ["Propeller / Airfoil", "Flat / Hull Plate", "Cylindrical / Shaft", "Tubular / Pipe", "Disc / Seal", "Complex Casting"],
+    fabrication: ["Cast Bronze / Ni-Al-Bronze", "Forged Steel", "Welded (Marine Grade)", "CNC Machined", "Sand Cast", "Rolled / Formed"],
+  },
+  'food-processing': {
+    item: ["Conveyor Component", "Auger / Screw", "Mixing Blade", "Heat Exchanger Plate", "Tank Liner", "Filler Nozzle"],
+    grade: ["FDA 21 CFR 177 (Plastic)", "3-A Sanitary Standard", "NSF/ANSI 51", "FSSAI Compliant", "EU 10/2011 (Plastic Contact)"],
+    shape: ["Tubular / Hollow", "Flat / Sheet", "Screw / Auger Profile", "Disc / Blade", "Cylindrical / Drum", "Custom Fitment"],
+    fabrication: ["Electropolished SS", "Injection Moulded (Food Grade)", "CNC Machined", "Fabricated / Welded (TIG)", "Coated (PTFE/FEP)", "Cast"],
+  },
+  packaging: {
+    item: ["Forming Die", "Mould Core", "Film Roll Spindle", "Sealing Bar", "Cutter Blade", "Label Applicator Part"],
+    grade: ["ISO 15378 (Pharma Pack)", "FDA GRAS", "EU Reg 10/2011", "BIS IS 9845", "RoHS (Plastic)"],
+    shape: ["Flat / Sheet / Film", "Cylindrical / Roll", "Box / Rectangular", "Tube / Sleeve", "Die Cut / Custom", "Complex Mould"],
+    fabrication: ["Extruded", "Injection Moulded", "Blow Moulded", "CNC Machined (Dies)", "Thermoformed", "Laminated"],
+  },
+  'energy-power': {
+    item: ["Boiler Drum", "Turbine Blade", "Pressure Vessel", "Heat Exchanger", "Wind Tower Section", "Solar Frame Extrusion"],
+    grade: ["ASME Sec VIII (Pressure Vessel)", "IBR (Boiler)", "IS 2062 (Structural)", "IEC 61400 (Wind)", "IS 4454 (Spring Steel)"],
+    shape: ["Cylindrical / Drum", "Aerofoil / Blade", "Flat / Panel", "Tubular / Pipe", "Forged Disc / Rotor", "Box Section / Tower"],
+    fabrication: ["Welded (SAW)", "Forged (Large Die)", "Rolled / Formed", "Cast", "CNC Machined", "Heat Treated (PWHT)"],
+  },
+  polymer: {
+    item: ["Resin Pellet / Chip", "Film / Sheet", "Pipe / Profile", "Compound / Masterbatch", "Rubber Compound", "Foam Slab"],
+    grade: ["ISO 1872 (PE)", "ASTM D638", "RoHS Compliant", "Halogen Free", "IS 10910 (PVC Pipe)", "FDA/REACH Compliant"],
+    shape: ["Pellet / Granule", "Sheet / Film", "Tubular / Pipe", "Rod / Bar", "Foam Block", "Powder"],
+    fabrication: ["Extruded", "Injection Moulded", "Calendered / Rolled", "Blow Moulded", "Compression Moulded", "Reaction Injection Moulded (RIM)"],
+  },
+  'medical-devices': {
+    item: ["Implant Body", "Surgical Blade", "Catheter Tube", "Device Housing", "Endoscope Component", "Prosthetic Joint"],
+    grade: ["ISO 13485:2016", "FDA 510(k) Cleared", "CE MDR Certified", "ISO 10993 Biocompatible", "CDSCO Registered"],
+    shape: ["Cylindrical / Rod", "Flat / Sheet", "Hollow / Tube", "Curved / Contoured", "Custom Anatomy", "Micro / Miniature"],
+    fabrication: ["CNC Precision Machined", "Laser Welded / Cut", "Injection Moulded (ISO Grade)", "Electropolished", "3D Printed (Ti64)", "Hydroformed"],
+  },
+  chemical_industry: {
+    item: ["Reactor Vessel", "Heat Exchanger", "Pump Impeller", "Valve Body", "Agitator Shaft", "Piping Assembly"],
+    grade: ["ASME Sec VIII Div 1", "ATEX Certified", "IBR Approved", "ISO 9001", "OSHA Compliant"],
+    shape: ["Cylindrical / Vessel", "Tubular / Pipe", "Flat / Sheet", "Disc / Impeller", "Flanged End", "Custom Fitment"],
+    fabrication: ["Welded (SAW/TIG)", "Forged", "CNC Machined", "Glass Lined", "Rubber Lined", "Cast"],
+  },
+  'rubber-elastomers': {
+    item: ["Rubber Sheet", "O-Ring", "Gasket", "Rubber Compound", "Seal Profile", "Anti-Vibration Mount"],
+    grade: ["ASTM D2000 (Rubber)", "IS 3400 (NR)", "ISO 37 (Tensile)", "RoHS Compliant", "FDA Grade Silicone"],
+    shape: ["Sheet / Roll", "Ring / O-Ring", "Profile / Extruded", "Moulded / Custom", "Tubular / Hose", "Slab / Block"],
+    fabrication: ["Compression Moulded", "Transfer Moulded", "Injection Moulded", "Extruded", "Calendered", "Vulcanized"],
+  },
+  'paints-coatings': {
+    item: ["Pigment Dispersion", "Resin Base", "Paint Batch", "Coating Film", "Primer Layer", "Clear Coat"],
+    grade: ["IS 2932 (Synthetic Enamel)", "IS 1580 (Bituminous)", "ASTM D3359 (Adhesion)", "ISO 4624 (Pull-off)", "VOC Compliant (EPA)"],
+    shape: ["Liquid / Paste", "Powder / Granule", "Film / Dry", "Aerosol / Spray", "Concentrate / Resin", "Emulsion"],
+    fabrication: ["Ball Milled", "High-Speed Dispersed", "Sand / Bead Milled", "Electrostatically Sprayed", "Powder Coated (KTL)", "UV Cured"],
+  },
+  agriculture: {
+    item: ["Harvester Blade", "Irrigation Pipe", "Sprayer Component", "Gear Box Part", "PTO Shaft", "Seed Drill Component"],
+    grade: ["IS 1570 (Steel)", "IS 2062 (Structural)", "BIS IS 7904 (Sprayer)", "ICAR Certified", "CE (EU Machinery)"],
+    shape: ["Flat / Blade", "Tubular / Pipe", "Cylindrical / Shaft", "Disc / Wheel", "Curved / Hook", "Custom Forging"],
+    fabrication: ["Forged", "Cast Iron / Cast Steel", "CNC Machined", "Stamped", "Welded", "Galvanized / Powder Coated"],
+  },
+  'mining-minerals': {
+    item: ["Crusher Jaw", "Ball Mill Liner", "Drill Rod", "Screen Mesh", "Conveyor Idler", "Centrifugal Pump Impeller"],
+    grade: ["ASTM A532 (White Iron)", "IS 1875 (Forged Steel)", "MSHA Approved", "CE / ATEX", "IS 2062 (Structural)"],
+    shape: ["Plate / Liner", "Cylindrical / Rod", "Ring / Shell", "Mesh / Wire", "Disc / Impeller", "Custom Wear Part"],
+    fabrication: ["Cast (White Iron / Mn Steel)", "Forged", "Welded Overlay (Hardfaced)", "CNC Machined", "Hot Rolled", "Heat Treated"],
+  },
+};
