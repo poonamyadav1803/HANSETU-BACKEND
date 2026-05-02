@@ -95,6 +95,20 @@ const data: InsertCalibrationService[] = [
     instruments: JSON.stringify(["Concrete Testers", "Load Cells", "Survey Instruments", "Torque Wrenches"]),
     isActive: true,
   },
+  // ── From GGI seed data ───────────────────────────────────────────────────
+  {
+    name: "Testing Equipment Calibration Services",
+    industrySlug: "automobile",
+    city: "Pune",
+    price: "₹10,000 - ₹50,000",
+    accreditation: "ISO/IEC 17025, NIST Traceable",
+    doorDelivery: true,
+    visitServices: true,
+    responseTime: "24 hours",
+    rating: "4.7",
+    instruments: JSON.stringify(["Tensile Testing Machines", "Hardness Testers", "CMMs", "Vernier Calipers", "Torque Wrenches"]),
+    isActive: true,
+  },
 ];
 
 export async function seedCalibrationServices(): Promise<void> {
