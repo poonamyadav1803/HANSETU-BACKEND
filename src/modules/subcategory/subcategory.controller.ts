@@ -1,15 +1,15 @@
-import { Request, Response, NextFunction } from "express";
-import { CategoryRepository } from "../category/category.repository";
-import { SubcategoryRepository } from "./subcategory.repository";
-import { SubcategoryService } from "./subcategory.service";
+import { Request, Response, NextFunction } from 'express';
+import { CategoryRepository } from '../category/category.repository';
+import { SubcategoryRepository } from './subcategory.repository';
+import { SubcategoryService } from './subcategory.service';
 import {
   createSubcategorySchema,
   updateSubcategorySchema,
-} from "./subcategory.schema";
+} from './subcategory.schema';
 
 const service = new SubcategoryService(
   new SubcategoryRepository(),
-  new CategoryRepository()
+  new CategoryRepository(),
 );
 
 export class SubcategoryController {
@@ -18,7 +18,7 @@ export class SubcategoryController {
       const { categoryId } = req.query;
       const filters: { categoryId?: string } = {};
 
-      if (typeof categoryId === "string") filters.categoryId = categoryId;
+      if (typeof categoryId === 'string') filters.categoryId = categoryId;
 
       res.json(await service.getAll(filters));
     } catch (err) {
@@ -56,7 +56,7 @@ export class SubcategoryController {
   async delete(req: Request, res: Response, next: NextFunction) {
     try {
       await service.delete(req.params.id);
-      res.json({ message: "Subcategory deleted successfully" });
+      res.json({ message: 'Subcategory deleted successfully' });
     } catch (err) {
       next(err);
     }

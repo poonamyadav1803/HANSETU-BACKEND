@@ -1,11 +1,11 @@
-import { asc, eq } from "drizzle-orm";
-import { db } from "../../db";
+import { asc, eq } from 'drizzle-orm';
+import { db } from '../../db';
 import {
   categories,
   subcategories,
   type Category,
   type Subcategory,
-} from "../../db/schema";
+} from '../../db/schema';
 
 type CategoryWithSubcategories = Category & { subcategories: Subcategory[] };
 type CategoryCreatePayload = {
@@ -25,14 +25,18 @@ type SubcategoryCreatePayload = {
 };
 
 export class CategoryRepository {
-  private async attachSubcategories(cats: Category[]): Promise<CategoryWithSubcategories[]> {
+  private async attachSubcategories(
+    cats: Category[],
+  ): Promise<CategoryWithSubcategories[]> {
     if (cats.length === 0) return [];
 
     const subs = await db.select().from(subcategories);
 
     return cats.map((cat) => ({
       ...cat,
-      subcategories: subs.filter((subcategory) => subcategory.categoryId === cat.id),
+      subcategories: subs.filter(
+        (subcategory) => subcategory.categoryId === cat.id,
+      ),
     }));
   }
 
@@ -58,7 +62,10 @@ export class CategoryRepository {
   }
 
   async findBySlug(slug: string) {
-    const [cat] = await db.select().from(categories).where(eq(categories.slug, slug));
+    const [cat] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.slug, slug));
     if (!cat) return null;
 
     const [hydrated] = await this.attachSubcategories([cat]);
@@ -66,16 +73,25 @@ export class CategoryRepository {
   }
 
   async findPlainById(id: string) {
-    const [cat] = await db.select().from(categories).where(eq(categories.id, id));
+    const [cat] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, id));
     return cat ?? null;
   }
 
   async findPlainBySlug(slug: string) {
-    const [cat] = await db.select().from(categories).where(eq(categories.slug, slug));
+    const [cat] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.slug, slug));
     return cat ?? null;
   }
 
-  async create(categoryPayload: CategoryCreatePayload, subcategoryNames: string[] = []) {
+  async create(
+    categoryPayload: CategoryCreatePayload,
+    subcategoryNames: string[] = [],
+  ) {
     return db.transaction(async (tx) => {
       const [createdCategory] = await tx
         .insert(categories)
@@ -83,10 +99,11 @@ export class CategoryRepository {
         .returning();
 
       if (subcategoryNames.length > 0) {
-        const subcategoryPayload: SubcategoryCreatePayload[] = subcategoryNames.map((name) => ({
-          categoryId: createdCategory.id,
-          name,
-        }));
+        const subcategoryPayload: SubcategoryCreatePayload[] =
+          subcategoryNames.map((name) => ({
+            categoryId: createdCategory.id,
+            name,
+          }));
 
         await tx.insert(subcategories).values(subcategoryPayload as any);
       }
@@ -106,7 +123,7 @@ export class CategoryRepository {
   async update(
     id: string,
     categoryPayload: CategoryUpdatePayload,
-    subcategoryNames?: string[]
+    subcategoryNames?: string[],
   ) {
     return db.transaction(async (tx) => {
       const [updatedCategory] = await tx
@@ -124,10 +141,11 @@ export class CategoryRepository {
         await tx.delete(subcategories).where(eq(subcategories.categoryId, id));
 
         if (subcategoryNames.length > 0) {
-          const subcategoryPayload: SubcategoryCreatePayload[] = subcategoryNames.map((name) => ({
-            categoryId: id,
-            name,
-          }));
+          const subcategoryPayload: SubcategoryCreatePayload[] =
+            subcategoryNames.map((name) => ({
+              categoryId: id,
+              name,
+            }));
 
           await tx.insert(subcategories).values(subcategoryPayload as any);
         }

@@ -1,10 +1,10 @@
-import { Router } from "express";
-import { CategoryController } from "./category.controller";
+import { Router } from 'express';
+import { CategoryController } from './category.controller';
 
 export class CategoryRoutes {
   public router = Router();
   private controller = new CategoryController();
-  private uuidParam = ":id([0-9a-fA-F-]{36})";
+  private uuidParam = ':id([0-9a-fA-F-]{36})';
 
   constructor() {
     /**
@@ -45,8 +45,8 @@ export class CategoryRoutes {
      *               items:
      *                 $ref: '#/components/schemas/Category'
      */
-    this.router.get("/", this.controller.getAll);
-    this.router.post("/", this.controller.create);
+    this.router.get('/', this.controller.getAll);
+    this.router.post('/', this.controller.create);
 
     /**
      * @openapi
@@ -101,8 +101,8 @@ export class CategoryRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.get("/slug/:slug", this.controller.getBySlug);
-    this.router.get("/:slug", this.controller.getBySlug);
+    this.router.get('/slug/:slug', this.controller.getBySlug);
+    this.router.get('/:slug', this.controller.getBySlug);
 
     /**
      * @openapi

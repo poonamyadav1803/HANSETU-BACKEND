@@ -1,9 +1,13 @@
-import { eq, and } from "drizzle-orm";
-import { db } from "../../db";
-import { products } from "../../db/schema";
+import { eq, and } from 'drizzle-orm';
+import { db } from '../../db';
+import { products } from '../../db/schema';
 
 export class ProductRepository {
-  async findAll(filters: { categoryId?: string; subcategoryId?: string; inStock?: boolean }) {
+  async findAll(filters: {
+    categoryId?: string;
+    subcategoryId?: string;
+    inStock?: boolean;
+  }) {
     const conditions = [];
 
     if (filters.categoryId) {
@@ -17,7 +21,10 @@ export class ProductRepository {
     }
 
     return conditions.length > 0
-      ? db.select().from(products).where(and(...conditions))
+      ? db
+          .select()
+          .from(products)
+          .where(and(...conditions))
       : db.select().from(products);
   }
 

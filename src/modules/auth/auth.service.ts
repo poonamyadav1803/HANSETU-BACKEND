@@ -1,29 +1,25 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { UserRepository } from "../user/user.repository";
-import { IUser, UserProfile, BusinessType } from "../user/user.entity";
-import { env } from "../../config/env";
-import { otpStore, generateOtp } from "./otp.store";
-import { verifyGst } from "../gst/gst.service";
-import { sendOtpEmail } from "../../services/email.service";
-import { sendOtpSms } from "../../services/sms.service";
-import { db } from "../../db";
-import { otpTable } from "../../db/schema";
-import { eq } from "drizzle-orm";
-import { HttpException } from "../../core/HttpException";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { UserRepository } from '../user/user.repository';
+import { IUser, UserProfile, BusinessType } from '../user/user.entity';
+import { env } from '../../config/env';
+import { otpStore, generateOtp } from './otp.store';
+import { verifyGst } from '../gst/gst.service';
+import { sendOtpEmail } from '../../services/email.service';
+import { sendOtpSms } from '../../services/sms.service';
+import { db } from '../../db';
+import { otpTable } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import { HttpException } from '../../core/HttpException';
 
 function issueOtpToken(email: string): string {
-  return jwt.sign(
-    { email, type: "otp" },
-    env.JWT_SECRET,
-    { expiresIn: "30m" }
-  );
+  return jwt.sign({ email, type: 'otp' }, env.JWT_SECRET, { expiresIn: '30m' });
 }
 
 export function consumeOtpToken(token: string): { email: string } | null {
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as any;
-    if (decoded.type !== "otp") return null;
+    if (decoded.type !== 'otp') return null;
     return { email: decoded.email };
   } catch {
     return null;
@@ -39,7 +35,7 @@ function normalizeCertifications(value?: string | string[]) {
   if (!value) return [];
   if (Array.isArray(value)) return value.filter(Boolean);
   return value
-    .split(",")
+    .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -47,23 +43,26 @@ function normalizeCertifications(value?: string | string[]) {
 function buildLegacyProfile(profile: UserProfile): UserProfile {
   return {
     ...profile,
-    industries: profile.industries ?? profile.industriesServed ?? profile.manufacturerIndustries ?? [],
-    materialTypes:
-      profile.materialTypes ??
-      [
-        ...(profile.rawMaterialCategories ?? []),
-        ...Object.values(profile.materialCategories ?? {}).flat(),
-      ],
+    industries:
+      profile.industries ??
+      profile.industriesServed ??
+      profile.manufacturerIndustries ??
+      [],
+    materialTypes: profile.materialTypes ?? [
+      ...(profile.rawMaterialCategories ?? []),
+      ...Object.values(profile.materialCategories ?? {}).flat(),
+    ],
     manufacturingProcesses:
       profile.manufacturingProcesses ??
-      (profile.manufacturingCapabilities ?? []).join(", "),
+      (profile.manufacturingCapabilities ?? []).join(', '),
     targetIndustries:
       profile.targetIndustries ??
       profile.industriesServed ??
       profile.manufacturerIndustries ??
       [],
     rawMaterialProducts:
-      profile.rawMaterialProducts ?? Object.values(profile.materialCategories ?? {}).flat(),
+      profile.rawMaterialProducts ??
+      Object.values(profile.materialCategories ?? {}).flat(),
   };
 }
 
@@ -78,12 +77,12 @@ export class AuthService {
   // ─── Phone OTP ─────────────────────────────────────────────────────────────
   async sendPhoneOtp(mobile: string): Promise<void> {
     const otp = generateOtp();
-    otpStore.set("phone", mobile, otp);
+    otpStore.set('phone', mobile, otp);
     await sendOtpSms(mobile, otp);
   }
 
   async verifyPhoneOtp(mobile: string, otp: string): Promise<boolean> {
-    return otpStore.verify("phone", mobile, otp);
+    return otpStore.verify('phone', mobile, otp);
   }
 
   // ─── Email OTP ─────────────────────────────────────────────────────────────
@@ -95,7 +94,7 @@ export class AuthService {
     await db.insert(otpTable).values({ email, otp, expiresAt });
     await sendOtpEmail(email, otp);
 
-    console.log("OTP sent successfully", otp);
+    console.log('OTP sent successfully', otp);
   }
 
   async verifyEmailOtp(email: string, otp: string): Promise<string> {
@@ -105,13 +104,19 @@ export class AuthService {
     });
 
     if (!record) {
-      throw new HttpException(400, "Invalid OTP. Please check and try again.");
+      throw new HttpException(400, 'Invalid OTP. Please check and try again.');
     }
     if (record.isUsed) {
-      throw new HttpException(400, "This OTP has already been used. Please request a new one.");
+      throw new HttpException(
+        400,
+        'This OTP has already been used. Please request a new one.',
+      );
     }
     if (new Date() > record.expiresAt) {
-      throw new HttpException(400, "OTP has expired. Please request a new one.");
+      throw new HttpException(
+        400,
+        'OTP has expired. Please request a new one.',
+      );
     }
 
     await db
@@ -132,14 +137,14 @@ export class AuthService {
   // ─── Current User ───────────────────────────────────────────────────────────
   async me(userId: string) {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new HttpException(404, "User not found.");
+    if (!user) throw new HttpException(404, 'User not found.');
     return toSafeUser(user);
   }
 
   // ─── Update Profile ─────────────────────────────────────────────────────────
   async updateProfile(userId: string, profile: UserProfile) {
     const user = await this.userRepo.findById(userId);
-    if (!user) throw new HttpException(404, "User not found.");
+    if (!user) throw new HttpException(404, 'User not found.');
     const normalizedProfile = buildLegacyProfile(profile);
     await this.userRepo.updateProfile(userId, normalizedProfile, {
       registrationComplete: normalizedProfile.profileComplete === true,
@@ -169,24 +174,36 @@ export class AuthService {
     existingClients?: string;
   }) {
     const verified = consumeOtpToken(data.otpToken);
-    if (!verified) throw new HttpException(401, "OTP session expired. Please verify your email again.");
-    if (verified.email !== data.email) throw new HttpException(400, "Email does not match the verified OTP session.");
+    if (!verified)
+      throw new HttpException(
+        401,
+        'OTP session expired. Please verify your email again.',
+      );
+    if (verified.email !== data.email)
+      throw new HttpException(
+        400,
+        'Email does not match the verified OTP session.',
+      );
 
     const existing = await this.userRepo.findByEmail(data.email);
-    if (existing) throw new HttpException(409, "An account with this email already exists.");
+    if (existing)
+      throw new HttpException(
+        409,
+        'An account with this email already exists.',
+      );
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     const profile = buildLegacyProfile({
       industries: data.industries ?? [],
       materialTypes: data.materialTypes ?? [],
-      machinesAvailable: data.machinesAvailable ?? "",
-      machineSpecs: data.machineSpecs ?? "",
-      manufacturingProcesses: data.manufacturingProcesses ?? "",
-      productionCapacity: data.productionCapacity ?? "",
-      supplyCapacity: data.supplyCapacity ?? "",
+      machinesAvailable: data.machinesAvailable ?? '',
+      machineSpecs: data.machineSpecs ?? '',
+      manufacturingProcesses: data.manufacturingProcesses ?? '',
+      productionCapacity: data.productionCapacity ?? '',
+      supplyCapacity: data.supplyCapacity ?? '',
       certifications: normalizeCertifications(data.certifications),
-      existingClients: data.existingClients ?? "",
+      existingClients: data.existingClients ?? '',
     });
 
     const user = await this.userRepo.create({
@@ -207,17 +224,23 @@ export class AuthService {
 
   // ─── Login ─────────────────────────────────────────────────────────────────
   async login(identifier: string, password: string) {
-    const isEmail = identifier.includes("@");
+    const isEmail = identifier.includes('@');
     const user = isEmail
       ? await this.userRepo.findByEmail(identifier)
       : await this.userRepo.findByUsername(identifier);
 
-    if (!user) throw new HttpException(401, "Invalid email/username or password.");
+    if (!user)
+      throw new HttpException(401, 'Invalid email/username or password.');
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new HttpException(401, "Invalid email/username or password.");
+    if (!isMatch)
+      throw new HttpException(401, 'Invalid email/username or password.');
 
-    if (!user.isActive) throw new HttpException(403, "Your account has been deactivated. Please contact support.");
+    if (!user.isActive)
+      throw new HttpException(
+        403,
+        'Your account has been deactivated. Please contact support.',
+      );
 
     return this.generateAuthResponse(user);
   }
@@ -226,7 +249,7 @@ export class AuthService {
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: '1d' },
     );
     return { token, user: toSafeUser(user) };
   }
