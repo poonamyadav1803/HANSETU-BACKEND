@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const signupSchema = z.object({
   gstNumber: z.string().min(15).max(20),
@@ -6,7 +6,7 @@ export const signupSchema = z.object({
   mobile: z.string().min(10).max(15),
   username: z.string().min(3).max(100),
   password: z.string().min(8),
-  businessType: z.enum(["manufacturer", "raw_material_supplier", "both"]),
+  businessType: z.enum(['manufacturer', 'raw_material_supplier', 'both']),
   otpToken: z.string().min(1),
   industries: z.array(z.string()).optional(),
   materialTypes: z.array(z.string()).optional(),
@@ -21,29 +21,35 @@ export const signupSchema = z.object({
 
 // Accepts email address OR username
 export const loginSchema = z.object({
-  email: z.string().min(1, "Email or username is required"),
+  email: z.string().min(1, 'Email or username is required'),
   password: z.string().min(1),
 });
 
 export const gstVerifySchema = z.object({
   gstNumber: z
     .string()
-    .min(15, "GST number must be 15 characters")
+    .min(15, 'GST number must be 15 characters')
     .max(20)
-    .regex(/^[0-9A-Z]+$/, "GST number must contain only digits and uppercase letters"),
+    .regex(
+      /^[0-9A-Z]+$/,
+      'GST number must contain only digits and uppercase letters',
+    ),
 });
 
 export const sendPhoneOtpSchema = z.object({
   mobile: z
     .string()
-    .min(10, "Mobile number must be at least 10 digits")
+    .min(10, 'Mobile number must be at least 10 digits')
     .max(15)
-    .regex(/^[+\d]+$/, "Invalid mobile number format"),
+    .regex(/^[+\d]+$/, 'Invalid mobile number format'),
 });
 
 export const verifyPhoneOtpSchema = z.object({
   mobile: z.string().min(10).max(15),
-  otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must be digits only"),
+  otp: z
+    .string()
+    .length(6, 'OTP must be 6 digits')
+    .regex(/^\d+$/, 'OTP must be digits only'),
 });
 
 export const sendEmailOtpSchema = z.object({
@@ -52,7 +58,10 @@ export const sendEmailOtpSchema = z.object({
 
 export const verifyEmailOtpSchema = z.object({
   email: z.string().email(),
-  otp: z.string().length(6, "OTP must be 6 digits").regex(/^\d+$/, "OTP must be digits only"),
+  otp: z
+    .string()
+    .length(6, 'OTP must be 6 digits')
+    .regex(/^\d+$/, 'OTP must be digits only'),
 });
 
 const wizardAddressSchema = z.object({
@@ -74,7 +83,7 @@ export const updateProfileSchema = z.object({
   website: z.string().optional(),
   addresses: z.array(wizardAddressSchema).optional(),
   description: z.string().optional(),
-  service: z.enum(["manufacturing", "raw_material_supply"]).optional(),
+  service: z.enum(['manufacturing', 'raw_material_supply']).optional(),
   industriesServed: z.array(z.string()).optional(),
   materialCategories: z.record(z.array(z.string())).optional(),
   capabilitySpecs: z.record(z.record(z.unknown())).optional(),

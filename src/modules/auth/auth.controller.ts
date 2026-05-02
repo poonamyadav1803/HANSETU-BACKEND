@@ -19,7 +19,7 @@ const authService = new AuthService(new UserRepository());
 export class AuthController {
   async signup(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const data = signupSchema.parse(req.body);
+      const data: any = signupSchema.parse(req.body);
       const result = await authService.signup(data);
       res.status(201).json(result);
     } catch (err) {

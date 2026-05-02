@@ -1,6 +1,6 @@
-import { Router } from "express";
-import { AuthController } from "./auth.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import { Router } from 'express';
+import { AuthController } from './auth.controller';
+import { authMiddleware } from '../../middlewares/auth.middleware';
 
 export class AuthRoutes {
   public router = Router();
@@ -59,9 +59,9 @@ export class AuthRoutes {
      *                 available:
      *                   type: boolean
      */
-    this.router.get("/check-username/:username", this.controller.checkUsername);
+    this.router.get('/check-username/:username', this.controller.checkUsername);
 
-    this.router.post("/gst-verify", this.controller.gstVerify);
+    this.router.post('/gst-verify', this.controller.gstVerify);
 
     /**
      * @openapi
@@ -83,7 +83,7 @@ export class AuthRoutes {
      *             schema:
      *               $ref: '#/components/schemas/SendOtpResponse'
      */
-    this.router.post("/send-email-otp", this.controller.sendEmailOtp);
+    this.router.post('/send-email-otp', this.controller.sendEmailOtp);
 
     /**
      * @openapi
@@ -111,7 +111,7 @@ export class AuthRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.post("/verify-email-otp", this.controller.verifyEmailOtp);
+    this.router.post('/verify-email-otp', this.controller.verifyEmailOtp);
 
     /**
      * @openapi
@@ -145,7 +145,7 @@ export class AuthRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.post("/signup", this.controller.signup);
+    this.router.post('/signup', this.controller.signup);
 
     /**
      * @openapi
@@ -173,7 +173,7 @@ export class AuthRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.post("/login", this.controller.login);
+    this.router.post('/login', this.controller.login);
 
     /**
      * @openapi
@@ -197,7 +197,7 @@ export class AuthRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.get("/me", authMiddleware, this.controller.me);
+    this.router.get('/me', authMiddleware, this.controller.me);
 
     /**
      * @openapi
@@ -227,7 +227,11 @@ export class AuthRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.patch("/me/profile", authMiddleware, this.controller.updateProfile);
+    this.router.patch(
+      '/me/profile',
+      authMiddleware,
+      this.controller.updateProfile,
+    );
 
     /**
      * @openapi
@@ -281,7 +285,7 @@ export class AuthRoutes {
      *       200:
      *         description: OTP sent to mobile
      */
-    this.router.post("/send-phone-otp", this.controller.sendPhoneOtp);
+    this.router.post('/send-phone-otp', this.controller.sendPhoneOtp);
 
     /**
      * @openapi
@@ -307,6 +311,6 @@ export class AuthRoutes {
      *       400:
      *         description: Invalid or expired OTP
      */
-    this.router.post("/verify-phone-otp", this.controller.verifyPhoneOtp);
+    this.router.post('/verify-phone-otp', this.controller.verifyPhoneOtp);
   }
 }
