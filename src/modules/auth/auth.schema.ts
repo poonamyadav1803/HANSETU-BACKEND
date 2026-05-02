@@ -72,7 +72,15 @@ const wizardAddressSchema = z.object({
   postalCode: z.string().optional(),
 });
 
+const wizardPartsSelSchema = z.object({
+  item: z.array(z.string()).default([]),
+  grade: z.array(z.string()).default([]),
+  shape: z.array(z.string()).default([]),
+  fabrication: z.array(z.string()).default([]),
+});
+
 export const updateProfileSchema = z.object({
+  // Contact & Company
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   designation: z.string().optional(),
@@ -83,30 +91,54 @@ export const updateProfileSchema = z.object({
   website: z.string().optional(),
   addresses: z.array(wizardAddressSchema).optional(),
   description: z.string().optional(),
+  certifications: z.union([z.string(), z.array(z.string())]).optional(),
+  existingClients: z.string().optional(),
+
+  // Services (multi-select)
+  services: z.array(z.string()).optional(),
+
+  // Manufacturing
+  manufacturingCapabilities: z.array(z.string()).optional(),
+  // capabilitySpecs: capSlug → { paramId → string | string[] }
+  capabilitySpecs: z.record(z.record(z.union([z.string(), z.array(z.string())]))).optional(),
+  // manufacturingProducts: industrySlug → categoryName → subcategoryNames[]
+  manufacturingProducts: z.record(z.record(z.array(z.string()))).optional(),
+  manufacturingProductsFlat: z.array(z.string()).optional(),
+  productionCapacity: z.string().optional(),
+
+  // Manufacturing target industries
+  targetIndustries: z.array(z.string()).optional(),
+  // industryPartsSelections: industrySlug → { item, grade, shape, fabrication }
+  industryPartsSelections: z.record(wizardPartsSelSchema).optional(),
+
+  // Raw Material Supply
+  rawMaterialCategories: z.array(z.string()).optional(),
+  // rawMaterialSelections: categorySlug → subcategoryNames[]
+  rawMaterialSelections: z.record(z.array(z.string())).optional(),
+  rawMaterialProducts: z.array(z.string()).optional(),
+  supplyCapacity: z.string().optional(),
+
+  // Raw supply target industries
+  rawTargetIndustries: z.array(z.string()).optional(),
+  // rawIndustrySelections: industrySlug → rawCategorySlug → subcategoryNames[]
+  rawIndustrySelections: z.record(z.record(z.array(z.string()))).optional(),
+
+  // Wizard metadata
+  profileComplete: z.boolean().optional(),
+  wizardCompletedAt: z.string().optional(),
+
+  // Legacy fields (still accepted for backward compatibility)
   service: z.enum(['manufacturing', 'raw_material_supply']).optional(),
   industriesServed: z.array(z.string()).optional(),
   materialCategories: z.record(z.array(z.string())).optional(),
-  capabilitySpecs: z.record(z.record(z.unknown())).optional(),
   manufacturerIndustries: z.array(z.string()).optional(),
-  industryPartsPrefs: z.record(z.record(z.unknown())).optional(),
-  manufacturingCapabilities: z.array(z.string()).optional(),
-  productionCapacity: z.string().optional(),
-  rawMaterialCategories: z.array(z.string()).optional(),
-  supplyCapacity: z.string().optional(),
   industrySelections: z.record(z.array(z.string())).optional(),
-  certifications: z.union([z.string(), z.array(z.string())]).optional(),
-  existingClients: z.string().optional(),
-  profileComplete: z.boolean().optional(),
-  wizardCompletedAt: z.string().optional(),
+  industryPartsPrefs: z.record(z.record(z.unknown())).optional(),
   industries: z.array(z.string()).optional(),
   materialTypes: z.array(z.string()).optional(),
   machinesAvailable: z.string().optional(),
   machineSpecs: z.string().optional(),
   manufacturingProcesses: z.string().optional(),
-  rawMaterialProducts: z.array(z.string()).optional(),
-  targetIndustries: z.array(z.string()).optional(),
-  services: z.array(z.string()).optional(),
-  manufacturingProducts: z.array(z.string()).optional(),
 });
 
 export const completeRegistrationSchema = z.object({
