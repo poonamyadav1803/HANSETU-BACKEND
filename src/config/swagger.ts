@@ -321,6 +321,7 @@ const options: swaggerJsdoc.Options = {
           type: "object",
           properties: {
             id: { type: "string", format: "uuid" },
+            manufacturerUserId: { type: "string", format: "uuid", nullable: true },
             categoryId: { type: "string", format: "uuid" },
             name: { type: "string", example: "Drill Bits" },
             createdAt: { type: "string", format: "date-time" },
