@@ -8,8 +8,8 @@ import { verifyGst } from '../gst/gst.service';
 import { sendOtpEmail } from '../../services/email.service';
 import { sendOtpSms } from '../../services/sms.service';
 import { db } from '../../db';
-import { otpTable, adminInvitations } from '../../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { otpTable } from '../../db/schema';
+import { eq } from 'drizzle-orm';
 import { HttpException } from '../../core/HttpException';
 
 function issueOtpToken(email: string): string {
@@ -292,98 +292,6 @@ export class AuthService {
         403,
         'Your account has been deactivated. Please contact support.',
       );
-
-    return this.generateAuthResponse(user);
-  }
-
-  // ─── Validate Invite Token (public) ───────────────────────────────────────
-  async validateInviteToken(token: string) {
-    const [invite] = await db
-      .select()
-      .from(adminInvitations)
-      .where(and(eq(adminInvitations.token, token), eq(adminInvitations.status, "pending")));
-
-    if (!invite) throw new HttpException(400, 'Invalid or already used invitation token.');
-    if (invite.expiresAt < new Date()) {
-      await db
-        .update(adminInvitations)
-        .set({ status: 'expired' })
-        .where(eq(adminInvitations.id, invite.id));
-      throw new HttpException(400, 'Invitation link has expired. Please request a new one.');
-    }
-
-    return { email: invite.email, valid: true };
-  }
-
-  // ─── Admin Registration via Invite ────────────────────────────────────────
-  async adminRegister(data: {
-    token: string;
-    firstName: string;
-    lastName: string;
-    username: string;
-    password: string;
-  }) {
-    const [invite] = await db
-      .select()
-      .from(adminInvitations)
-      .where(and(eq(adminInvitations.token, data.token), eq(adminInvitations.status, "pending")));
-
-    if (!invite) throw new HttpException(400, 'Invalid or already used invitation token.');
-    if (invite.expiresAt < new Date()) {
-      await db.update(adminInvitations).set({ status: 'expired' }).where(eq(adminInvitations.id, invite.id));
-      throw new HttpException(400, 'Invitation link has expired. Please request a new one.');
-    }
-
-    const existing = await this.userRepo.findByEmail(invite.email);
-    if (existing) throw new HttpException(409, 'An account with this email already exists.');
-
-    const usernameCheck = await this.userRepo.findByUsername(data.username);
-    if (usernameCheck) throw new HttpException(409, 'Username is already taken.');
-
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-
-    const user = await this.userRepo.create({
-      email: invite.email,
-      username: data.username,
-      password: hashedPassword,
-      role: 'admin',
-      isActive: false, // requires approval from existing admin
-      emailVerified: true,
-      registrationComplete: false,
-      profile: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-      },
-    });
-
-    // Mark invitation as accepted
-    await db
-      .update(adminInvitations)
-      .set({ status: 'accepted' })
-      .where(eq(adminInvitations.id, invite.id));
-
-    return {
-      message: 'Registration submitted. Your account is pending approval by an existing admin.',
-      user: toSafeUser(user),
-    };
-  }
-
-  // ─── Admin Login ───────────────────────────────────────────────────────────
-  async adminLogin(identifier: string, password: string) {
-    const isEmail = identifier.includes('@');
-    const user = isEmail
-      ? await this.userRepo.findByEmail(identifier)
-      : await this.userRepo.findByUsername(identifier);
-
-    if (!user) throw new HttpException(401, 'Invalid email/username or password.');
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new HttpException(401, 'Invalid email/username or password.');
-
-    if (user.role !== 'admin') throw new HttpException(403, 'Access denied. Admin credentials required.');
-
-    if (!user.isActive)
-      throw new HttpException(403, 'Your admin account is pending approval or has been deactivated.');
 
     return this.generateAuthResponse(user);
   }
