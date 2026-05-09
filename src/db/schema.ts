@@ -315,6 +315,9 @@ export type Subcategory = typeof subcategories.$inferSelect;
 // ─────────────────────────────────────────────────────────────────────────────
 export const products = pgTable("products", {
   id: uuid("id").primaryKey().defaultRandom(),
+  manufacturerUserId: uuid("manufacturer_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   categoryId: uuid("category_id")
     .notNull()
     .references(() => categories.id, { onDelete: "cascade" }),
