@@ -1,15 +1,13 @@
 import { Router } from "express";
 import { AdminController } from "./admin.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
-import { requireAdmin } from "../../middlewares/rbac.middleware";
+import { adminMiddleware } from "../../middlewares/admin.middleware";
 
 export class AdminRoutes {
   public router = Router();
   private controller = new AdminController();
 
   constructor() {
-    // All admin routes require authentication + admin role
-    this.router.use(authMiddleware, requireAdmin);
+    this.router.use(adminMiddleware);
 
     /**
      * @openapi
@@ -19,11 +17,6 @@ export class AdminRoutes {
      *     summary: Platform-wide user statistics
      *     security:
      *       - bearerAuth: []
-     *     responses:
-     *       200:
-     *         description: Stats object
-     *       403:
-     *         description: Admin role required
      */
     this.router.get("/stats", this.controller.getStats);
 
@@ -32,12 +25,9 @@ export class AdminRoutes {
      * /api/admin/users:
      *   get:
      *     tags: [Admin]
-     *     summary: List all registered users
+     *     summary: List all registered business users
      *     security:
      *       - bearerAuth: []
-     *     responses:
-     *       200:
-     *         description: Array of user objects (password excluded)
      */
     this.router.get("/users", this.controller.getAllUsers);
 
@@ -46,16 +36,9 @@ export class AdminRoutes {
      * /api/admin/users/{id}:
      *   get:
      *     tags: [Admin]
-     *     summary: Get user by ID
+     *     summary: Get business user by ID
      *     security:
      *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *           format: uuid
      */
     this.router.get("/users/:id", this.controller.getUserById);
 
@@ -64,7 +47,7 @@ export class AdminRoutes {
      * /api/admin/users/{id}/activate:
      *   patch:
      *     tags: [Admin]
-     *     summary: Activate a user account
+     *     summary: Activate a business user account
      *     security:
      *       - bearerAuth: []
      */
@@ -75,7 +58,7 @@ export class AdminRoutes {
      * /api/admin/users/{id}/deactivate:
      *   patch:
      *     tags: [Admin]
-     *     summary: Deactivate a user account
+     *     summary: Deactivate a business user account
      *     security:
      *       - bearerAuth: []
      */
@@ -86,85 +69,10 @@ export class AdminRoutes {
      * /api/admin/users/{id}/role:
      *   patch:
      *     tags: [Admin]
-     *     summary: Change a user's role
+     *     summary: Change a business user's role
      *     security:
      *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [role]
-     *             properties:
-     *               role:
-     *                 type: string
-     *                 enum: [user, admin]
      */
     this.router.patch("/users/:id/role", this.controller.updateUserRole);
-
-    /**
-     * @openapi
-     * /api/admin/invite:
-     *   post:
-     *     tags: [Admin]
-     *     summary: Invite a new admin user by email
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [email]
-     *             properties:
-     *               email:
-     *                 type: string
-     *                 format: email
-     *     responses:
-     *       200:
-     *         description: Invitation sent successfully
-     *       409:
-     *         description: Email already registered or already invited
-     */
-    this.router.post("/invite", this.controller.inviteUser);
-
-    /**
-     * @openapi
-     * /api/admin/pending-registrations:
-     *   get:
-     *     tags: [Admin]
-     *     summary: List admin accounts pending approval
-     *     security:
-     *       - bearerAuth: []
-     *     responses:
-     *       200:
-     *         description: Array of pending admin users
-     */
-    this.router.get("/pending-registrations", this.controller.getPendingRegistrations);
-
-    /**
-     * @openapi
-     * /api/admin/approve/{id}:
-     *   patch:
-     *     tags: [Admin]
-     *     summary: Approve a pending admin registration
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema:
-     *           type: string
-     *           format: uuid
-     *     responses:
-     *       200:
-     *         description: Admin account approved and activation email sent
-     *       404:
-     *         description: User not found
-     */
-    this.router.patch("/approve/:id", this.controller.approveRegistration);
   }
 }
