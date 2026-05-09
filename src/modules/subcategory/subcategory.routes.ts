@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { SubcategoryController } from './subcategory.controller';
+import { authMiddleware } from '../../middlewares/auth.middleware';
+import { requireAdmin } from '../../middlewares/rbac.middleware';
 
 export class SubcategoryRoutes {
   public router = Router();
@@ -51,7 +53,7 @@ export class SubcategoryRoutes {
      *                 $ref: '#/components/schemas/SubcategoryWithCategory'
      */
     this.router.get('/', this.controller.getAll);
-    this.router.post('/', this.controller.create);
+    this.router.post('/', authMiddleware, requireAdmin, this.controller.create);
 
     /**
      * @openapi
@@ -137,7 +139,7 @@ export class SubcategoryRoutes {
      *               $ref: '#/components/schemas/ErrorResponse'
      */
     this.router.get(`/${this.uuidParam}`, this.controller.getById);
-    this.router.patch(`/${this.uuidParam}`, this.controller.update);
-    this.router.delete(`/${this.uuidParam}`, this.controller.delete);
+    this.router.patch(`/${this.uuidParam}`, authMiddleware, requireAdmin, this.controller.update);
+    this.router.delete(`/${this.uuidParam}`, authMiddleware, requireAdmin, this.controller.delete);
   }
 }
