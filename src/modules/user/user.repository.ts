@@ -71,6 +71,10 @@ export class UserRepository {
       .where(eq(users.id, id));
   }
 
+  async updatePassword(id: string, hashedPassword: string) {
+    await db.update(users).set({ password: hashedPassword, updatedAt: new Date() }).where(eq(users.id, id));
+  }
+
   async updateRole(id: string, role: UserRole) {
     await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id));
   }
