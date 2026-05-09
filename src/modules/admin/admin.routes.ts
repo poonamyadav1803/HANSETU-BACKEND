@@ -102,5 +102,69 @@ export class AdminRoutes {
      *                 enum: [user, admin]
      */
     this.router.patch("/users/:id/role", this.controller.updateUserRole);
+
+    /**
+     * @openapi
+     * /api/admin/invite:
+     *   post:
+     *     tags: [Admin]
+     *     summary: Invite a new admin user by email
+     *     security:
+     *       - bearerAuth: []
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [email]
+     *             properties:
+     *               email:
+     *                 type: string
+     *                 format: email
+     *     responses:
+     *       200:
+     *         description: Invitation sent successfully
+     *       409:
+     *         description: Email already registered or already invited
+     */
+    this.router.post("/invite", this.controller.inviteUser);
+
+    /**
+     * @openapi
+     * /api/admin/pending-registrations:
+     *   get:
+     *     tags: [Admin]
+     *     summary: List admin accounts pending approval
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Array of pending admin users
+     */
+    this.router.get("/pending-registrations", this.controller.getPendingRegistrations);
+
+    /**
+     * @openapi
+     * /api/admin/approve/{id}:
+     *   patch:
+     *     tags: [Admin]
+     *     summary: Approve a pending admin registration
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: uuid
+     *     responses:
+     *       200:
+     *         description: Admin account approved and activation email sent
+     *       404:
+     *         description: User not found
+     */
+    this.router.patch("/approve/:id", this.controller.approveRegistration);
   }
 }
