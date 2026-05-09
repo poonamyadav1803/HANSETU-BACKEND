@@ -175,6 +175,9 @@ export class AuthRoutes {
      */
     this.router.post('/login', this.controller.login);
 
+    this.router.post('/forgot-password', this.controller.forgotPassword);
+    this.router.post('/reset-password', this.controller.resetPassword);
+
     /**
      * @openapi
      * /api/auth/me:
