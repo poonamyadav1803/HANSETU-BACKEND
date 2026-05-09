@@ -83,6 +83,9 @@ export class AdminAuthRoutes {
      */
     this.router.post("/register", this.controller.register);
 
+    this.router.post("/forgot-password", this.controller.forgotPassword.bind(this.controller));
+    this.router.post("/reset-password", this.controller.resetPassword.bind(this.controller));
+
     // ── Protected routes (requires admin JWT) ─────────────────────────────────
     this.router.use(adminMiddleware);
 
