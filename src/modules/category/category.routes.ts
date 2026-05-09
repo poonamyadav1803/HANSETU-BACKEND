@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CategoryController } from './category.controller';
+import { adminMiddleware } from '../../middlewares/admin.middleware';
 
 export class CategoryRoutes {
   public router = Router();
@@ -46,7 +47,7 @@ export class CategoryRoutes {
      *                 $ref: '#/components/schemas/Category'
      */
     this.router.get('/', this.controller.getAll);
-    this.router.post('/', this.controller.create);
+    this.router.post('/', adminMiddleware, this.controller.create);
 
     /**
      * @openapi
@@ -141,7 +142,7 @@ export class CategoryRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.patch(`/${this.uuidParam}`, this.controller.update);
+    this.router.patch(`/${this.uuidParam}`, adminMiddleware, this.controller.update);
 
     /**
      * @openapi
@@ -172,6 +173,6 @@ export class CategoryRoutes {
      *             schema:
      *               $ref: '#/components/schemas/ErrorResponse'
      */
-    this.router.delete(`/${this.uuidParam}`, this.controller.delete);
+    this.router.delete(`/${this.uuidParam}`, adminMiddleware, this.controller.delete);
   }
 }

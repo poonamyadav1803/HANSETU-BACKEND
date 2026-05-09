@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest } from "../../middlewares/auth.middleware";
+import { AdminRequest } from "../../middlewares/admin.middleware";
 import { AdminService } from "./admin.service";
 import { UserRepository } from "../user/user.repository";
 import { z } from "zod";
@@ -11,7 +11,7 @@ const updateRoleSchema = z.object({
 });
 
 export class AdminController {
-  async getStats(req: AuthRequest, res: Response, next: NextFunction) {
+  async getStats(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const stats = await adminService.getStats();
       res.json(stats);
@@ -20,7 +20,7 @@ export class AdminController {
     }
   }
 
-  async getAllUsers(req: AuthRequest, res: Response, next: NextFunction) {
+  async getAllUsers(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const users = await adminService.getAllUsers();
       res.json(users);
@@ -29,7 +29,7 @@ export class AdminController {
     }
   }
 
-  async getUserById(req: AuthRequest, res: Response, next: NextFunction) {
+  async getUserById(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const user = await adminService.getUserById(req.params.id);
       res.json(user);
@@ -38,7 +38,7 @@ export class AdminController {
     }
   }
 
-  async activateUser(req: AuthRequest, res: Response, next: NextFunction) {
+  async activateUser(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const result = await adminService.activateUser(req.params.id);
       res.json(result);
@@ -47,7 +47,7 @@ export class AdminController {
     }
   }
 
-  async deactivateUser(req: AuthRequest, res: Response, next: NextFunction) {
+  async deactivateUser(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const result = await adminService.deactivateUser(req.params.id);
       res.json(result);
@@ -56,7 +56,7 @@ export class AdminController {
     }
   }
 
-  async updateUserRole(req: AuthRequest, res: Response, next: NextFunction) {
+  async updateUserRole(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const { role } = updateRoleSchema.parse(req.body);
       const user = await adminService.updateUserRole(req.params.id, role);

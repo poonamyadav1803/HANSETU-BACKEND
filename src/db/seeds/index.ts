@@ -20,6 +20,7 @@ import { seedFinancialServices } from "./financial.seeder";
 import { seedSuppliers } from "./supplier.seeder";
 import { seedWizardNavigationData } from "./wizard-navigation.seeder";
 import { seedRbac } from "../seed/rbac.seed";
+import { seedAdmin } from "../seed/admin.seed";
 
 async function runSeeds() {
   log("═══════════════════════════════════════════");
@@ -42,6 +43,7 @@ async function runSeeds() {
     await seedSuppliers();
     await seedWizardNavigationData();
     await seedRbac();
+    await seedAdmin();
 
     log("═══════════════════════════════════════════");
     log("  All seeds completed successfully.");

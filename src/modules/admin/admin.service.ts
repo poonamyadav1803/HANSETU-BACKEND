@@ -51,7 +51,6 @@ export class AdminService {
       manufacturers: users.filter((u) => u.businessType === "manufacturer").length,
       suppliers: users.filter((u) => u.businessType === "raw_material_supplier").length,
       both: users.filter((u) => u.businessType === "both").length,
-      admins: users.filter((u) => u.role === "admin").length,
     };
   }
 }

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { SubcategoryController } from './subcategory.controller';
+import { adminMiddleware } from '../../middlewares/admin.middleware';
 
 export class SubcategoryRoutes {
   public router = Router();
@@ -51,7 +52,7 @@ export class SubcategoryRoutes {
      *                 $ref: '#/components/schemas/SubcategoryWithCategory'
      */
     this.router.get('/', this.controller.getAll);
-    this.router.post('/', this.controller.create);
+    this.router.post('/', adminMiddleware, this.controller.create);
 
     /**
      * @openapi
@@ -137,7 +138,7 @@ export class SubcategoryRoutes {
      *               $ref: '#/components/schemas/ErrorResponse'
      */
     this.router.get(`/${this.uuidParam}`, this.controller.getById);
-    this.router.patch(`/${this.uuidParam}`, this.controller.update);
-    this.router.delete(`/${this.uuidParam}`, this.controller.delete);
+    this.router.patch(`/${this.uuidParam}`, adminMiddleware, this.controller.update);
+    this.router.delete(`/${this.uuidParam}`, adminMiddleware, this.controller.delete);
   }
 }
