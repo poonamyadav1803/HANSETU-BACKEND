@@ -8,7 +8,7 @@ import { AdminUserRepository } from "./admin-user.repository";
 import { IAdminUser } from "./admin-user.entity";
 import { env } from "../../config/env";
 import { HttpException } from "../../core/HttpException";
-import { sendAdminInviteEmail, sendAdminApprovalEmail } from "../../services/email.service";
+import { sendAdminInviteEmail, sendAdminApprovalEmail, sendAdminPasswordResetEmail } from "../../services/email.service";
 
 function toSafeAdmin(admin: IAdminUser) {
   const { password, ...safe } = admin;
@@ -113,6 +113,45 @@ export class AdminAuthService {
       message: "Registration submitted. Your account is pending approval from an existing admin.",
       admin: toSafeAdmin(admin),
     };
+  }
+
+  // ─── Forgot Password ───────────────────────────────────────────────────────
+  async forgotPassword(email: string) {
+    const admin = await this.adminRepo.findByEmail(email);
+    if (admin && admin.isActive) {
+      const token = jwt.sign(
+        { adminId: admin.id, email: admin.email, type: 'admin_password_reset' },
+        env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+      const resetLink = `${env.FRONTEND_URL}/admin-reset-password?token=${token}`;
+      await sendAdminPasswordResetEmail(admin.email, resetLink);
+    }
+    return { message: 'If an active admin account with that email exists, a reset link has been sent.' };
+  }
+
+  // ─── Reset Password ────────────────────────────────────────────────────────
+  async resetPassword(token: string, newPassword: string) {
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, env.JWT_SECRET);
+    } catch {
+      throw new HttpException(400, 'Reset link is invalid or has expired. Please request a new one.');
+    }
+
+    if (decoded.type !== 'admin_password_reset') {
+      throw new HttpException(400, 'Invalid reset token.');
+    }
+
+    const admin = await this.adminRepo.findById(decoded.adminId);
+    if (!admin || admin.email !== decoded.email) {
+      throw new HttpException(400, 'Reset link is invalid or has expired.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.adminRepo.updatePassword(decoded.adminId, hashedPassword);
+
+    return { message: 'Password reset successfully. You can now log in with your new password.' };
   }
 
   // ─── Login ─────────────────────────────────────────────────────────────────
