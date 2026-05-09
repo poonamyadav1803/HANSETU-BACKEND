@@ -1,14 +1,13 @@
 import { Router } from 'express';
 import { BusinessAdminController } from './business-admin.controller';
-import { authMiddleware } from '../../middlewares/auth.middleware';
-import { requireAdmin } from '../../middlewares/rbac.middleware';
+import { adminMiddleware } from '../../middlewares/admin.middleware';
 
 export class BusinessAdminRoutes {
   public router = Router();
   private controller = new BusinessAdminController();
 
   constructor() {
-    this.router.use(authMiddleware, requireAdmin);
+    this.router.use(adminMiddleware);
 
     this.router.get('/stats', this.controller.getStats);
     this.router.get('/users', this.controller.getUsers);
