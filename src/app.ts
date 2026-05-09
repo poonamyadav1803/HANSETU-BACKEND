@@ -19,6 +19,8 @@ import { StudentServiceRoutes } from "./modules/student-service/student-service.
 import { FinancialServiceRoutes } from "./modules/financial-service/financial-service.routes";
 import { SupplierRoutes } from "./modules/supplier/supplier.routes";
 import { AdminRoutes } from "./modules/admin/admin.routes";
+import { AdminAuthRoutes } from "./modules/admin-auth/admin-auth.routes";
+import { BusinessAdminRoutes } from "./modules/business-admin/business-admin.routes";
 import { WizardRoutes } from "./modules/wizard/wizard.routes";
 import { ProfileRoutes } from "./modules/profile/profile.routes";
 import { NavRoutes } from "./modules/nav/nav.routes";
@@ -106,6 +108,8 @@ export function createApp() {
   app.use("/api/financial-services", new FinancialServiceRoutes().router);
   app.use("/api/suppliers", new SupplierRoutes().router);
   app.use("/api/admin", new AdminRoutes().router);
+  app.use("/api/admin-auth", new AdminAuthRoutes().router);
+  app.use("/api/business-admin", new BusinessAdminRoutes().router);
   app.use("/api/wizard", new WizardRoutes().router);
   app.use("/api/profile", new ProfileRoutes().router);
   app.use("/api/nav", new NavRoutes().router);
