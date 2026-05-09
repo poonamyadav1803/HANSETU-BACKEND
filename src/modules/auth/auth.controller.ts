@@ -2,6 +2,7 @@ import { Response, NextFunction } from "express";
 import { AuthService } from "./auth.service";
 import { UserRepository } from "../user/user.repository";
 import { AuthRequest } from "../../middlewares/auth.middleware";
+import { z } from "zod";
 import {
   signupSchema,
   loginSchema,
@@ -13,6 +14,14 @@ import {
   updateProfileSchema,
   completeRegistrationSchema,
 } from "./auth.schema";
+
+const adminRegisterSchema = z.object({
+  token: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  username: z.string().min(4),
+  password: z.string().min(8),
+});
 
 const authService = new AuthService(new UserRepository());
 
@@ -125,6 +134,36 @@ export class AuthController {
         return;
       }
       res.json({ success: true, message: "Phone OTP verified" });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async validateInviteToken(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { token } = req.params;
+      const result = await authService.validateInviteToken(token);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async adminRegister(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const data = adminRegisterSchema.parse(req.body);
+      const result = await authService.adminRegister(data);
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async adminLogin(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = loginSchema.parse(req.body);
+      const result = await authService.adminLogin(email, password);
+      res.json(result);
     } catch (err) {
       next(err);
     }
