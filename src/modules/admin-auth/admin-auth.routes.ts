@@ -117,6 +117,7 @@ export class AdminAuthRoutes {
      *     security:
      *       - bearerAuth: []
      */
+    this.router.get("/admins", this.controller.getAdmins.bind(this.controller));
     this.router.get("/pending", this.controller.getPendingRegistrations);
 
     /**

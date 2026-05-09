@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AdminRequest } from "../../middlewares/admin.middleware";
 import { AdminAuthService } from "./admin-auth.service";
 import { AdminUserRepository } from "./admin-user.repository";
+import { env } from "../../config/env";
 
 const adminAuthService = new AdminAuthService(new AdminUserRepository());
 
@@ -66,8 +67,7 @@ export class AdminAuthController {
   async inviteAdmin(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const { email } = inviteSchema.parse(req.body);
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-      const result = await adminAuthService.inviteAdmin(email, req.adminId!, frontendUrl);
+      const result = await adminAuthService.inviteAdmin(email, req.adminId!, env.FRONTEND_URL);
       res.json(result);
     } catch (err) {
       next(err);
@@ -86,6 +86,15 @@ export class AdminAuthController {
   async approveRegistration(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const result = await adminAuthService.approveRegistration(req.params.id);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getAdmins(req: AdminRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await adminAuthService.getAll();
       res.json(result);
     } catch (err) {
       next(err);

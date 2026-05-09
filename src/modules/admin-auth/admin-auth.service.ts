@@ -134,6 +134,12 @@ export class AdminAuthService {
     return { token, admin: toSafeAdmin(admin) };
   }
 
+  // ─── List All Admins ───────────────────────────────────────────────────────
+  async getAll() {
+    const admins = await this.adminRepo.findAll();
+    return admins.map(toSafeAdmin);
+  }
+
   // ─── Pending Registrations ─────────────────────────────────────────────────
   async getPendingRegistrations() {
     const pending = await this.adminRepo.findPending();
