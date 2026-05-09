@@ -92,6 +92,38 @@ export class AdminAuthController {
     }
   }
 
+  async forgotPassword(req: AdminRequest, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== 'string') {
+        res.status(400).json({ message: 'Email is required.' });
+        return;
+      }
+      const result = await adminAuthService.forgotPassword(email.trim().toLowerCase());
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async resetPassword(req: AdminRequest, res: Response, next: NextFunction) {
+    try {
+      const { token, password } = req.body;
+      if (!token || !password || typeof token !== 'string' || typeof password !== 'string') {
+        res.status(400).json({ message: 'Token and password are required.' });
+        return;
+      }
+      if (password.length < 8) {
+        res.status(400).json({ message: 'Password must be at least 8 characters.' });
+        return;
+      }
+      const result = await adminAuthService.resetPassword(token, password);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async getAdmins(req: AdminRequest, res: Response, next: NextFunction) {
     try {
       const result = await adminAuthService.getAll();

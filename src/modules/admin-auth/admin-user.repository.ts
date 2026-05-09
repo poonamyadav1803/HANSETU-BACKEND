@@ -52,6 +52,10 @@ export class AdminUserRepository {
     await db.update(adminUsers).set({ isActive: true, updatedAt: new Date() }).where(eq(adminUsers.id, id));
   }
 
+  async updatePassword(id: string, hashedPassword: string) {
+    await db.update(adminUsers).set({ password: hashedPassword, updatedAt: new Date() }).where(eq(adminUsers.id, id));
+  }
+
   private mapRow(row: typeof adminUsers.$inferSelect): IAdminUser {
     return {
       id: row.id,

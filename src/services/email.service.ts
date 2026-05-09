@@ -57,6 +57,30 @@ export async function sendAdminApprovalEmail(to: string): Promise<void> {
   });
 }
 
+export async function sendAdminPasswordResetEmail(to: string, resetLink: string): Promise<void> {
+  const transporter = createTransport();
+  await transporter.sendMail({
+    from: env.EMAIL_FROM,
+    to,
+    subject: "Reset your Hansetu Admin password",
+    text: `You requested a password reset for your Hansetu Admin account.\n\nClick the link below to set a new password:\n\n${resetLink}\n\nThis link expires in 1 hour. If you didn't request this, you can safely ignore this email.`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:auto;">
+        <h2 style="color:#1e293b;">Reset Your Admin Password</h2>
+        <p>We received a request to reset the password for your <strong>Hansetu Admin</strong> account.</p>
+        <p>Click the button below to choose a new password:</p>
+        <a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#1e293b;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;margin:12px 0;">
+          Reset Admin Password
+        </a>
+        <p style="color:#64748b;font-size:0.875rem;">
+          This link expires in <strong>1 hour</strong>. If you didn't request a password reset, you can safely ignore this email — your password will not change.
+        </p>
+        <p style="color:#94a3b8;font-size:0.75rem;">Or copy this link: ${resetLink}</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendPasswordResetEmail(to: string, resetLink: string): Promise<void> {
   const transporter = createTransport();
   await transporter.sendMail({
