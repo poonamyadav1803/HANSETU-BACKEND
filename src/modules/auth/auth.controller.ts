@@ -106,6 +106,38 @@ export class AuthController {
     }
   }
 
+  async forgotPassword(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== 'string') {
+        res.status(400).json({ message: 'Email is required.' });
+        return;
+      }
+      const result = await authService.forgotPassword(email.trim().toLowerCase());
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async resetPassword(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { token, password } = req.body;
+      if (!token || !password || typeof token !== 'string' || typeof password !== 'string') {
+        res.status(400).json({ message: 'Token and password are required.' });
+        return;
+      }
+      if (password.length < 8) {
+        res.status(400).json({ message: 'Password must be at least 8 characters.' });
+        return;
+      }
+      const result = await authService.resetPassword(token, password);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async sendPhoneOtp(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { mobile } = sendPhoneOtpSchema.parse(req.body);
