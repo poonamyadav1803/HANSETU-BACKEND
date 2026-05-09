@@ -5,7 +5,7 @@ import { IUser, UserProfile, BusinessType } from '../user/user.entity';
 import { env } from '../../config/env';
 import { otpStore, generateOtp } from './otp.store';
 import { verifyGst } from '../gst/gst.service';
-import { sendOtpEmail } from '../../services/email.service';
+import { sendOtpEmail, sendPasswordResetEmail } from '../../services/email.service';
 import { sendOtpSms } from '../../services/sms.service';
 import { db } from '../../db';
 import { otpTable } from '../../db/schema';
@@ -294,6 +294,46 @@ export class AuthService {
       );
 
     return this.generateAuthResponse(user);
+  }
+
+  // ─── Forgot Password ───────────────────────────────────────────────────────
+  async forgotPassword(email: string) {
+    const user = await this.userRepo.findByEmail(email);
+    // Always return the same message to prevent email enumeration
+    if (user) {
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, type: 'password_reset' },
+        env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+      const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+      await sendPasswordResetEmail(user.email, resetLink);
+    }
+    return { message: 'If an account with that email exists, a reset link has been sent.' };
+  }
+
+  // ─── Reset Password ────────────────────────────────────────────────────────
+  async resetPassword(token: string, newPassword: string) {
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, env.JWT_SECRET);
+    } catch {
+      throw new HttpException(400, 'Reset link is invalid or has expired. Please request a new one.');
+    }
+
+    if (decoded.type !== 'password_reset') {
+      throw new HttpException(400, 'Invalid reset token.');
+    }
+
+    const user = await this.userRepo.findById(decoded.userId);
+    if (!user || user.email !== decoded.email) {
+      throw new HttpException(400, 'Reset link is invalid or has expired.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.userRepo.updatePassword(decoded.userId, hashedPassword);
+
+    return { message: 'Password reset successfully. You can now log in with your new password.' };
   }
 
   private generateAuthResponse(user: IUser) {
