@@ -17,6 +17,7 @@ export const env = {
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
   EMAIL_FROM: process.env.EMAIL_FROM || 'Hansetu <noreply@hansetu.com>',
+  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:5173",
   // Twilio
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || '',
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || '',
