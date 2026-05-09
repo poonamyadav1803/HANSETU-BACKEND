@@ -621,3 +621,35 @@ export const suppliers = pgTable("suppliers", {
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin Users (separate from business users)
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminUsers = pgTable("admin_users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  username: varchar("username", { length: 100 }).unique().notNull(),
+  password: text("password").notNull(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  isActive: boolean("is_active").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AdminUser = typeof adminUsers.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin Invitations
+// ─────────────────────────────────────────────────────────────────────────────
+export const adminInvitations = pgTable("admin_invitations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull(),
+  token: varchar("token", { length: 500 }).unique().notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // pending | accepted | expired
+  invitedBy: uuid("invited_by").notNull().references(() => adminUsers.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AdminInvitation = typeof adminInvitations.$inferSelect;
