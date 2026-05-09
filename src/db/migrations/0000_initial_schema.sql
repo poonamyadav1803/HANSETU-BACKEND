@@ -102,6 +102,7 @@ CREATE INDEX IF NOT EXISTS "subcategories_category_id_idx" ON "subcategories" ("
 -- ─────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS "products" (
   "id"             uuid          PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  "manufacturer_user_id" uuid    REFERENCES "users" ("id") ON DELETE SET NULL,
   "category_id"    uuid          NOT NULL REFERENCES "categories" ("id") ON DELETE CASCADE,
   "subcategory_id" uuid          REFERENCES "subcategories" ("id") ON DELETE SET NULL,
   "name"           varchar(500)  NOT NULL,
@@ -128,6 +129,7 @@ CREATE TABLE otp (
 
 CREATE INDEX IF NOT EXISTS "products_category_id_idx"    ON "products" ("category_id");
 CREATE INDEX IF NOT EXISTS "products_subcategory_id_idx" ON "products" ("subcategory_id");
+CREATE INDEX IF NOT EXISTS "products_manufacturer_user_id_idx" ON "products" ("manufacturer_user_id");
 CREATE INDEX IF NOT EXISTS "products_brand_idx"          ON "products" ("brand");
 CREATE INDEX IF NOT EXISTS "products_in_stock_idx"       ON "products" ("in_stock");
 

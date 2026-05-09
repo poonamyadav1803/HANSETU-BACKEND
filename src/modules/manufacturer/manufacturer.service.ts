@@ -1,12 +1,15 @@
 import { BaseService } from "../../core/BaseService";
-import { ManufacturerRepository } from "./manufacturer.repository";
+import {
+  ManufacturerFilters,
+  ManufacturerRepository,
+} from "./manufacturer.repository";
 
 export class ManufacturerService extends BaseService {
   constructor(private repo: ManufacturerRepository) {
     super();
   }
 
-  async getAll(filters: { industrySlug?: string }) {
+  async getAll(filters: ManufacturerFilters) {
     const rows = await this.repo.findAll(filters);
     return rows.map(this.parseJsonFields);
   }
