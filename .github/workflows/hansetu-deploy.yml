@@ -134,7 +134,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: poonamyadav1803/HANSETU-FRONTEND
-          ref: main
+          ref: feature-workflow-frontend
           # If frontend repo is private uncomment below and add PAT secret:
           # token: ${{ secrets.GH_PAT }}
 
@@ -152,16 +152,6 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
-
-      - name: Create ECR repo if not exists
-        run: |
-          aws ecr describe-repositories \
-            --repository-names ${{ env.FRONTEND_IMAGE }} \
-            --region ${{ secrets.AWS_REGION }} 2>/dev/null || \
-          aws ecr create-repository \
-            --repository-name ${{ env.FRONTEND_IMAGE }} \
-            --region ${{ secrets.AWS_REGION }}
-
       - name: Build and push frontend image
         run: |
           docker build \
@@ -170,11 +160,9 @@ jobs:
             -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest \
             -f Dockerfile \
             .
-
           docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
           docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
           echo "✔ Frontend pushed → ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}"
-
   # ────────────────────────────────────────────────────────────────────────────
   #  JOB 3 — SSH into EC2 and deploy
   #  Both build jobs must pass before this runs.
