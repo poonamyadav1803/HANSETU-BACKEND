@@ -64,11 +64,6 @@ services:
   # ── Frontend (build only — exits after writing files to volume) ────────────
   frontend:
     image: ${ECR_REGISTRY}/hansetu/frontend:latest
-    build:
-      context: ./hansetu-frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-}
     container_name: hansetu-frontend
     volumes:
       - frontend_dist:/app/dist
@@ -79,57 +74,3 @@ volumes:
     driver: local
   frontend_dist:
     driver: local
-
-
-
-version: '3.9'
-
-services:
-
-  postgres:
-    image: postgres:15
-    container_name: hansetu-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: neondb_owner
-      POSTGRES_PASSWORD: npg_etJUVvwO80Lb
-      POSTGRES_DB: hansetu
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  backend:
-    image: 267860592937.dkr.ecr.us-east-1.amazonaws.com/hansetu/backend:latest
-    container_name: hansetu-backend
-    restart: always
-    ports:
-      - "3000:3000"
-    environment:
-      PORT: 3000
-      DATABASE_URL: postgresql://neondb_owner:npg_etJUVvwO80Lb@ep-jolly-silence-ai1s9juy-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-      JWT_SECRET: hansetu-secret
-    depends_on:
-      - postgres
-
-  frontend:
-    image: 267860592937.dkr.ecr.us-east-1.amazonaws.com/hansetu/frontend:latest
-    container_name: hansetu-frontend
-    restart: always
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-
-  nginx:
-    image: nginx:alpine
-    container_name: hansetu-nginx
-    restart: always
-    ports:
-      - "8080:80"
-    volumes:
-      - /home/ubuntu/HANSETU-BACKEND/nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - frontend
-      - backend
-
-volumes:
-  postgres_data:
