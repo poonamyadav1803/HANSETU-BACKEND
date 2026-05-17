@@ -1,0 +1,290 @@
+name: Hansetu Full Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature-workflow
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  GITHUB SECRETS REQUIRED:
+#
+#  AWS
+#    AWS_ACCESS_KEY_ID         → IAM user access key
+#    AWS_SECRET_ACCESS_KEY     → IAM user secret key
+#    AWS_REGION                → e.g. us-east-1
+#    AWS_ACCOUNT_ID            → 12-digit AWS account ID
+#
+#  Server SSH
+#    VM_HOST                   → 34.234.63.10
+#    VM_USER                   → ubuntu
+#    SSH_PRIVATE_KEY           → contents of .pem file
+#
+#  App secrets (written to .env on server)
+#    POSTGRES_USER
+#    POSTGRES_PASSWORD
+#    POSTGRES_DB
+#    DATABASE_URL
+#    JWT_SECRET
+#    MASTERS_INDIA_API_KEY
+#    SMTP_HOST
+#    SMTP_PORT
+#    SMTP_USER
+#    SMTP_PASS
+#    EMAIL_FROM
+#    TWILIO_ACCOUNT_SID
+#    TWILIO_AUTH_TOKEN
+#    TWILIO_PHONE_NUMBER
+#    FRONTEND_URL
+#    VITE_API_URL              → leave empty (Nginx proxies /api/*)
+# ══════════════════════════════════════════════════════════════════════════════
+
+env:
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  BACKEND_IMAGE: hansetu/backend
+  FRONTEND_IMAGE: hansetu/frontend
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  #  JOB 1 — Build, test and push BACKEND image to ECR
+  # ────────────────────────────────────────────────────────────────────────────
+  build-backend:
+    name: Build & Push Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout backend code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - name: Create ECR repo if not exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${{ env.BACKEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }} 2>/dev/null || \
+          aws ecr create-repository \
+            --repository-name ${{ env.BACKEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Build backend image
+        run: |
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest \
+            -f Dockerfile \
+            .
+
+      - name: Test backend container
+        run: |
+          docker run -d \
+            -p 3000:3000 \
+            --name test-backend \
+            -e PORT=3000 \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -e SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            -e SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            -e SMTP_USER="${{ secrets.SMTP_USER }}" \
+            -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+
+          echo "Waiting for backend to start..."
+          sleep 20
+
+          echo "=== Container logs ==="
+          docker logs test-backend
+
+          echo "=== Health check ==="
+          curl --fail http://localhost:3000/api/health
+
+          docker stop test-backend && docker rm test-backend
+
+      - name: Push backend to ECR
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+          echo "✔ Backend pushed → ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  #  JOB 2 — Build and push FRONTEND image to ECR
+  # ────────────────────────────────────────────────────────────────────────────
+  build-frontend:
+    name: Build & Push Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout frontend repo
+        uses: actions/checkout@v4
+        with:
+          repository: poonamyadav1803/HANSETU-FRONTEND
+          ref: main
+          # If frontend repo is private uncomment below and add PAT secret:
+          # token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - name: Create ECR repo if not exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${{ env.FRONTEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }} 2>/dev/null || \
+          aws ecr create-repository \
+            --repository-name ${{ env.FRONTEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Build and push frontend image
+        run: |
+          docker build \
+            --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest \
+            -f Dockerfile \
+            .
+
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          echo "✔ Frontend pushed → ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  #  JOB 3 — SSH into EC2 and deploy
+  #  Both build jobs must pass before this runs.
+  #  On the server:
+  #    1. Write .env from GitHub secrets
+  #    2. docker compose pull  (pulls ECR images — no rebuild)
+  #    3. docker compose up    (starts containers using pulled images)
+  #    4. Copy frontend files to Nginx web root
+  #    5. Reload Nginx
+  # ────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+
+    steps:
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -e
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  Hansetu — Deploying on EC2"
+            echo "  Image tag: ${{ github.sha }}"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            COMPOSE_DIR=~/sunidhi
+            ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+
+            # ── 1. Login to ECR ──────────────────────────────────────────────
+            echo "▶ Logging into ECR..."
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+              docker login --username AWS --password-stdin $ECR_REGISTRY
+            echo "  ✔ ECR login success"
+
+            # ── 2. Write .env from GitHub secrets ────────────────────────────
+            # All secrets land here — docker-compose reads them via ${VAR}
+            echo "▶ Writing .env..."
+            cat > $COMPOSE_DIR/.env << ENVEOF
+            ECR_REGISTRY=$ECR_REGISTRY
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            NODE_ENV=production
+            MASTERS_INDIA_API_KEY=${{ secrets.MASTERS_INDIA_API_KEY }}
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USER=${{ secrets.SMTP_USER }}
+            SMTP_PASS=${{ secrets.SMTP_PASS }}
+            EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+            TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}
+            TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }}
+            TWILIO_PHONE_NUMBER=${{ secrets.TWILIO_PHONE_NUMBER }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            ENVEOF
+            echo "  ✔ .env written"
+
+            cd $COMPOSE_DIR
+
+            # ── 3. Pull latest images from ECR ───────────────────────────────
+            # --no-build → use the images already in ECR, don't rebuild on server
+            echo "▶ Pulling images from ECR..."
+            docker compose pull backend frontend
+            echo "  ✔ Images pulled"
+
+            # ── 4. Restart backend and postgres ─────────────────────────────
+            echo "▶ Starting backend and postgres..."
+            docker compose up -d --no-build --force-recreate backend postgres
+            echo "  ✔ Backend and postgres running"
+
+            # ── 5. Run frontend container to refresh volume ──────────────────
+            # Container runs, writes dist/ to the named volume, then exits (code 0)
+            echo "▶ Refreshing frontend build..."
+            docker compose up --no-build frontend
+            echo "  ✔ Frontend files updated in volume"
+
+            # ── 6. Wait for backend health ───────────────────────────────────
+            echo "▶ Waiting for backend health check..."
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+                echo "  ✔ Backend is healthy"
+                break
+              fi
+              echo "  ... attempt $i/12, retrying in 5s"
+              sleep 5
+            done
+
+            # ── 7. Copy frontend files to Nginx web root ─────────────────────
+            echo "▶ Copying frontend files to Nginx web root..."
+            sudo cp -r /var/lib/docker/volumes/sunidhi_frontend_dist/_data/. /var/www/hansetu/
+            sudo chown -R www-data:www-data /var/www/hansetu
+            sudo chmod -R 755 /var/www/hansetu
+            echo "  ✔ Frontend files updated"
+
+            # ── 8. Reload Nginx ──────────────────────────────────────────────
+            echo "▶ Reloading Nginx..."
+            sudo systemctl reload nginx
+            echo "  ✔ Nginx reloaded"
+
+            # ── 9. Summary ───────────────────────────────────────────────────
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  ✔ Deploy complete!"
+            docker compose ps
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

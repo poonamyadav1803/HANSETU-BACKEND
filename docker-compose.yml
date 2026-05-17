@@ -1,0 +1,84 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Hansetu — Full-Stack Docker Compose
+#  Services : backend · frontend (build only) · postgres
+#  Nginx     : runs on the HOST machine
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL Database ────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hansetu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend ────────────────────────────────────────────────────────────────
+  backend:
+    # "image" tells compose to pull this from ECR instead of building locally.
+    # On first local run use: docker compose up --build
+    # On CI/CD deploys: image is already pulled from ECR before compose up
+    image: ${ECR_REGISTRY}/hansetu/backend:latest
+    build:
+      context: ./hansetu-backend
+      dockerfile: Dockerfile
+    container_name: hansetu-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT:                   3000
+      DATABASE_URL:           ${DATABASE_URL}
+      JWT_SECRET:             ${JWT_SECRET}
+      MASTERS_INDIA_API_KEY:  ${MASTERS_INDIA_API_KEY}
+      SMTP_HOST:              ${SMTP_HOST}
+      SMTP_PORT:              ${SMTP_PORT}
+      SMTP_USER:              ${SMTP_USER}
+      SMTP_PASS:              ${SMTP_PASS}
+      EMAIL_FROM:             ${EMAIL_FROM}
+      TWILIO_ACCOUNT_SID:     ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN:      ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER:    ${TWILIO_PHONE_NUMBER}
+      FRONTEND_URL:           ${FRONTEND_URL}
+      NODE_ENV:               production
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ── Frontend (build only — exits after writing files to volume) ────────────
+  frontend:
+    image: ${ECR_REGISTRY}/hansetu/frontend:latest
+    build:
+      context: ./hansetu-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: hansetu-frontend
+    volumes:
+      - frontend_dist:/app/dist
+    restart: "no"
+
+volumes:
+  postgres_data:
+    driver: local
+  frontend_dist:
+    driver: local
