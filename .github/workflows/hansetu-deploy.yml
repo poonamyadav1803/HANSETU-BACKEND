@@ -153,15 +153,6 @@ jobs:
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
-      - name: Create ECR repo if not exists
-        run: |
-          aws ecr describe-repositories \
-            --repository-names ${{ env.FRONTEND_IMAGE }} \
-            --region ${{ secrets.AWS_REGION }} 2>/dev/null || \
-          aws ecr create-repository \
-            --repository-name ${{ env.FRONTEND_IMAGE }} \
-            --region ${{ secrets.AWS_REGION }}
-
       - name: Build and push frontend image
         run: |
           docker build \
