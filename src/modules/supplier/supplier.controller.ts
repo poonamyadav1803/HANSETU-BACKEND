@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { SupplierService } from "./supplier.service";
 import { SupplierRepository } from "./supplier.repository";
+import { AuthRequest } from "../../middlewares/auth.middleware";
 
 const service = new SupplierService(new SupplierRepository());
 
@@ -20,6 +21,14 @@ export class SupplierController {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       res.json(await service.getById(req.params.id));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getDashboardStats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      res.json(await service.getDashboardStats(req.userId!));
     } catch (err) {
       next(err);
     }

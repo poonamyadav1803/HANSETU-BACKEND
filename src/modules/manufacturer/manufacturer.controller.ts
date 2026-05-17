@@ -4,6 +4,7 @@ import {
   ManufacturerFilters,
   ManufacturerRepository,
 } from "./manufacturer.repository";
+import { AuthRequest } from "../../middlewares/auth.middleware";
 
 const service = new ManufacturerService(new ManufacturerRepository());
 
@@ -44,6 +45,14 @@ export class ManufacturerController {
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       res.json(await service.getById(req.params.id));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getDashboardStats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      res.json(await service.getDashboardStats(req.userId!));
     } catch (err) {
       next(err);
     }

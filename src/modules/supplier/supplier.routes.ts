@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { SupplierController } from "./supplier.controller";
+import { authMiddleware } from "../../middlewares/auth.middleware";
 
 export class SupplierRoutes {
   public router = Router();
@@ -32,6 +33,20 @@ export class SupplierRoutes {
      *                 $ref: '#/components/schemas/Supplier'
      */
     this.router.get("/", this.controller.getAll);
+
+    /**
+     * @openapi
+     * /api/suppliers/me/stats:
+     *   get:
+     *     tags: [Suppliers]
+     *     summary: Dashboard stats for the authenticated supplier
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Dashboard statistics
+     */
+    this.router.get("/me/stats", authMiddleware, this.controller.getDashboardStats);
 
     /**
      * @openapi

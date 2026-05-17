@@ -21,4 +21,12 @@ export class SupplierRepository {
       .where(eq(suppliers.id, id));
     return row ?? null;
   }
+
+  async countActive(): Promise<number> {
+    const rows = await db
+      .select({ id: suppliers.id })
+      .from(suppliers)
+      .where(eq(suppliers.isActive, true));
+    return rows.length;
+  }
 }

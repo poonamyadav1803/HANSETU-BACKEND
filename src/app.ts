@@ -24,6 +24,9 @@ import { BusinessAdminRoutes } from "./modules/business-admin/business-admin.rou
 import { WizardRoutes } from "./modules/wizard/wizard.routes";
 import { ProfileRoutes } from "./modules/profile/profile.routes";
 import { NavRoutes } from "./modules/nav/nav.routes";
+import { RawMaterialOrderRoutes } from "./modules/raw-material-order/raw-material-order.routes";
+import { SupplierInventoryRoutes } from "./modules/supplier-inventory/supplier-inventory.routes";
+import { SupplierTransactionRoutes } from "./modules/supplier-transaction/supplier-transaction.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerSpec } from "./config/swagger";
 import { log } from "./utils/logger";
@@ -113,6 +116,9 @@ export function createApp() {
   app.use("/api/wizard", new WizardRoutes().router);
   app.use("/api/profile", new ProfileRoutes().router);
   app.use("/api/nav", new NavRoutes().router);
+  app.use("/api/raw-material-orders", new RawMaterialOrderRoutes().router);
+  app.use("/api/supplier-inventory", new SupplierInventoryRoutes().router);
+  app.use("/api/supplier-transactions", new SupplierTransactionRoutes().router);
 
   // ─── Health Check ─────────────────────────────────────────────────────────────
   /**

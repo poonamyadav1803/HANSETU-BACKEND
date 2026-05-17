@@ -656,3 +656,84 @@ export const adminInvitations = pgTable("admin_invitations", {
 });
 
 export type AdminInvitation = typeof adminInvitations.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Raw Material Orders (placed by manufacturer users)
+// ─────────────────────────────────────────────────────────────────────────────
+export const rawMaterialOrders = pgTable("raw_material_orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  manufacturerUserId: uuid("manufacturer_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  materialName: varchar("material_name", { length: 500 }).notNull(),
+  supplierName: varchar("supplier_name", { length: 500 }).notNull(),
+  quantity: varchar("quantity", { length: 100 }).notNull(),
+  price: varchar("price", { length: 100 }).notNull(),
+  status: varchar("status", { length: 50 }).default("pending").notNull(), // pending | accepted | problem_reported
+  problemDescription: text("problem_description"),
+  orderDate: date("order_date").notNull(),
+  city: varchar("city", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertRawMaterialOrderSchema = createInsertSchema(rawMaterialOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertRawMaterialOrder = z.infer<typeof insertRawMaterialOrderSchema>;
+export type RawMaterialOrder = typeof rawMaterialOrders.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Supplier Inventory (managed by supplier users)
+// ─────────────────────────────────────────────────────────────────────────────
+export const supplierInventory = pgTable("supplier_inventory", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplierUserId: uuid("supplier_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  materialName: varchar("material_name", { length: 500 }).notNull(),
+  category: varchar("category", { length: 255 }).notNull(),
+  quantity: varchar("quantity", { length: 100 }).notNull(),
+  price: varchar("price", { length: 100 }).notNull(),
+  status: varchar("status", { length: 50 }).default("available").notNull(), // available | low_stock | out_of_stock
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSupplierInventorySchema = createInsertSchema(supplierInventory).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSupplierInventory = z.infer<typeof insertSupplierInventorySchema>;
+export type SupplierInventoryItem = typeof supplierInventory.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Supplier Transactions (sales by supplier users)
+// ─────────────────────────────────────────────────────────────────────────────
+export const supplierTransactions = pgTable("supplier_transactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  supplierUserId: uuid("supplier_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  buyerName: varchar("buyer_name", { length: 500 }).notNull(),
+  materialName: varchar("material_name", { length: 500 }).notNull(),
+  amount: varchar("amount", { length: 100 }).notNull(),
+  status: varchar("status", { length: 50 }).default("pending").notNull(), // paid | pending | overdue
+  transactionDate: date("transaction_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSupplierTransactionSchema = createInsertSchema(supplierTransactions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSupplierTransaction = z.infer<typeof insertSupplierTransactionSchema>;
+export type SupplierTransaction = typeof supplierTransactions.$inferSelect;
