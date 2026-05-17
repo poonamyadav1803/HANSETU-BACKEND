@@ -236,18 +236,18 @@ jobs:
             # ── 3. Pull latest images from ECR ───────────────────────────────
             # --no-build → use the images already in ECR, don't rebuild on server
             echo "▶ Pulling images from ECR..."
-            docker compose pull backend frontend
+            docker-compose pull backend frontend
             echo "  ✔ Images pulled"
 
             # ── 4. Restart backend and postgres ─────────────────────────────
             echo "▶ Starting backend and postgres..."
-            docker compose up -d --no-build --force-recreate backend postgres
+            docker-compose up -d --no-build --force-recreate backend postgres
             echo "  ✔ Backend and postgres running"
 
             # ── 5. Run frontend container to refresh volume ──────────────────
             # Container runs, writes dist/ to the named volume, then exits (code 0)
             echo "▶ Refreshing frontend build..."
-            docker compose up --no-build frontend
+            docker-compose up --no-build frontend
             echo "  ✔ Frontend files updated in volume"
 
             # ── 6. Wait for backend health ───────────────────────────────────
