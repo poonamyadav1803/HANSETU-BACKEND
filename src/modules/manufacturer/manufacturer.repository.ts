@@ -68,4 +68,12 @@ export class ManufacturerRepository {
       .where(eq(manufacturers.id, id));
     return row ?? null;
   }
+
+  async countActive(): Promise<number> {
+    const rows = await db
+      .select({ id: manufacturers.id })
+      .from(manufacturers)
+      .where(eq(manufacturers.isActive, true));
+    return rows.length;
+  }
 }
