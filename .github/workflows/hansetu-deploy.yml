@@ -134,7 +134,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: poonamyadav1803/HANSETU-FRONTEND
-          ref: main
+          ref: feature-workflow-frontend
           # If frontend repo is private uncomment below and add PAT secret:
           # token: ${{ secrets.GH_PAT }}
 
