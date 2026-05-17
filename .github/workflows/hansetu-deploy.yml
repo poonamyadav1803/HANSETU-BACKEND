@@ -72,7 +72,6 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
-
       - name: Create ECR repo if not exists
         run: |
           aws ecr describe-repositories \
@@ -81,7 +80,6 @@ jobs:
           aws ecr create-repository \
             --repository-name ${{ env.BACKEND_IMAGE }} \
             --region ${{ secrets.AWS_REGION }}
-
       - name: Build backend image
         run: |
           docker build \
@@ -89,7 +87,6 @@ jobs:
             -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest \
             -f Dockerfile \
             .
-
       - name: Test backend container
         run: |
           docker run -d \
@@ -104,18 +101,13 @@ jobs:
             -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
             -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
             ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
-
           echo "Waiting for backend to start..."
           sleep 20
-
           echo "=== Container logs ==="
           docker logs test-backend
-
           echo "=== Health check ==="
           curl --fail http://localhost:3000/api/health
-
           docker stop test-backend && docker rm test-backend
-
       - name: Push backend to ECR
         run: |
           docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
