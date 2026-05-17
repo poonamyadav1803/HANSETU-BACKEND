@@ -50,7 +50,7 @@ jobs:
   # ────────────────────────────────────────────────────────────────────────────
   #  JOB 1 — Build, test and push BACKEND image to ECR
   # ────────────────────────────────────────────────────────────────────────────
-  build-backend:
+    build-backend:
     name: Build & Push Backend
     runs-on: ubuntu-latest
 
@@ -72,7 +72,6 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
           docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
-
       - name: Create ECR repo if not exists
         run: |
           aws ecr describe-repositories \
@@ -81,7 +80,6 @@ jobs:
           aws ecr create-repository \
             --repository-name ${{ env.BACKEND_IMAGE }} \
             --region ${{ secrets.AWS_REGION }}
-
       - name: Build backend image
         run: |
           docker build \
@@ -89,7 +87,6 @@ jobs:
             -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest \
             -f Dockerfile \
             .
-
       - name: Test backend container
         run: |
           docker run -d \
@@ -104,24 +101,18 @@ jobs:
             -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
             -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
             ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
-
           echo "Waiting for backend to start..."
           sleep 20
-
           echo "=== Container logs ==="
           docker logs test-backend
-
           echo "=== Health check ==="
           curl --fail http://localhost:3000/api/health
-
           docker stop test-backend && docker rm test-backend
-
       - name: Push backend to ECR
         run: |
           docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
           docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
           echo "✔ Backend pushed → ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}"
-
   # ────────────────────────────────────────────────────────────────────────────
   #  JOB 2 — Build and push FRONTEND image to ECR
   # ────────────────────────────────────────────────────────────────────────────
@@ -194,7 +185,7 @@ jobs:
             echo "  Image tag: ${{ github.sha }}"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-            COMPOSE_DIR=~/sunidhi
+            COMPOSE_DIR=/home/ubuntu
             ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
 
             # ── 1. Login to ECR ──────────────────────────────────────────────
@@ -214,17 +205,11 @@ jobs:
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             NODE_ENV=production
-            MASTERS_INDIA_API_KEY=${{ secrets.MASTERS_INDIA_API_KEY }}
             SMTP_HOST=${{ secrets.SMTP_HOST }}
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
             SMTP_PASS=${{ secrets.SMTP_PASS }}
             EMAIL_FROM=${{ secrets.EMAIL_FROM }}
-            TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}
-            TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }}
-            TWILIO_PHONE_NUMBER=${{ secrets.TWILIO_PHONE_NUMBER }}
-            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
             ENVEOF
             echo "  ✔ .env written"
 
@@ -233,18 +218,18 @@ jobs:
             # ── 3. Pull latest images from ECR ───────────────────────────────
             # --no-build → use the images already in ECR, don't rebuild on server
             echo "▶ Pulling images from ECR..."
-            docker compose pull backend frontend
+            docker-compose pull backend frontend
             echo "  ✔ Images pulled"
 
             # ── 4. Restart backend and postgres ─────────────────────────────
             echo "▶ Starting backend and postgres..."
-            docker compose up -d --pull never --force-recreate backend postgres
+            docker-compose up -d --pull never --force-recreate backend postgres
             echo "  ✔ Backend and postgres running"
 
             # ── 5. Run frontend container to refresh volume ──────────────────
             # Container runs, writes dist/ to the named volume, then exits (code 0)
             echo "▶ Refreshing frontend build..."
-            docker compose up --pull never frontend
+            docker-compose up --pull never frontend
             echo "  ✔ Frontend files updated in volume"
 
             # ── 6. Wait for backend health ───────────────────────────────────
