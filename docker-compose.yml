@@ -33,9 +33,6 @@ services:
     # On first local run use: docker compose up --build
     # On CI/CD deploys: image is already pulled from ECR before compose up
     image: ${ECR_REGISTRY}/hansetu/backend:latest
-    build:
-      context: ./hansetu-backend
-      dockerfile: Dockerfile
     container_name: hansetu-backend
     restart: unless-stopped
     depends_on:
@@ -67,9 +64,6 @@ services:
   # ── Frontend (build only — exits after writing files to volume) ────────────
   frontend:
     image: ${ECR_REGISTRY}/hansetu/frontend:latest
-    build:
-      context: ./hansetu-frontend
-      dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-}
     container_name: hansetu-frontend
