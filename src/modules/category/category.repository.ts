@@ -2,6 +2,7 @@ import { asc, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import {
   categories,
+  industries,
   subcategories,
   type Category,
   type Subcategory,
@@ -40,12 +41,29 @@ export class CategoryRepository {
     }));
   }
 
-  async findAll() {
-    const cats = await db
-      .select()
-      .from(categories)
-      .where(eq(categories.isActive, true))
-      .orderBy(asc(categories.name));
+  async findAll(filters?: { industryId?: string; industrySlug?: string }) {
+    let industryId = filters?.industryId;
+
+    // Resolve slug → id
+    if (!industryId && filters?.industrySlug) {
+      const [ind] = await db
+        .select({ id: industries.id })
+        .from(industries)
+        .where(eq(industries.slug, filters.industrySlug));
+      if (ind) industryId = ind.id;
+    }
+
+    const cats = industryId
+      ? await db
+          .select()
+          .from(categories)
+          .where(eq(categories.industryId, industryId))
+          .orderBy(asc(categories.name))
+      : await db
+          .select()
+          .from(categories)
+          .where(eq(categories.isActive, true))
+          .orderBy(asc(categories.name));
 
     return this.attachSubcategories(cats);
   }
