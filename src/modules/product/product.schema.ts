@@ -2,20 +2,30 @@ import { z } from "zod";
 
 const productBaseSchema = z.object({
   manufacturerUserId: z.string().uuid().optional(),
-  categoryId: z.string().uuid(),
+  industryId: z.string().uuid().optional().nullable(),
+  categoryId: z.string().uuid().optional().nullable(),
   subcategoryId: z.string().uuid().nullable().optional(),
   name: z.string().trim().min(1).max(500),
-  price: z.union([z.string().trim().min(1), z.number()]),
+  description: z.string().nullable().optional(),
+  thumbnailUrl: z.string().url().nullable().optional(),
+  materialType: z.string().trim().max(255).nullable().optional(),
+  grade: z.string().trim().max(255).nullable().optional(),
+  specifications: z.record(z.string()).nullable().optional(),
+  moq: z.number().int().positive().nullable().optional(),
+  leadTime: z.string().trim().max(100).nullable().optional(),
+  price: z.union([z.string().trim().min(1), z.number()]).nullable().optional(),
   originalPrice: z.union([z.string().trim().min(1), z.number()]).nullable().optional(),
+  brand: z.string().trim().max(255).nullable().optional(),
+  samplesAvailable: z.boolean().optional(),
+  inStock: z.boolean().optional(),
   rating: z.union([z.string().trim().min(1), z.number()]).optional(),
   reviews: z.number().int().min(0).optional(),
-  brand: z.string().trim().max(255).nullable().optional(),
-  inStock: z.boolean().optional(),
-  specs: z.union([z.record(z.unknown()), z.array(z.unknown()), z.string()]).nullable().optional(),
-  description: z.string().nullable().optional(),
 });
 
-export const createProductSchema = productBaseSchema;
+export const createProductSchema = productBaseSchema.refine(
+  (d) => !!d.name,
+  { message: "name is required" }
+);
 
 export const updateProductSchema = productBaseSchema.partial().refine(
   (payload) => Object.keys(payload).length > 0,

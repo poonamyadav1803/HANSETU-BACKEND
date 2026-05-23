@@ -2,12 +2,7 @@ import { HttpException } from "../../core/HttpException";
 import { BaseService } from "../../core/BaseService";
 import { UserRepository } from "../user/user.repository";
 import { CreateProductInput, UpdateProductInput } from "./product.schema";
-import {
-  ProductFilters,
-  ProductPayload,
-  ProductRepository,
-  ProductUpdatePayload,
-} from "./product.repository";
+import { ProductFilters, ProductPayload, ProductRepository, ProductUpdatePayload } from "./product.repository";
 
 type ProductActor = {
   userId?: string;
@@ -23,92 +18,87 @@ export class ProductService extends BaseService {
   }
 
   async getAll(filters: ProductFilters) {
-    const rows = await this.repo.findAll(filters);
-    return rows.map(this.parseProduct);
+    const { data, total } = await this.repo.findAll(filters);
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 20;
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getMine(actor: ProductActor, filters: Omit<ProductFilters, "manufacturerUserId">) {
     const user = await this.requireProductManager(actor);
-    const rows = await this.repo.findAll({
-      ...filters,
-      manufacturerUserId: user.id,
-    });
-    return rows.map(this.parseProduct);
+    return this.repo.findByManufacturer(user.id);
   }
 
   async getById(id: string) {
     const product = await this.repo.findById(id);
     if (!product) this.throwNotFound("Product not found");
-    return this.parseProduct(product!);
+    return product;
+  }
+
+  async getRelatedServices(id: string) {
+    const product = await this.repo.rawFindById(id);
+    if (!product) this.throwNotFound("Product not found");
+    return this.repo.findRelatedServices(id);
   }
 
   async create(input: CreateProductInput, actor: ProductActor) {
     const user = await this.requireProductManager(actor);
+
     const manufacturerUserId =
       actor.userRole === "admin" && input.manufacturerUserId
         ? input.manufacturerUserId
         : user.id;
 
-    if (manufacturerUserId !== user.id) {
-      await this.ensureProductOwnerExists(manufacturerUserId);
+    if (input.categoryId) {
+      await this.validateCategoryAndSubcategory(input.categoryId, input.subcategoryId);
     }
 
-    await this.validateCategoryAndSubcategory(input.categoryId, input.subcategoryId);
-
-    const created = await this.repo.create(
-      this.toProductPayload({
-        ...input,
-        manufacturerUserId,
-      })
-    );
-
-    return this.parseProduct(created);
+    const payload = this.toPayload({ ...input, manufacturerUserId });
+    const created = await this.repo.create(payload);
+    return created;
   }
 
   async update(id: string, input: UpdateProductInput, actor: ProductActor) {
     await this.requireProductManager(actor);
 
-    const product = await this.repo.findById(id);
+    const product = await this.repo.rawFindById(id);
     if (!product) this.throwNotFound("Product not found");
-    this.assertCanModify(product!, actor);
+    this.assertCanModify(product, actor);
 
-    const nextCategoryId = input.categoryId ?? product!.categoryId;
-    const nextSubcategoryId =
-      input.subcategoryId === undefined ? product!.subcategoryId : input.subcategoryId;
-    await this.validateCategoryAndSubcategory(nextCategoryId, nextSubcategoryId);
-    if (actor.userRole === "admin" && input.manufacturerUserId !== undefined) {
-      await this.ensureProductOwnerExists(input.manufacturerUserId);
+    if (input.categoryId) {
+      const nextSubcategoryId =
+        input.subcategoryId === undefined ? product.subcategoryId : input.subcategoryId;
+      await this.validateCategoryAndSubcategory(input.categoryId, nextSubcategoryId);
     }
 
-    const payload = this.toProductUpdatePayload(input, actor);
+    const payload = this.toUpdatePayload(input, actor);
     const updated = await this.repo.update(id, payload);
-    return this.parseProduct(updated!);
+    return updated;
   }
 
   async delete(id: string, actor: ProductActor) {
     await this.requireProductManager(actor);
-
-    const product = await this.repo.findById(id);
+    const product = await this.repo.rawFindById(id);
     if (!product) this.throwNotFound("Product not found");
-    this.assertCanModify(product!, actor);
-
+    this.assertCanModify(product, actor);
     await this.repo.delete(id);
   }
 
-  async getByCategoryId(categoryId: string) {
-    const rows = await this.repo.findByCategoryId(categoryId);
-    return rows.map(this.parseProduct);
-  }
+  // ── Private helpers ───────────────────────────────────────────────────────────
 
   private async requireProductManager(actor: ProductActor) {
-    if (!actor.userId) {
-      throw new HttpException(401, "Authentication required.");
-    }
+    if (!actor.userId) throw new HttpException(401, "Authentication required.");
 
     const user = await this.userRepo.findById(actor.userId);
-    if (!user || !user.isActive) {
-      throw new HttpException(401, "Invalid or inactive user.");
-    }
+    if (!user || !user.isActive) throw new HttpException(401, "Invalid or inactive user.");
 
     const canManage =
       actor.userRole === "admin" ||
@@ -116,135 +106,76 @@ export class ProductService extends BaseService {
       user.businessType === "manufacturer" ||
       user.businessType === "both";
 
-    if (!canManage) {
-      throw new HttpException(
-        403,
-        "Only manufacturers can manage products."
-      );
-    }
-
+    if (!canManage) throw new HttpException(403, "Only manufacturers can manage products.");
     return user;
   }
 
-  private assertCanModify(
-    product: { manufacturerUserId?: string | null },
-    actor: ProductActor
-  ) {
+  private assertCanModify(product: { manufacturerUserId?: string | null }, actor: ProductActor) {
     if (actor.userRole === "admin") return;
-    if (product.manufacturerUserId && product.manufacturerUserId === actor.userId) {
-      return;
-    }
-
-    throw new HttpException(
-      403,
-      "You can only modify products created by your account."
-    );
+    if (product.manufacturerUserId && product.manufacturerUserId === actor.userId) return;
+    throw new HttpException(403, "You can only modify products created by your account.");
   }
 
-  private async ensureProductOwnerExists(userId: string) {
-    const user = await this.userRepo.findById(userId);
-    if (!user || !user.isActive) {
-      throw new HttpException(400, "Manufacturer user not found or inactive.");
-    }
-    if (
-      user.role !== "admin" &&
-      user.businessType !== "manufacturer" &&
-      user.businessType !== "both"
-    ) {
-      throw new HttpException(400, "Product owner must be a manufacturer user.");
-    }
-  }
-
-  private async validateCategoryAndSubcategory(
-    categoryId: string,
-    subcategoryId?: string | null
-  ) {
-    const categoryExists = await this.repo.categoryExists(categoryId);
-    if (!categoryExists) {
-      throw new HttpException(400, "Category not found.");
-    }
-
+  private async validateCategoryAndSubcategory(categoryId: string, subcategoryId?: string | null) {
+    const exists = await this.repo.categoryExists(categoryId);
+    if (!exists) throw new HttpException(400, "Category not found.");
     if (!subcategoryId) return;
 
-    const subcategory = await this.repo.findSubcategory(subcategoryId);
-    if (!subcategory) {
-      throw new HttpException(400, "Subcategory not found.");
-    }
-    if (subcategory.categoryId !== categoryId) {
-      throw new HttpException(
-        400,
-        "Subcategory does not belong to the selected category."
-      );
-    }
+    const sub = await this.repo.findSubcategory(subcategoryId);
+    if (!sub) throw new HttpException(400, "Subcategory not found.");
+    if (sub.categoryId !== categoryId)
+      throw new HttpException(400, "Subcategory does not belong to the selected category.");
   }
 
-  private toProductPayload(input: CreateProductInput): ProductPayload {
+  private toPayload(input: CreateProductInput & { manufacturerUserId?: string }): ProductPayload {
     return {
-      manufacturerUserId: input.manufacturerUserId,
-      categoryId: input.categoryId,
+      manufacturerUserId: input.manufacturerUserId ?? null,
+      industryId: input.industryId ?? null,
+      categoryId: input.categoryId ?? null,
       subcategoryId: input.subcategoryId ?? null,
       name: input.name,
-      price: String(input.price),
-      originalPrice:
-        input.originalPrice === undefined || input.originalPrice === null
-          ? null
-          : String(input.originalPrice),
-      rating: input.rating === undefined ? undefined : String(input.rating),
-      reviews: input.reviews,
-      brand: input.brand ?? null,
-      inStock: input.inStock,
-      specs: this.stringifySpecs(input.specs),
       description: input.description ?? null,
+      thumbnailUrl: input.thumbnailUrl ?? null,
+      materialType: input.materialType ?? null,
+      grade: input.grade ?? null,
+      specifications: (input.specifications as Record<string, string>) ?? null,
+      moq: input.moq ?? null,
+      leadTime: input.leadTime ?? null,
+      price: input.price != null ? String(input.price) : null,
+      originalPrice: input.originalPrice != null ? String(input.originalPrice) : null,
+      brand: input.brand ?? null,
+      samplesAvailable: input.samplesAvailable,
+      inStock: input.inStock,
+      rating: input.rating !== undefined ? String(input.rating) : undefined,
+      reviews: input.reviews,
     };
   }
 
-  private toProductUpdatePayload(
-    input: UpdateProductInput,
-    actor: ProductActor
-  ): ProductUpdatePayload {
-    const payload: ProductUpdatePayload = {};
+  private toUpdatePayload(input: UpdateProductInput, actor: ProductActor): ProductUpdatePayload {
+    const p: ProductUpdatePayload = {};
 
-    if (input.categoryId !== undefined) payload.categoryId = input.categoryId;
-    if (input.subcategoryId !== undefined) payload.subcategoryId = input.subcategoryId;
-    if (input.name !== undefined) payload.name = input.name;
-    if (input.price !== undefined) payload.price = String(input.price);
-    if (input.originalPrice !== undefined) {
-      payload.originalPrice =
-        input.originalPrice === null ? null : String(input.originalPrice);
-    }
-    if (input.rating !== undefined) payload.rating = String(input.rating);
-    if (input.reviews !== undefined) payload.reviews = input.reviews;
-    if (input.brand !== undefined) payload.brand = input.brand;
-    if (input.inStock !== undefined) payload.inStock = input.inStock;
-    if (input.specs !== undefined) payload.specs = this.stringifySpecs(input.specs);
-    if (input.description !== undefined) payload.description = input.description;
+    if (input.industryId !== undefined) p.industryId = input.industryId;
+    if (input.categoryId !== undefined) p.categoryId = input.categoryId;
+    if (input.subcategoryId !== undefined) p.subcategoryId = input.subcategoryId;
+    if (input.name !== undefined) p.name = input.name;
+    if (input.description !== undefined) p.description = input.description;
+    if (input.thumbnailUrl !== undefined) p.thumbnailUrl = input.thumbnailUrl;
+    if (input.materialType !== undefined) p.materialType = input.materialType;
+    if (input.grade !== undefined) p.grade = input.grade;
+    if (input.specifications !== undefined) p.specifications = input.specifications as Record<string, string>;
+    if (input.moq !== undefined) p.moq = input.moq;
+    if (input.leadTime !== undefined) p.leadTime = input.leadTime;
+    if (input.price !== undefined) p.price = input.price != null ? String(input.price) : null;
+    if (input.originalPrice !== undefined) p.originalPrice = input.originalPrice != null ? String(input.originalPrice) : null;
+    if (input.brand !== undefined) p.brand = input.brand;
+    if (input.samplesAvailable !== undefined) p.samplesAvailable = input.samplesAvailable;
+    if (input.inStock !== undefined) p.inStock = input.inStock;
+    if (input.rating !== undefined) p.rating = String(input.rating);
+    if (input.reviews !== undefined) p.reviews = input.reviews;
     if (actor.userRole === "admin" && input.manufacturerUserId !== undefined) {
-      payload.manufacturerUserId = input.manufacturerUserId;
+      p.manufacturerUserId = input.manufacturerUserId;
     }
 
-    return payload;
-  }
-
-  private stringifySpecs(specs: CreateProductInput["specs"]) {
-    if (specs === undefined) return undefined;
-    if (specs === null) return null;
-    return typeof specs === "string" ? specs : JSON.stringify(specs);
-  }
-
-  private parseProduct(row: Record<string, unknown>) {
-    return {
-      ...row,
-      specs: this.parseSpecs(row.specs),
-    };
-  }
-
-  private parseSpecs(specs: unknown) {
-    if (!specs || typeof specs !== "string") return specs ?? null;
-
-    try {
-      return JSON.parse(specs);
-    } catch {
-      return specs;
-    }
+    return p;
   }
 }

@@ -22,7 +22,10 @@ export interface GstVerificationResult {
   natureOfBusinessActivities: string[];
   stateJurisdiction: string | null;
   stateJurisdictionCode: string | null;
+  centralJurisdiction: string | null;
+  centralJurisdictionCode: string | null;
   dealerType: string | null;
+  einvoiceStatus: string | null;
   cancellationDate: string | null;
   additionalAddresses: unknown[] | null;
   lastUpdatedAtGstn: string | null;
@@ -122,10 +125,13 @@ async function fetchFromWhiteBooks(
       natureOfBusinessActivities: Array.isArray(payload.nba) ? payload.nba : [],
       stateJurisdiction: payload.stj ?? null,
       stateJurisdictionCode: payload.stjCd ?? null,
+      centralJurisdiction: payload.ctj ?? null,
+      centralJurisdictionCode: payload.ctjCd ?? null,
       dealerType: payload.dty ?? null,
-      cancellationDate: payload.cxdt ?? null,
+      einvoiceStatus: payload.einvoiceStatus ?? null,
+      cancellationDate: payload.cxdt || null,
       additionalAddresses: Array.isArray(payload.adadr) ? payload.adadr : null,
-      lastUpdatedAtGstn: payload.lstupdt ?? null,
+      lastUpdatedAtGstn: payload.lstupdt || null,
       fromCache: false,
     },
     rawResponse: raw,
@@ -159,7 +165,10 @@ export async function verifyGst(gstNumber: string): Promise<GstVerificationResul
       ),
       stateJurisdiction: cached.stateJurisdiction ?? null,
       stateJurisdictionCode: cached.stateJurisdictionCode ?? null,
+      centralJurisdiction: cached.centralJurisdiction ?? null,
+      centralJurisdictionCode: cached.centralJurisdictionCode ?? null,
       dealerType: cached.dealerType ?? null,
+      einvoiceStatus: cached.einvoiceStatus ?? null,
       cancellationDate: cached.cancellationDate ?? null,
       additionalAddresses: cached.additionalAddresses as unknown[] | null,
       lastUpdatedAtGstn: cached.lastUpdatedAtGstn ?? null,
@@ -182,7 +191,10 @@ export async function verifyGst(gstNumber: string): Promise<GstVerificationResul
     natureOfBusinessActivities: JSON.stringify(result.natureOfBusinessActivities),
     stateJurisdiction: result.stateJurisdiction,
     stateJurisdictionCode: result.stateJurisdictionCode,
+    centralJurisdiction: result.centralJurisdiction,
+    centralJurisdictionCode: result.centralJurisdictionCode,
     dealerType: result.dealerType,
+    einvoiceStatus: result.einvoiceStatus,
     cancellationDate: result.cancellationDate,
     additionalAddresses: result.additionalAddresses,
     lastUpdatedAtGstn: result.lastUpdatedAtGstn,
