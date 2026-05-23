@@ -106,7 +106,6 @@ export async function seedCategories(): Promise<void> {
         reviews: product.reviews,
         brand: product.brand,
         inStock: product.inStock,
-        specs: product.specs,
         description: product.description,
       };
 
