@@ -27,6 +27,9 @@ export interface UserProfile {
   designation?: string;
   phone?: string;
   companyName?: string;
+  tradeName?: string;
+  constitutionOfBusiness?: string;
+  gstRegisteredDate?: string;
   yearEstablished?: string;
   totalEmployees?: string;
   website?: string;
