@@ -73,7 +73,7 @@ jobs:
           echo "=== Container logs ==="
           docker logs test-backend
           echo "=== Health check ==="
-          curl --fail http://localhost:3000
+          curl --fail http://localhost:3000/api/health
           docker stop test-backend
           docker rm test-backend
       - name: Push backend image to ECR
