@@ -7,11 +7,11 @@ import { requireAdmin } from "../../middlewares/rbac.middleware";
 const navService = new NavService();
 
 const rawMaterialSchema = z.object({
+  industryId: z.string().uuid().optional().nullable(),
+  label: z.string().trim().min(1).max(255),
   slug: z.string().trim().min(1).max(100),
-  name: z.string().trim().min(1).max(255),
   icon: z.string().trim().max(100).optional().nullable(),
-  groupName: z.string().trim().min(1).max(255),
-  subcategories: z.array(z.string().trim().min(1)).optional(),
+  sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
 });
 

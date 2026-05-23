@@ -21,8 +21,8 @@ export class CategoryService extends BaseService {
     super();
   }
 
-  async getAll() {
-    return this.repo.findAll();
+  async getAll(filters?: { industryId?: string; industrySlug?: string }) {
+    return this.repo.findAll(filters);
   }
 
   async getById(id: string) {

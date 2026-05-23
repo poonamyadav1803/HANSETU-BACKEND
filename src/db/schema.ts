@@ -198,14 +198,17 @@ export const gstInfo = pgTable("gst_info", {
   constitutionOfBusiness: varchar("constitution_of_business", { length: 255 }),
   principalPlaceOfBusiness: text("principal_place_of_business"),
   natureOfBusinessActivities: text("nature_of_business_activities"),
-  rawApiResponse: text("raw_api_response"),
   stateJurisdiction: text("state_jurisdiction"),
-  stateJurisdictionCode: varchar("state_jurisdiction_code", { length: 10 }),
+  stateJurisdictionCode: varchar("state_jurisdiction_code", { length: 20 }),
+  centralJurisdiction: text("central_jurisdiction"),
+  centralJurisdictionCode: varchar("central_jurisdiction_code", { length: 20 }),
   dealerType: varchar("dealer_type", { length: 50 }),
-  cancellationDate: date("cancellation_date"),
+  einvoiceStatus: varchar("einvoice_status", { length: 10 }),
+  cancellationDate: varchar("cancellation_date", { length: 50 }),
   additionalAddresses: jsonb("additional_addresses"),
-  lastUpdatedAtGstn: date("last_updated_at_gstn"),
+  lastUpdatedAtGstn: varchar("last_updated_at_gstn", { length: 50 }),
   lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+  rawApiResponse: text("raw_api_response"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -236,11 +239,11 @@ export type Industry = typeof industries.$inferSelect;
 
 export const navRawMaterialCategories = pgTable("nav_raw_material_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
+  industryId: uuid("industry_id").references(() => industries.id, { onDelete: "cascade" }),
+  label: varchar("label", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).unique().notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
   icon: varchar("icon", { length: 100 }),
-  groupName: varchar("group_name", { length: 255 }).notNull(),
-  subcategories: jsonb("subcategories").default([]).notNull(),
+  sortOrder: integer("sort_order").default(0),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -268,6 +271,7 @@ export type CustomProduct = typeof customProducts.$inferSelect;
 // ─────────────────────────────────────────────────────────────────────────────
 export const categories = pgTable("categories", {
   id: uuid("id").primaryKey().defaultRandom(),
+  industryId: uuid("industry_id").references(() => industries.id, { onDelete: "cascade" }),
   slug: varchar("slug", { length: 100 }).unique().notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
@@ -318,21 +322,26 @@ export const products = pgTable("products", {
   manufacturerUserId: uuid("manufacturer_user_id").references(() => users.id, {
     onDelete: "set null",
   }),
-  categoryId: uuid("category_id")
-    .notNull()
-    .references(() => categories.id, { onDelete: "cascade" }),
+  industryId: uuid("industry_id").references(() => industries.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").references(() => categories.id, { onDelete: "cascade" }),
   subcategoryId: uuid("subcategory_id").references(() => subcategories.id, {
     onDelete: "set null",
   }),
   name: varchar("name", { length: 500 }).notNull(),
-  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"),
+  thumbnailUrl: text("thumbnail_url"),
+  materialType: varchar("material_type", { length: 255 }),
+  grade: varchar("grade", { length: 255 }),
+  specifications: jsonb("specifications").default({}),
+  moq: integer("moq"),
+  leadTime: varchar("lead_time", { length: 100 }),
+  price: numeric("price", { precision: 10, scale: 2 }),
   originalPrice: numeric("original_price", { precision: 10, scale: 2 }),
+  brand: varchar("brand", { length: 255 }),
+  samplesAvailable: boolean("samples_available").default(false),
+  inStock: boolean("in_stock").default(true),
   rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
   reviews: integer("reviews").default(0),
-  brand: varchar("brand", { length: 255 }),
-  inStock: boolean("in_stock").default(true),
-  specs: text("specs"),
-  description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -345,6 +354,21 @@ export const insertProductSchema = createInsertSchema(products).omit({
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Product ↔ Services junction
+// ─────────────────────────────────────────────────────────────────────────────
+export const productServices = pgTable("product_services", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  serviceType: varchar("service_type", { length: 50 }).notNull(), // testing | calibration | training
+  serviceId: uuid("service_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ProductService = typeof productServices.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Manufacturers
