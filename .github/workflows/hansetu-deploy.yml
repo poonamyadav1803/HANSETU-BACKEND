@@ -139,30 +139,53 @@ jobs:
       - build-backend
       - build-frontend
 
-    steps:
-      - name: SSH into EC2 and deploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          timeout: 20m
-          script: |
-            set -e
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Hansetu Deployment Started"
-            echo "Image tag: ${{ github.sha }}"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            COMPOSE_DIR=/home/ubuntu
-            ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
-            echo "▶ Logging into ECR..."
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
+      steps:
+    - name: SSH into EC2 and deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        timeout: 20m
+        script: |
+          set -e
+  
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Hansetu Deployment Started"
+          echo "Image tag: ${{ github.sha }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+          COMPOSE_DIR=/home/ubuntu
+          ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+  
+          echo "▶ Logging into ECR..."
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+            docker login --username AWS --password-stdin $ECR_REGISTRY
+  
+          cd $COMPOSE_DIR
+  
+          # Clone repo only if not already present
+          if [ ! -d "HANSETU-BACKEND" ]; then
             git clone -b workflow git@github.com:poonamyadav1803/HANSETU-BACKEND.git
-            cp .env ~/HANSETU-BACKEND
-            cd ~/HANSETU-BACKEND
-            docker-compose up -d
-            sudo systemctl reload nginx
-            sudo systemctl restart nginx
+          fi
+  
+          cd HANSETU-BACKEND
+  
+          echo "▶ Pulling latest code..."
+          git fetch origin
+          git reset --hard origin/workflow
+  
+          echo "▶ Pulling latest Docker images..."
+          docker-compose pull
+  
+          echo "▶ Starting containers..."
+          docker-compose up -d --remove-orphans
+  
+          echo "▶ Restarting Nginx..."
+          sudo systemctl reload nginx
+          sudo systemctl restart nginx
+  
+          echo "✅ Deployment completed successfully"
+
     
