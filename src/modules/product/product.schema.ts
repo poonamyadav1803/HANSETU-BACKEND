@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const productImageSchema = z.object({
+  url: z.string().url(),
+  key: z.string().optional(),
+  bucket: z.string().optional(),
+  mimeType: z.string().optional(),
+  size: z.number().int().min(0).optional(),
+  originalName: z.string().optional(),
+});
+
 const productBaseSchema = z.object({
   manufacturerUserId: z.string().uuid().optional(),
   categoryId: z.string().uuid(),
@@ -13,6 +22,8 @@ const productBaseSchema = z.object({
   inStock: z.boolean().optional(),
   specs: z.union([z.record(z.unknown()), z.array(z.unknown()), z.string()]).nullable().optional(),
   description: z.string().nullable().optional(),
+  images: z.array(productImageSchema).optional(),
+  imageUrls: z.array(z.string().url()).optional(),
 });
 
 export const createProductSchema = productBaseSchema;
@@ -24,3 +35,4 @@ export const updateProductSchema = productBaseSchema.partial().refine(
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type ProductImageInput = z.infer<typeof productImageSchema>;

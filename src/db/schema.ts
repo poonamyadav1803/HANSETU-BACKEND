@@ -333,6 +333,7 @@ export const products = pgTable("products", {
   inStock: boolean("in_stock").default(true),
   specs: text("specs"),
   description: text("description"),
+  images: jsonb("images").default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -1,7 +1,12 @@
 import { HttpException } from "../../core/HttpException";
 import { BaseService } from "../../core/BaseService";
+import { FileUploadService, UploadedFile } from "../../services/file-upload.service";
 import { UserRepository } from "../user/user.repository";
-import { CreateProductInput, UpdateProductInput } from "./product.schema";
+import {
+  CreateProductInput,
+  ProductImageInput,
+  UpdateProductInput,
+} from "./product.schema";
 import {
   ProductFilters,
   ProductPayload,
@@ -17,7 +22,8 @@ type ProductActor = {
 export class ProductService extends BaseService {
   constructor(
     private repo: ProductRepository,
-    private userRepo = new UserRepository()
+    private userRepo = new UserRepository(),
+    private fileUploadService = new FileUploadService()
   ) {
     super();
   }
@@ -42,7 +48,11 @@ export class ProductService extends BaseService {
     return this.parseProduct(product!);
   }
 
-  async create(input: CreateProductInput, actor: ProductActor) {
+  async create(
+    input: CreateProductInput,
+    actor: ProductActor,
+    files: Express.Multer.File[] = []
+  ) {
     const user = await this.requireProductManager(actor);
     const manufacturerUserId =
       actor.userRole === "admin" && input.manufacturerUserId
@@ -54,18 +64,25 @@ export class ProductService extends BaseService {
     }
 
     await this.validateCategoryAndSubcategory(input.categoryId, input.subcategoryId);
+    const uploadedImages = await this.uploadProductImages(files);
 
-    const created = await this.repo.create(
-      this.toProductPayload({
-        ...input,
-        manufacturerUserId,
-      })
-    );
+    const payload = this.toProductPayload({
+      ...input,
+      manufacturerUserId,
+    });
+    payload.images = this.mergeImages(input, uploadedImages);
+
+    const created = await this.repo.create(payload);
 
     return this.parseProduct(created);
   }
 
-  async update(id: string, input: UpdateProductInput, actor: ProductActor) {
+  async update(
+    id: string,
+    input: UpdateProductInput,
+    actor: ProductActor,
+    files: Express.Multer.File[] = []
+  ) {
     await this.requireProductManager(actor);
 
     const product = await this.repo.findById(id);
@@ -80,7 +97,15 @@ export class ProductService extends BaseService {
       await this.ensureProductOwnerExists(input.manufacturerUserId);
     }
 
+    const uploadedImages = await this.uploadProductImages(files);
     const payload = this.toProductUpdatePayload(input, actor);
+    if (input.images !== undefined || input.imageUrls !== undefined || uploadedImages.length) {
+      const currentImages = this.parseImages(product!.images);
+      payload.images =
+        input.images !== undefined || input.imageUrls !== undefined
+          ? this.mergeImages(input, uploadedImages)
+          : [...currentImages, ...uploadedImages];
+    }
     const updated = await this.repo.update(id, payload);
     return this.parseProduct(updated!);
   }
@@ -195,6 +220,7 @@ export class ProductService extends BaseService {
       inStock: input.inStock,
       specs: this.stringifySpecs(input.specs),
       description: input.description ?? null,
+      images: this.mergeImages(input),
     };
   }
 
@@ -218,6 +244,9 @@ export class ProductService extends BaseService {
     if (input.inStock !== undefined) payload.inStock = input.inStock;
     if (input.specs !== undefined) payload.specs = this.stringifySpecs(input.specs);
     if (input.description !== undefined) payload.description = input.description;
+    if (input.images !== undefined || input.imageUrls !== undefined) {
+      payload.images = this.mergeImages(input);
+    }
     if (actor.userRole === "admin" && input.manufacturerUserId !== undefined) {
       payload.manufacturerUserId = input.manufacturerUserId;
     }
@@ -235,6 +264,7 @@ export class ProductService extends BaseService {
     return {
       ...row,
       specs: this.parseSpecs(row.specs),
+      images: this.parseImages(row.images),
     };
   }
 
@@ -245,6 +275,33 @@ export class ProductService extends BaseService {
       return JSON.parse(specs);
     } catch {
       return specs;
+    }
+  }
+
+  private async uploadProductImages(files: Express.Multer.File[] = []) {
+    return this.fileUploadService.uploadMany(files, { folder: "products" });
+  }
+
+  private mergeImages(
+    input: Pick<CreateProductInput | UpdateProductInput, "images" | "imageUrls">,
+    uploadedImages: UploadedFile[] = []
+  ): ProductImageInput[] {
+    const existingImages = input.images ?? [];
+    const urlImages = (input.imageUrls ?? []).map((url) => ({ url }));
+
+    return [...existingImages, ...urlImages, ...uploadedImages];
+  }
+
+  private parseImages(images: unknown): ProductImageInput[] {
+    if (!images) return [];
+    if (Array.isArray(images)) return images as ProductImageInput[];
+    if (typeof images !== "string") return [];
+
+    try {
+      const parsed = JSON.parse(images);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
     }
   }
 }

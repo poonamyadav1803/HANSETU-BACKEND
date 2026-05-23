@@ -1,11 +1,17 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware";
+import { createImageUpload } from "../../middlewares/upload.middleware";
 import { ProductController } from "./product.controller";
 
 export class ProductRoutes {
   public router = Router();
   private controller = new ProductController();
   private uuidParam = ":id([0-9a-fA-F-]{36})";
+  private productImagesUpload = createImageUpload({
+    fieldName: "images",
+    maxFiles: 10,
+    maxFileSizeMb: 5,
+  });
 
   constructor() {
     /**
@@ -48,7 +54,7 @@ export class ProductRoutes {
      *         description: Only manufacturer or admin users can create products
      */
     this.router.get("/", this.controller.getAll);
-    this.router.post("/", authMiddleware, this.controller.create);
+    this.router.post("/", authMiddleware, this.productImagesUpload, this.controller.create);
 
     /**
      * @openapi
@@ -82,7 +88,12 @@ export class ProductRoutes {
      *       - bearerAuth: []
      */
     this.router.get(`/${this.uuidParam}`, this.controller.getById);
-    this.router.patch(`/${this.uuidParam}`, authMiddleware, this.controller.update);
+    this.router.patch(
+      `/${this.uuidParam}`,
+      authMiddleware,
+      this.productImagesUpload,
+      this.controller.update
+    );
     this.router.delete(`/${this.uuidParam}`, authMiddleware, this.controller.delete);
   }
 }
