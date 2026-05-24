@@ -30,7 +30,7 @@ export class ProductService extends BaseService {
 
   async getAll(filters: ProductFilters) {
     const rows = await this.repo.findAll(filters);
-    return rows.map(this.parseProduct);
+    return rows.map((row) => this.parseProduct(row));
   }
 
   async getMine(actor: ProductActor, filters: Omit<ProductFilters, "manufacturerUserId">) {
@@ -39,7 +39,7 @@ export class ProductService extends BaseService {
       ...filters,
       manufacturerUserId: user.id,
     });
-    return rows.map(this.parseProduct);
+    return rows.map((row) => this.parseProduct(row));
   }
 
   async getById(id: string) {
@@ -100,7 +100,7 @@ export class ProductService extends BaseService {
     const uploadedImages = await this.uploadProductImages(files);
     const payload = this.toProductUpdatePayload(input, actor);
     if (input.images !== undefined || input.imageUrls !== undefined || uploadedImages.length) {
-      const currentImages = this.parseImages(product!.images);
+      const currentImages = this.parseImages(product!.images) ?? [];
       payload.images =
         input.images !== undefined || input.imageUrls !== undefined
           ? this.mergeImages(input, uploadedImages)
@@ -122,7 +122,7 @@ export class ProductService extends BaseService {
 
   async getByCategoryId(categoryId: string) {
     const rows = await this.repo.findByCategoryId(categoryId);
-    return rows.map(this.parseProduct);
+    return rows.map((row) => this.parseProduct(row));
   }
 
   private async requireProductManager(actor: ProductActor) {
@@ -285,23 +285,25 @@ export class ProductService extends BaseService {
   private mergeImages(
     input: Pick<CreateProductInput | UpdateProductInput, "images" | "imageUrls">,
     uploadedImages: UploadedFile[] = []
-  ): ProductImageInput[] {
+  ): ProductImageInput[] | null {
     const existingImages = input.images ?? [];
     const urlImages = (input.imageUrls ?? []).map((url) => ({ url }));
+    const mergedImages = [...existingImages, ...urlImages, ...uploadedImages];
 
-    return [...existingImages, ...urlImages, ...uploadedImages];
+    if (mergedImages.length > 0) return mergedImages;
+    return input.images === null ? null : null;
   }
 
-  private parseImages(images: unknown): ProductImageInput[] {
-    if (!images) return [];
+  private parseImages(images: unknown): ProductImageInput[] | null {
+    if (!images) return null;
     if (Array.isArray(images)) return images as ProductImageInput[];
-    if (typeof images !== "string") return [];
+    if (typeof images !== "string") return null;
 
     try {
       const parsed = JSON.parse(images);
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? parsed : null;
     } catch {
-      return [];
+      return null;
     }
   }
 }
