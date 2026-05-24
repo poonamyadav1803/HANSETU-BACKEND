@@ -3,7 +3,6 @@ import { HttpException } from "../core/HttpException";
 
 const imageMimeTypes = new Set([
   "image/jpeg",
-  "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",

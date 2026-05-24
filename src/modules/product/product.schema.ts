@@ -22,7 +22,7 @@ const productBaseSchema = z.object({
   inStock: z.boolean().optional(),
   specs: z.union([z.record(z.unknown()), z.array(z.unknown()), z.string()]).nullable().optional(),
   description: z.string().nullable().optional(),
-  images: z.array(productImageSchema).optional(),
+  images: z.array(productImageSchema).nullable().optional(),
   imageUrls: z.array(z.string().url()).optional(),
 });
 
