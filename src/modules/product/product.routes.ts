@@ -19,42 +19,20 @@ export class ProductRoutes {
      * /api/products:
      *   get:
      *     tags: [Products]
-     *     summary: List products with optional filters
-     *     parameters:
-     *       - in: query
-     *         name: categoryId
-     *         schema: { type: string, format: uuid }
-     *       - in: query
-     *         name: subcategoryId
-     *         schema: { type: string, format: uuid }
-     *       - in: query
-     *         name: manufacturerUserId
-     *         schema: { type: string, format: uuid }
-     *       - in: query
-     *         name: brand
-     *         schema: { type: string }
-     *       - in: query
-     *         name: inStock
-     *         schema: { type: boolean }
-     *       - in: query
-     *         name: search
-     *         schema: { type: string }
-     *     responses:
-     *       200:
-     *         description: Array of product objects
+     *     summary: List products with optional filters and pagination
      *   post:
      *     tags: [Products]
-     *     summary: Create a product for the authenticated manufacturer
+     *     summary: Create a product (manufacturer or admin)
      *     security:
      *       - bearerAuth: []
-     *     responses:
-     *       201:
-     *         description: Product created
-     *       403:
-     *         description: Only manufacturer or admin users can create products
      */
-    this.router.get("/", this.controller.getAll);
-    this.router.post("/", authMiddleware, this.productImagesUpload, this.controller.create);
+    this.router.get("/", this.controller.getAll.bind(this.controller));
+    this.router.post(
+      "/",
+      authMiddleware,
+      this.productImagesUpload,
+      this.controller.create.bind(this.controller)
+    );
 
     /**
      * @openapi
@@ -64,36 +42,53 @@ export class ProductRoutes {
      *     summary: List products owned by the authenticated manufacturer
      *     security:
      *       - bearerAuth: []
-     *     responses:
-     *       200:
-     *         description: Array of owned product objects
      */
-    this.router.get("/my-products", authMiddleware, this.controller.getMine);
+    this.router.get(
+      "/my-products",
+      authMiddleware,
+      this.controller.getMine.bind(this.controller)
+    );
+
+    /**
+     * @openapi
+     * /api/products/{id}/related-services:
+     *   get:
+     *     tags: [Products]
+     *     summary: Get testing, calibration, and training services linked to this product
+     */
+    this.router.get(
+      `/${this.uuidParam}/related-services`,
+      this.controller.getRelatedServices.bind(this.controller)
+    );
 
     /**
      * @openapi
      * /api/products/{id}:
      *   get:
      *     tags: [Products]
-     *     summary: Get a product by ID
+     *     summary: Get full product detail by ID
      *   patch:
      *     tags: [Products]
-     *     summary: Update a product owned by the authenticated manufacturer
+     *     summary: Update a product
      *     security:
      *       - bearerAuth: []
      *   delete:
      *     tags: [Products]
-     *     summary: Delete a product owned by the authenticated manufacturer
+     *     summary: Delete a product
      *     security:
      *       - bearerAuth: []
      */
-    this.router.get(`/${this.uuidParam}`, this.controller.getById);
+    this.router.get(`/${this.uuidParam}`, this.controller.getById.bind(this.controller));
     this.router.patch(
       `/${this.uuidParam}`,
       authMiddleware,
       this.productImagesUpload,
-      this.controller.update
+      this.controller.update.bind(this.controller)
     );
-    this.router.delete(`/${this.uuidParam}`, authMiddleware, this.controller.delete);
+    this.router.delete(
+      `/${this.uuidParam}`,
+      authMiddleware,
+      this.controller.delete.bind(this.controller)
+    );
   }
 }

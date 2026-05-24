@@ -111,17 +111,13 @@ export async function seedWizardNavigationData() {
       .insert(navRawMaterialCategories)
       .values({
         slug: category.id,
-        name: category.name,
+        label: category.name,
         icon: null,
-        groupName: RAW_MATERIAL_GROUPS[category.id] ?? "Other Materials",
-        subcategories: category.subcategories,
       })
       .onConflictDoUpdate({
         target: navRawMaterialCategories.slug,
         set: {
-          name: category.name,
-          groupName: RAW_MATERIAL_GROUPS[category.id] ?? "Other Materials",
-          subcategories: category.subcategories,
+          label: category.name,
           updatedAt: new Date(),
         },
       });

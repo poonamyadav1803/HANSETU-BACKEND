@@ -29,23 +29,35 @@ export class ProductService extends BaseService {
   }
 
   async getAll(filters: ProductFilters) {
-    const rows = await this.repo.findAll(filters);
-    return rows.map((row) => this.parseProduct(row));
+    const { data, total } = await this.repo.findAll(filters);
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 20;
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getMine(actor: ProductActor, filters: Omit<ProductFilters, "manufacturerUserId">) {
     const user = await this.requireProductManager(actor);
-    const rows = await this.repo.findAll({
-      ...filters,
-      manufacturerUserId: user.id,
-    });
-    return rows.map((row) => this.parseProduct(row));
+    return this.repo.findByManufacturer(user.id);
   }
 
   async getById(id: string) {
     const product = await this.repo.findById(id);
     if (!product) this.throwNotFound("Product not found");
-    return this.parseProduct(product!);
+    return product;
+  }
+
+  async getRelatedServices(id: string) {
+    const product = await this.repo.rawFindById(id);
+    if (!product) this.throwNotFound("Product not found");
+    return this.repo.findRelatedServices(id);
   }
 
   async create(
@@ -59,21 +71,18 @@ export class ProductService extends BaseService {
         ? input.manufacturerUserId
         : user.id;
 
-    if (manufacturerUserId !== user.id) {
-      await this.ensureProductOwnerExists(manufacturerUserId);
+    if (input.categoryId) {
+      await this.validateCategoryAndSubcategory(input.categoryId, input.subcategoryId);
     }
 
-    await this.validateCategoryAndSubcategory(input.categoryId, input.subcategoryId);
     const uploadedImages = await this.uploadProductImages(files);
-
-    const payload = this.toProductPayload({
-      ...input,
-      manufacturerUserId,
-    });
+    const payload = this.toPayload({ ...input, manufacturerUserId });
     payload.images = this.mergeImages(input, uploadedImages);
+    if (!payload.thumbnailUrl && uploadedImages[0]?.url) {
+      payload.thumbnailUrl = uploadedImages[0].url;
+    }
 
-    const created = await this.repo.create(payload);
-    return this.parseProduct(created);
+    return this.repo.create(payload);
   }
 
   async update(
@@ -84,20 +93,18 @@ export class ProductService extends BaseService {
   ) {
     await this.requireProductManager(actor);
 
-    const product = await this.repo.findById(id);
+    const product = await this.repo.rawFindById(id);
     if (!product) this.throwNotFound("Product not found");
     this.assertCanModify(product!, actor);
 
-    const nextCategoryId = input.categoryId ?? product!.categoryId;
-    const nextSubcategoryId =
-      input.subcategoryId === undefined ? product!.subcategoryId : input.subcategoryId;
-    await this.validateCategoryAndSubcategory(nextCategoryId, nextSubcategoryId);
-    if (actor.userRole === "admin" && input.manufacturerUserId !== undefined) {
-      await this.ensureProductOwnerExists(input.manufacturerUserId);
+    if (input.categoryId) {
+      const nextSubcategoryId =
+        input.subcategoryId === undefined ? product!.subcategoryId : input.subcategoryId;
+      await this.validateCategoryAndSubcategory(input.categoryId, nextSubcategoryId);
     }
 
     const uploadedImages = await this.uploadProductImages(files);
-    const payload = this.toProductUpdatePayload(input, actor);
+    const payload = this.toUpdatePayload(input, actor);
     if (input.images !== undefined || input.imageUrls !== undefined || uploadedImages.length) {
       const currentImages = this.parseImages(product!.images) ?? [];
       payload.images =
@@ -105,30 +112,27 @@ export class ProductService extends BaseService {
           ? this.mergeImages(input, uploadedImages)
           : [...currentImages, ...uploadedImages];
     }
+    if (
+      input.thumbnailUrl === undefined &&
+      !product!.thumbnailUrl &&
+      uploadedImages[0]?.url
+    ) {
+      payload.thumbnailUrl = uploadedImages[0].url;
+    }
 
-    const updated = await this.repo.update(id, payload);
-    return this.parseProduct(updated!);
+    return this.repo.update(id, payload);
   }
 
   async delete(id: string, actor: ProductActor) {
     await this.requireProductManager(actor);
-
-    const product = await this.repo.findById(id);
+    const product = await this.repo.rawFindById(id);
     if (!product) this.throwNotFound("Product not found");
     this.assertCanModify(product!, actor);
-
     await this.repo.delete(id);
   }
 
-  async getByCategoryId(categoryId: string) {
-    const rows = await this.repo.findByCategoryId(categoryId);
-    return rows.map((row) => this.parseProduct(row));
-  }
-
   private async requireProductManager(actor: ProductActor) {
-    if (!actor.userId) {
-      throw new HttpException(401, "Authentication required.");
-    }
+    if (!actor.userId) throw new HttpException(401, "Authentication required.");
 
     const user = await this.userRepo.findById(actor.userId);
     if (!user || !user.isActive) {
@@ -141,106 +145,84 @@ export class ProductService extends BaseService {
       user.businessType === "manufacturer" ||
       user.businessType === "both";
 
-    if (!canManage) {
-      throw new HttpException(403, "Only manufacturers can manage products.");
-    }
-
+    if (!canManage) throw new HttpException(403, "Only manufacturers can manage products.");
     return user;
   }
 
-  private assertCanModify(
-    product: { manufacturerUserId?: string | null },
-    actor: ProductActor
-  ) {
+  private assertCanModify(product: { manufacturerUserId?: string | null }, actor: ProductActor) {
     if (actor.userRole === "admin") return;
-    if (product.manufacturerUserId && product.manufacturerUserId === actor.userId) {
-      return;
-    }
-
-    throw new HttpException(
-      403,
-      "You can only modify products created by your account."
-    );
-  }
-
-  private async ensureProductOwnerExists(userId: string) {
-    const user = await this.userRepo.findById(userId);
-    if (!user || !user.isActive) {
-      throw new HttpException(400, "Manufacturer user not found or inactive.");
-    }
-    if (
-      user.role !== "admin" &&
-      user.businessType !== "manufacturer" &&
-      user.businessType !== "both"
-    ) {
-      throw new HttpException(400, "Product owner must be a manufacturer user.");
-    }
+    if (product.manufacturerUserId && product.manufacturerUserId === actor.userId) return;
+    throw new HttpException(403, "You can only modify products created by your account.");
   }
 
   private async validateCategoryAndSubcategory(
     categoryId: string,
     subcategoryId?: string | null
   ) {
-    const categoryExists = await this.repo.categoryExists(categoryId);
-    if (!categoryExists) {
-      throw new HttpException(400, "Category not found.");
-    }
-
+    const exists = await this.repo.categoryExists(categoryId);
+    if (!exists) throw new HttpException(400, "Category not found.");
     if (!subcategoryId) return;
 
     const subcategory = await this.repo.findSubcategory(subcategoryId);
-    if (!subcategory) {
-      throw new HttpException(400, "Subcategory not found.");
-    }
+    if (!subcategory) throw new HttpException(400, "Subcategory not found.");
     if (subcategory.categoryId !== categoryId) {
-      throw new HttpException(
-        400,
-        "Subcategory does not belong to the selected category."
-      );
+      throw new HttpException(400, "Subcategory does not belong to the selected category.");
     }
   }
 
-  private toProductPayload(input: CreateProductInput): ProductPayload {
+  private toPayload(input: CreateProductInput & { manufacturerUserId?: string }): ProductPayload {
     return {
-      manufacturerUserId: input.manufacturerUserId,
-      categoryId: input.categoryId,
+      manufacturerUserId: input.manufacturerUserId ?? null,
+      industryId: input.industryId ?? null,
+      categoryId: input.categoryId ?? null,
       subcategoryId: input.subcategoryId ?? null,
       name: input.name,
-      price: String(input.price),
-      originalPrice:
-        input.originalPrice === undefined || input.originalPrice === null
-          ? null
-          : String(input.originalPrice),
-      rating: input.rating === undefined ? undefined : String(input.rating),
-      reviews: input.reviews,
-      brand: input.brand ?? null,
-      inStock: input.inStock,
-      specs: this.stringifySpecs(input.specs),
       description: input.description ?? null,
+      thumbnailUrl: input.thumbnailUrl ?? null,
+      materialType: input.materialType ?? null,
+      grade: input.grade ?? null,
+      specifications: input.specifications ?? null,
+      moq: input.moq ?? null,
+      leadTime: input.leadTime ?? null,
+      price: input.price != null ? String(input.price) : null,
+      originalPrice: input.originalPrice != null ? String(input.originalPrice) : null,
+      brand: input.brand ?? null,
+      samplesAvailable: input.samplesAvailable,
+      inStock: input.inStock,
+      rating: input.rating !== undefined ? String(input.rating) : undefined,
+      reviews: input.reviews,
       images: this.mergeImages(input),
     };
   }
 
-  private toProductUpdatePayload(
-    input: UpdateProductInput,
-    actor: ProductActor
-  ): ProductUpdatePayload {
+  private toUpdatePayload(input: UpdateProductInput, actor: ProductActor): ProductUpdatePayload {
     const payload: ProductUpdatePayload = {};
 
+    if (input.industryId !== undefined) payload.industryId = input.industryId;
     if (input.categoryId !== undefined) payload.categoryId = input.categoryId;
     if (input.subcategoryId !== undefined) payload.subcategoryId = input.subcategoryId;
     if (input.name !== undefined) payload.name = input.name;
-    if (input.price !== undefined) payload.price = String(input.price);
+    if (input.description !== undefined) payload.description = input.description;
+    if (input.thumbnailUrl !== undefined) payload.thumbnailUrl = input.thumbnailUrl;
+    if (input.materialType !== undefined) payload.materialType = input.materialType;
+    if (input.grade !== undefined) payload.grade = input.grade;
+    if (input.specifications !== undefined) payload.specifications = input.specifications;
+    if (input.moq !== undefined) payload.moq = input.moq;
+    if (input.leadTime !== undefined) payload.leadTime = input.leadTime;
+    if (input.price !== undefined) {
+      payload.price = input.price != null ? String(input.price) : null;
+    }
     if (input.originalPrice !== undefined) {
       payload.originalPrice =
-        input.originalPrice === null ? null : String(input.originalPrice);
+        input.originalPrice != null ? String(input.originalPrice) : null;
     }
+    if (input.brand !== undefined) payload.brand = input.brand;
+    if (input.samplesAvailable !== undefined) {
+      payload.samplesAvailable = input.samplesAvailable;
+    }
+    if (input.inStock !== undefined) payload.inStock = input.inStock;
     if (input.rating !== undefined) payload.rating = String(input.rating);
     if (input.reviews !== undefined) payload.reviews = input.reviews;
-    if (input.brand !== undefined) payload.brand = input.brand;
-    if (input.inStock !== undefined) payload.inStock = input.inStock;
-    if (input.specs !== undefined) payload.specs = this.stringifySpecs(input.specs);
-    if (input.description !== undefined) payload.description = input.description;
     if (input.images !== undefined || input.imageUrls !== undefined) {
       payload.images = this.mergeImages(input);
     }
@@ -249,30 +231,6 @@ export class ProductService extends BaseService {
     }
 
     return payload;
-  }
-
-  private stringifySpecs(specs: CreateProductInput["specs"]) {
-    if (specs === undefined) return undefined;
-    if (specs === null) return null;
-    return typeof specs === "string" ? specs : JSON.stringify(specs);
-  }
-
-  private parseProduct(row: Record<string, unknown>) {
-    return {
-      ...row,
-      specs: this.parseSpecs(row.specs),
-      images: this.parseImages(row.images),
-    };
-  }
-
-  private parseSpecs(specs: unknown) {
-    if (!specs || typeof specs !== "string") return specs ?? null;
-
-    try {
-      return JSON.parse(specs);
-    } catch {
-      return specs;
-    }
   }
 
   private async uploadProductImages(files: Express.Multer.File[] = []) {
@@ -287,8 +245,7 @@ export class ProductService extends BaseService {
     const urlImages = (input.imageUrls ?? []).map((url) => ({ url }));
     const mergedImages = [...existingImages, ...urlImages, ...uploadedImages];
 
-    if (mergedImages.length > 0) return mergedImages;
-    return null;
+    return mergedImages.length > 0 ? mergedImages : null;
   }
 
   private parseImages(images: unknown): ProductImageInput[] | null {

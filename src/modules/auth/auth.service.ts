@@ -214,6 +214,24 @@ export class AuthService {
     password: string;
     businessType: BusinessType;
     otpToken: string;
+    // Company details
+    companyName?: string;
+    tradeName?: string;
+    constitutionOfBusiness?: string;
+    gstRegisteredDate?: string;
+    yearEstablished?: string;
+    totalEmployees?: string;
+    website?: string;
+    description?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      district?: string;
+      state?: string;
+      pincode?: string;
+      country?: string;
+    };
+    // Business profile
     industries?: string[];
     materialTypes?: string[];
     machinesAvailable?: string;
@@ -245,7 +263,20 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
+    const addresses: UserProfile['addresses'] = data.address
+      ? [{ label: 'Primary', ...data.address, postalCode: data.address.pincode }]
+      : [];
+
     const profile = buildLegacyProfile({
+      companyName: data.companyName,
+      tradeName: data.tradeName,
+      constitutionOfBusiness: data.constitutionOfBusiness,
+      gstRegisteredDate: data.gstRegisteredDate,
+      yearEstablished: data.yearEstablished,
+      totalEmployees: data.totalEmployees,
+      website: data.website,
+      description: data.description,
+      addresses,
       industries: data.industries ?? [],
       materialTypes: data.materialTypes ?? [],
       machinesAvailable: data.machinesAvailable ?? '',

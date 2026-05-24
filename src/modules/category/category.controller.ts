@@ -6,9 +6,15 @@ import { createCategorySchema, updateCategorySchema } from './category.schema';
 const service = new CategoryService(new CategoryRepository());
 
 export class CategoryController {
-  async getAll(_req: Request, res: Response, next: NextFunction) {
+  async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      res.json(await service.getAll());
+      const { industryId, industrySlug } = req.query;
+      res.json(
+        await service.getAll({
+          industryId: typeof industryId === "string" ? industryId : undefined,
+          industrySlug: typeof industrySlug === "string" ? industrySlug : undefined,
+        })
+      );
     } catch (err) {
       next(err);
     }
