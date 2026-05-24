@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS "products" (
   "in_stock"       boolean       DEFAULT true,
   "specs"          text,
   "description"    text,
-  "images"         jsonb         DEFAULT '[]'::jsonb NOT NULL,
+  "images"         jsonb,
   "created_at"     timestamp     DEFAULT now(),
   "updated_at"     timestamp     DEFAULT now()
 );
