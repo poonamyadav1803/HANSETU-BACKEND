@@ -2,9 +2,6 @@ name: Hansetu Full Deploy
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - workflow
 
 env:
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
@@ -93,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: poonamyadav1803/HANSETU-FRONTEND
-          ref: workflow
+          ref: main
           # token: ${{ secrets.GH_PAT }}
 
       - name: Set up Docker Buildx
@@ -173,7 +170,7 @@ jobs:
           fi
 
           echo "▶ Cloning fresh repository..."
-          git clone -b workflow git@github.com:poonamyadav1803/HANSETU-BACKEND.git
+          git clone -b main git@github.com:poonamyadav1803/HANSETU-BACKEND.git
 
           echo "▶ Copying environment file..."
           cp ~/.env HANSETU-BACKEND/
