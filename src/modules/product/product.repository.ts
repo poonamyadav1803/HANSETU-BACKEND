@@ -24,7 +24,7 @@ export type ProductPayload = {
   inStock?: boolean;
   specs?: string | null;
   description?: string | null;
-  images?: unknown[] | null;
+  images?: unknown[];
 };
 
 export type ProductUpdatePayload = Partial<ProductPayload>;

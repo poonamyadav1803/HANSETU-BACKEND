@@ -6,13 +6,7 @@ async function run() {
 
   await db.execute(sql`
     ALTER TABLE products
-      ADD COLUMN IF NOT EXISTS images JSONB
-  `);
-
-  await db.execute(sql`
-    ALTER TABLE products
-      ALTER COLUMN images DROP DEFAULT,
-      ALTER COLUMN images DROP NOT NULL
+      ADD COLUMN IF NOT EXISTS images JSONB DEFAULT '[]'::jsonb NOT NULL
   `);
 
   console.log("Product images migration complete.");
