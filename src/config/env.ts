@@ -22,4 +22,10 @@ export const env = {
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || '',
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || '',
   TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || '',
+  // S3 uploads
+  AWS_REGION: process.env.AWS_REGION || 'ap-southeast-2',
+  AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || 'AKIAT4XN4JEUW7LRDP74',
+  AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || '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',
+  S3_BUCKET_NAME: process.env.S3_BUCKET_NAME || 'hansetu-media',
+  S3_PUBLIC_BASE_URL: process.env.S3_PUBLIC_BASE_URL || 'https://hansetu.com',
 };

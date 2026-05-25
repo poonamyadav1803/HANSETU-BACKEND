@@ -342,6 +342,7 @@ export const products = pgTable("products", {
   inStock: boolean("in_stock").default(true),
   rating: numeric("rating", { precision: 3, scale: 1 }).default("0"),
   reviews: integer("reviews").default(0),
+  images: jsonb("images"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

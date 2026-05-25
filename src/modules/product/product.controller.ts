@@ -1,9 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { AuthRequest } from "../../middlewares/auth.middleware";
-import { ProductRepository } from "./product.repository";
+import { ProductFilters, ProductRepository } from "./product.repository";
 import { createProductSchema, updateProductSchema } from "./product.schema";
 import { ProductService } from "./product.service";
-import { ProductFilters } from "./product.repository";
 
 const service = new ProductService(new ProductRepository());
 
@@ -19,7 +18,13 @@ export class ProductController {
 
   async getMine(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      res.json(await service.getMine({ userId: req.userId, userRole: req.userRole }, {}));
+      const filters = ProductController.parseListFilters(req.query);
+      res.json(
+        await service.getMine(
+          { userId: req.userId, userRole: req.userRole },
+          filters
+        )
+      );
     } catch (err) {
       next(err);
     }
@@ -43,11 +48,17 @@ export class ProductController {
 
   async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const payload = createProductSchema.parse(req.body);
-      const product = await service.create(payload, {
-        userId: req.userId,
-        userRole: req.userRole,
-      });
+      const payload = createProductSchema.parse(
+        ProductController.normalizeProductBody(req.body)
+      );
+      const product = await service.create(
+        payload,
+        {
+          userId: req.userId,
+          userRole: req.userRole,
+        },
+        ProductController.getUploadedFiles(req)
+      );
       res.status(201).json(product);
     } catch (err) {
       next(err);
@@ -56,12 +67,19 @@ export class ProductController {
 
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const payload = updateProductSchema.parse(req.body);
+      const payload = updateProductSchema.parse(
+        ProductController.normalizeProductBody(req.body)
+      );
       res.json(
-        await service.update(req.params.id, payload, {
-          userId: req.userId,
-          userRole: req.userRole,
-        })
+        await service.update(
+          req.params.id,
+          payload,
+          {
+            userId: req.userId,
+            userRole: req.userRole,
+          },
+          ProductController.getUploadedFiles(req)
+        )
       );
     } catch (err) {
       next(err);
@@ -81,26 +99,81 @@ export class ProductController {
   }
 
   private static parseListFilters(query: Record<string, unknown>): ProductFilters {
-    const f: ProductFilters = {};
+    const filters: ProductFilters = {};
 
-    if (typeof query.industryId === "string") f.industryId = query.industryId;
-    if (typeof query.industrySlug === "string") f.industrySlug = query.industrySlug;
-    if (typeof query.categoryId === "string") f.categoryId = query.categoryId;
-    if (typeof query.subcategoryId === "string") f.subcategoryId = query.subcategoryId;
-    if (typeof query.manufacturerUserId === "string") f.manufacturerUserId = query.manufacturerUserId;
-    if (typeof query.materialType === "string") f.materialType = query.materialType;
-    if (typeof query.grade === "string") f.grade = query.grade;
-    if (typeof query.brand === "string") f.brand = query.brand;
-    if (typeof query.search === "string") f.search = query.search;
-    if (query.samplesAvailable === "true") f.samplesAvailable = true;
-    if (query.samplesAvailable === "false") f.samplesAvailable = false;
-    if (query.inStock === "true") f.inStock = true;
-    if (query.inStock === "false") f.inStock = false;
-    if (typeof query.minPrice === "string") f.minPrice = parseFloat(query.minPrice);
-    if (typeof query.maxPrice === "string") f.maxPrice = parseFloat(query.maxPrice);
-    if (typeof query.page === "string") f.page = Math.max(1, parseInt(query.page, 10));
-    if (typeof query.limit === "string") f.limit = Math.min(100, Math.max(1, parseInt(query.limit, 10)));
+    if (typeof query.industryId === "string") filters.industryId = query.industryId;
+    if (typeof query.industrySlug === "string") filters.industrySlug = query.industrySlug;
+    if (typeof query.categoryId === "string") filters.categoryId = query.categoryId;
+    if (typeof query.subcategoryId === "string") filters.subcategoryId = query.subcategoryId;
+    if (typeof query.manufacturerUserId === "string") {
+      filters.manufacturerUserId = query.manufacturerUserId;
+    }
+    if (typeof query.materialType === "string") filters.materialType = query.materialType;
+    if (typeof query.grade === "string") filters.grade = query.grade;
+    if (typeof query.brand === "string") filters.brand = query.brand;
+    if (typeof query.search === "string") filters.search = query.search;
+    if (query.samplesAvailable === "true") filters.samplesAvailable = true;
+    if (query.samplesAvailable === "false") filters.samplesAvailable = false;
+    if (query.inStock === "true") filters.inStock = true;
+    if (query.inStock === "false") filters.inStock = false;
+    if (typeof query.minPrice === "string") filters.minPrice = parseFloat(query.minPrice);
+    if (typeof query.maxPrice === "string") filters.maxPrice = parseFloat(query.maxPrice);
+    if (typeof query.page === "string") {
+      filters.page = Math.max(1, parseInt(query.page, 10));
+    }
+    if (typeof query.limit === "string") {
+      filters.limit = Math.min(100, Math.max(1, parseInt(query.limit, 10)));
+    }
 
-    return f;
+    return filters;
+  }
+
+  private static getUploadedFiles(req: Request) {
+    return Array.isArray(req.files) ? (req.files as Express.Multer.File[]) : [];
+  }
+
+  private static normalizeProductBody(body: Record<string, unknown>) {
+    const normalized = { ...body };
+
+    for (const key of ["images", "imageUrls", "specifications"] as const) {
+      if (typeof normalized[key] === "string") {
+        normalized[key] = ProductController.parseMaybeJson(normalized[key]);
+      }
+    }
+
+    for (const key of ["samplesAvailable", "inStock"] as const) {
+      if (typeof normalized[key] === "string") {
+        normalized[key] = normalized[key] === "true";
+      }
+    }
+
+    for (const key of ["moq", "reviews"] as const) {
+      if (typeof normalized[key] === "string") {
+        normalized[key] = Number(normalized[key]);
+      }
+    }
+
+    if (typeof normalized.imageUrls === "string") {
+      normalized.imageUrls = [normalized.imageUrls];
+    }
+
+    if (Array.isArray(normalized.imageUrls)) {
+      normalized.imageUrls = normalized.imageUrls.flatMap((value) =>
+        typeof value === "string"
+          ? value.split(",").map((url) => url.trim()).filter(Boolean)
+          : value
+      );
+    }
+
+    return normalized;
+  }
+
+  private static parseMaybeJson(value: unknown) {
+    if (typeof value !== "string") return value;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
   }
 }

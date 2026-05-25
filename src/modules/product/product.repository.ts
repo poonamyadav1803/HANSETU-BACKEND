@@ -1,11 +1,15 @@
-import {
-  and, asc, desc, eq, gte, ilike, lte, or, sql,
-} from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  categories, industries, products, productServices,
-  subcategories, users,
-  calibrationServices, testingServices, trainingPrograms,
+  calibrationServices,
+  categories,
+  industries,
+  products,
+  productServices,
+  subcategories,
+  testingServices,
+  trainingPrograms,
+  users,
 } from "../../db/schema";
 
 export type ProductFilters = {
@@ -46,6 +50,7 @@ export type ProductPayload = {
   inStock?: boolean;
   rating?: string;
   reviews?: number;
+  images?: unknown[] | null;
 };
 
 export type ProductUpdatePayload = Partial<ProductPayload>;
@@ -55,20 +60,7 @@ export class ProductRepository {
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
     const offset = (page - 1) * limit;
-
-    const conditions = this.buildConditions(filters);
-
-    // Resolve industrySlug → industryId via a subquery condition
-    let finalConditions = conditions;
-    if (filters.industrySlug && !filters.industryId) {
-      const [ind] = await db
-        .select({ id: industries.id })
-        .from(industries)
-        .where(eq(industries.slug, filters.industrySlug));
-      if (ind) {
-        finalConditions = [...conditions, eq(products.industryId, ind.id)];
-      }
-    }
+    const conditions = await this.buildConditions(filters);
 
     const baseQuery = db
       .select({
@@ -86,8 +78,8 @@ export class ProductRepository {
         inStock: products.inStock,
         rating: products.rating,
         reviews: products.reviews,
+        images: products.images,
         createdAt: products.createdAt,
-        // joined
         industryId: industries.id,
         industrySlug: industries.slug,
         industryName: industries.name,
@@ -102,9 +94,9 @@ export class ProductRepository {
       .leftJoin(categories, eq(products.categoryId, categories.id))
       .leftJoin(subcategories, eq(products.subcategoryId, subcategories.id));
 
-    const rows = finalConditions.length > 0
+    const rows = conditions.length > 0
       ? await baseQuery
-          .where(and(...finalConditions))
+          .where(and(...conditions))
           .orderBy(desc(products.createdAt))
           .limit(limit)
           .offset(offset)
@@ -113,14 +105,13 @@ export class ProductRepository {
           .limit(limit)
           .offset(offset);
 
-    // Count query (separate, cheaper)
     const countBase = db
       .select({ count: sql<number>`count(*)` })
       .from(products)
       .leftJoin(industries, eq(products.industryId, industries.id));
 
-    const [{ count }] = finalConditions.length > 0
-      ? await countBase.where(and(...finalConditions))
+    const [{ count }] = conditions.length > 0
+      ? await countBase.where(and(...conditions))
       : await countBase;
 
     return {
@@ -148,10 +139,10 @@ export class ProductRepository {
         inStock: products.inStock,
         rating: products.rating,
         reviews: products.reviews,
+        images: products.images,
         createdAt: products.createdAt,
         updatedAt: products.updatedAt,
         manufacturerUserId: products.manufacturerUserId,
-        // joined
         industryId: industries.id,
         industrySlug: industries.slug,
         industryName: industries.name,
@@ -169,10 +160,9 @@ export class ProductRepository {
 
     if (!row) return null;
 
-    // Optionally join manufacturer user info
     let manufacturer: Record<string, unknown> | null = null;
     if (row.manufacturerUserId) {
-      const [u] = await db
+      const [user] = await db
         .select({
           id: users.id,
           username: users.username,
@@ -181,7 +171,7 @@ export class ProductRepository {
         })
         .from(users)
         .where(eq(users.id, row.manufacturerUserId));
-      manufacturer = u ?? null;
+      manufacturer = user ?? null;
     }
 
     return {
@@ -201,6 +191,7 @@ export class ProductRepository {
       inStock: row.inStock,
       rating: row.rating,
       reviews: row.reviews,
+      images: row.images ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       industry: row.industryId
@@ -228,23 +219,23 @@ export class ProductRepository {
 
     for (const link of links) {
       if (link.serviceType === "testing") {
-        const [svc] = await db
+        const [service] = await db
           .select()
           .from(testingServices)
           .where(eq(testingServices.id, link.serviceId));
-        if (svc) testing.push(svc);
+        if (service) testing.push(service);
       } else if (link.serviceType === "calibration") {
-        const [svc] = await db
+        const [service] = await db
           .select()
           .from(calibrationServices)
           .where(eq(calibrationServices.id, link.serviceId));
-        if (svc) calibration.push(svc);
+        if (service) calibration.push(service);
       } else if (link.serviceType === "training") {
-        const [svc] = await db
+        const [service] = await db
           .select()
           .from(trainingPrograms)
           .where(eq(trainingPrograms.id, link.serviceId));
-        if (svc) training.push(svc);
+        if (service) training.push(service);
       }
     }
 
@@ -311,57 +302,53 @@ export class ProductRepository {
     return row ?? null;
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
-
-  private buildConditions(filters: ProductFilters) {
-    const conds: ReturnType<typeof eq>[] = [];
+  private async buildConditions(filters: ProductFilters) {
+    const conditions: any[] = [];
 
     if (filters.industryId) {
-      conds.push(eq(products.industryId, filters.industryId) as any);
+      conditions.push(eq(products.industryId, filters.industryId));
+    } else if (filters.industrySlug) {
+      const [industry] = await db
+        .select({ id: industries.id })
+        .from(industries)
+        .where(eq(industries.slug, filters.industrySlug));
+      if (industry) conditions.push(eq(products.industryId, industry.id));
     }
-    if (filters.categoryId) {
-      conds.push(eq(products.categoryId, filters.categoryId) as any);
-    }
+    if (filters.categoryId) conditions.push(eq(products.categoryId, filters.categoryId));
     if (filters.subcategoryId) {
-      conds.push(eq(products.subcategoryId, filters.subcategoryId) as any);
+      conditions.push(eq(products.subcategoryId, filters.subcategoryId));
     }
     if (filters.manufacturerUserId) {
-      conds.push(eq(products.manufacturerUserId, filters.manufacturerUserId) as any);
+      conditions.push(eq(products.manufacturerUserId, filters.manufacturerUserId));
     }
     if (filters.materialType) {
-      conds.push(ilike(products.materialType, `%${filters.materialType}%`) as any);
+      conditions.push(ilike(products.materialType, `%${filters.materialType}%`));
     }
-    if (filters.grade) {
-      conds.push(ilike(products.grade, `%${filters.grade}%`) as any);
-    }
-    if (filters.brand) {
-      conds.push(ilike(products.brand, `%${filters.brand}%`) as any);
-    }
+    if (filters.grade) conditions.push(ilike(products.grade, `%${filters.grade}%`));
+    if (filters.brand) conditions.push(ilike(products.brand, `%${filters.brand}%`));
     if (filters.samplesAvailable !== undefined) {
-      conds.push(eq(products.samplesAvailable, filters.samplesAvailable) as any);
+      conditions.push(eq(products.samplesAvailable, filters.samplesAvailable));
     }
-    if (filters.inStock !== undefined) {
-      conds.push(eq(products.inStock, filters.inStock) as any);
-    }
+    if (filters.inStock !== undefined) conditions.push(eq(products.inStock, filters.inStock));
     if (filters.minPrice !== undefined) {
-      conds.push(gte(products.price, String(filters.minPrice)) as any);
+      conditions.push(gte(products.price, String(filters.minPrice)));
     }
     if (filters.maxPrice !== undefined) {
-      conds.push(lte(products.price, String(filters.maxPrice)) as any);
+      conditions.push(lte(products.price, String(filters.maxPrice)));
     }
     if (filters.search) {
-      const pat = `%${filters.search}%`;
-      conds.push(
+      const pattern = `%${filters.search}%`;
+      conditions.push(
         or(
-          ilike(products.name, pat),
-          ilike(products.description, pat),
-          ilike(products.materialType, pat),
-          ilike(products.brand, pat)
-        ) as any
+          ilike(products.name, pattern),
+          ilike(products.description, pattern),
+          ilike(products.materialType, pattern),
+          ilike(products.brand, pattern)
+        )
       );
     }
 
-    return conds;
+    return conditions;
   }
 
   private shapeListRow(row: Record<string, unknown>) {
@@ -380,6 +367,7 @@ export class ProductRepository {
       inStock: row.inStock,
       rating: row.rating,
       reviews: row.reviews,
+      images: row.images ?? null,
       createdAt: row.createdAt,
       industry: row.industryId
         ? { id: row.industryId, slug: row.industrySlug, name: row.industryName }
