@@ -1,0 +1,190 @@
+name: Hansetu Full Deploy
+
+on:
+  workflow_dispatch:
+
+env:
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  BACKEND_IMAGE: hansetu/backend
+  FRONTEND_IMAGE: hansetu/frontend
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Build, test and push BACKEND image to ECR
+  # ────────────────────────────────────────────────────────────────────────────
+  build-backend:
+    name: Build & Push Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout backend code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+      - name: Create backend ECR repo if not exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${{ env.BACKEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }} 2>/dev/null || \
+          aws ecr create-repository \
+            --repository-name ${{ env.BACKEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }}
+      - name: Build backend image
+        run: |
+          docker build \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest \
+            -f Dockerfile \
+            .
+      - name: Test backend container
+        run: |
+          docker run -d \
+            -p 3000:3000 \
+            --name test-backend \
+            -e PORT=3000 \
+            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -e SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+            -e SMTP_PORT="${{ secrets.SMTP_PORT }}" \
+            -e SMTP_USER="${{ secrets.SMTP_USER }}" \
+            -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
+            -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          echo "Waiting for backend to start..."
+          sleep 180
+          echo "=== Container logs ==="
+          docker logs test-backend
+          echo "=== Health check ==="
+          curl --fail http://localhost:3000/api/health
+          docker stop test-backend
+          docker rm test-backend
+      - name: Push backend image to ECR
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+          echo "✔ Backend pushed successfully"
+  # ────────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Build and push FRONTEND image to ECR
+  # ────────────────────────────────────────────────────────────────────────────
+  build-frontend:
+    name: Build & Push Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout frontend repo
+        uses: actions/checkout@v4
+        with:
+          repository: poonamyadav1803/HANSETU-FRONTEND
+          ref: main
+          # token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+      - name: Create frontend ECR repo if not exists
+        run: |
+          aws ecr describe-repositories \
+            --repository-names ${{ env.FRONTEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }} 2>/dev/null || \
+          aws ecr create-repository \
+            --repository-name ${{ env.FRONTEND_IMAGE }} \
+            --region ${{ secrets.AWS_REGION }}
+      - name: Build frontend image
+        run: |
+          docker build \
+            --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest \
+            -f Dockerfile \
+            .
+      - name: Push frontend image to ECR
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          echo "✔ Frontend pushed successfully"
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs:
+      - build-backend
+      - build-frontend
+
+    steps:
+    - name: SSH into EC2 and deploy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        timeout: 20m
+        script: |
+          set -e
+  
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Hansetu Deployment Started"
+          echo "Image tag: ${{ github.sha }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  
+          COMPOSE_DIR=/home/ubuntu
+          ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+  
+          echo "▶ Logging into ECR..."
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+            docker login --username AWS --password-stdin $ECR_REGISTRY
+            
+          if [ -d "HANSETU-BACKEND" ]; then
+            echo "▶ Existing repo found. Removing old repo..."
+            cd HANSETU-BACKEND/
+            docker-compose down
+            docker system prune -af
+            cd ../
+            sudo rm -rf HANSETU-BACKEND/
+          fi
+
+          echo "▶ Cloning fresh repository..."
+          git clone -b main git@github.com:poonamyadav1803/HANSETU-BACKEND.git
+
+          echo "▶ Copying environment file..."
+          cp ~/.env HANSETU-BACKEND/
+
+          cd HANSETU-BACKEND/
+
+          echo "▶ Starting Docker containers..."
+          docker-compose up -d
+
+          echo "▶ Waiting for services to start..."
+          sleep 60
+
+          echo "▶ Reloading Nginx..."
+          sudo systemctl reload nginx.service
+          sudo systemctl restart nginx.service
+
+          echo "✅ Deployment completed successfully"
