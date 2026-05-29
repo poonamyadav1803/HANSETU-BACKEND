@@ -27,23 +27,10 @@ export class RawMaterialRoutes {
      */
     this.router.get("/", this.controller.getAll);
 
-    /**
-     * @openapi
-     * /api/raw-materials/{id}:
-     *   get:
-     *     tags: [Raw Materials]
-     *     summary: Get a raw material by ID
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: string, format: uuid }
-     *     responses:
-     *       200:
-     *         description: Raw material object
-     *       404:
-     *         description: Not found
-     */
+    // Material-category-based catalogue (new flow)
+    this.router.get("/products", this.controller.getProducts);
+    this.router.post("/inquiries", this.controller.createInquiry);
+
     this.router.get("/:id", this.controller.getById);
   }
 }
