@@ -74,5 +74,17 @@ export class AdminRoutes {
      *       - bearerAuth: []
      */
     this.router.patch("/users/:id/role", this.controller.updateUserRole);
+
+    // ── Raw Material Catalog CRUD (categories) ────────────────────────────
+    this.router.get("/catalog/rm-categories", this.controller.getRMCategories);
+    this.router.post("/catalog/rm-categories", this.controller.createRMCategory);
+    this.router.patch("/catalog/rm-categories/:id", this.controller.updateRMCategory);
+    this.router.delete("/catalog/rm-categories/:id", this.controller.deleteRMCategory);
+
+    // ── Raw Material Catalog CRUD (products) ──────────────────────────────
+    this.router.get("/catalog/rm-products", this.controller.getRMProducts);
+    this.router.post("/catalog/rm-products", this.controller.createRMProduct);
+    this.router.patch("/catalog/rm-products/:id", this.controller.updateRMProduct);
+    this.router.delete("/catalog/rm-products/:id", this.controller.deleteRMProduct);
   }
 }
