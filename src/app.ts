@@ -27,6 +27,11 @@ import { NavRoutes } from "./modules/nav/nav.routes";
 import { RawMaterialOrderRoutes } from "./modules/raw-material-order/raw-material-order.routes";
 import { SupplierInventoryRoutes } from "./modules/supplier-inventory/supplier-inventory.routes";
 import { SupplierTransactionRoutes } from "./modules/supplier-transaction/supplier-transaction.routes";
+import { MfrIndustryRoutes } from "./modules/mfr-industry/mfr-industry.routes";
+import { MfrCategoryRoutes } from "./modules/mfr-category/mfr-category.routes";
+import { MfrProductRoutes } from "./modules/mfr-product/mfr-product.routes";
+import { UserAddressRoutes } from "./modules/user-address/user-address.routes";
+import { AutoOrderRoutes } from "./modules/auto-order/auto-order.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerSpec } from "./config/swagger";
 import { log } from "./utils/logger";
@@ -119,6 +124,11 @@ export function createApp() {
   app.use("/api/raw-material-orders", new RawMaterialOrderRoutes().router);
   app.use("/api/supplier-inventory", new SupplierInventoryRoutes().router);
   app.use("/api/supplier-transactions", new SupplierTransactionRoutes().router);
+  app.use("/api/mfr-industries", new MfrIndustryRoutes().router);
+  app.use("/api/mfr-categories", new MfrCategoryRoutes().router);
+  app.use("/api/mfr-products", new MfrProductRoutes().router);
+  app.use("/api/addresses", new UserAddressRoutes().router);
+  app.use("/api/auto-orders", new AutoOrderRoutes().router);
 
   // ─── Health Check ─────────────────────────────────────────────────────────────
   /**
