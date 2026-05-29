@@ -8,6 +8,8 @@ export interface NavRawMaterialInput {
   label: string;
   slug: string;
   icon?: string | null;
+  groupName?: string | null;
+  subcategories?: string[];
   sortOrder?: number;
   isActive?: boolean;
 }
@@ -26,6 +28,8 @@ export class NavService {
         label: navRawMaterialCategories.label,
         slug: navRawMaterialCategories.slug,
         icon: navRawMaterialCategories.icon,
+        groupName: navRawMaterialCategories.groupName,
+        subcategories: navRawMaterialCategories.subcategories,
         sortOrder: navRawMaterialCategories.sortOrder,
         isActive: navRawMaterialCategories.isActive,
         industryId: industries.id,
@@ -42,11 +46,34 @@ export class NavService {
       label: r.label,
       slug: r.slug,
       icon: r.icon,
+      groupName: r.groupName,
+      subcategories: (r.subcategories as string[]) ?? [],
       sortOrder: r.sortOrder,
       isActive: r.isActive,
       industry: r.industryId
         ? { id: r.industryId, slug: r.industrySlug, name: r.industryName }
         : null,
+    }));
+  }
+
+  async getAllRawMaterials() {
+    const rows = await db
+      .select({
+        id: navRawMaterialCategories.id,
+        label: navRawMaterialCategories.label,
+        slug: navRawMaterialCategories.slug,
+        icon: navRawMaterialCategories.icon,
+        groupName: navRawMaterialCategories.groupName,
+        subcategories: navRawMaterialCategories.subcategories,
+        sortOrder: navRawMaterialCategories.sortOrder,
+        isActive: navRawMaterialCategories.isActive,
+      })
+      .from(navRawMaterialCategories)
+      .orderBy(asc(navRawMaterialCategories.sortOrder));
+
+    return rows.map((r) => ({
+      ...r,
+      subcategories: (r.subcategories as string[]) ?? [],
     }));
   }
 
@@ -58,6 +85,8 @@ export class NavService {
         label: input.label,
         slug: input.slug,
         icon: input.icon ?? null,
+        groupName: input.groupName ?? null,
+        subcategories: input.subcategories ?? [],
         sortOrder: input.sortOrder ?? 0,
         isActive: input.isActive ?? true,
       })
@@ -71,6 +100,8 @@ export class NavService {
     if (input.label !== undefined) set.label = input.label;
     if (input.slug !== undefined) set.slug = input.slug;
     if (input.icon !== undefined) set.icon = input.icon;
+    if (input.groupName !== undefined) set.groupName = input.groupName;
+    if (input.subcategories !== undefined) set.subcategories = input.subcategories;
     if (input.sortOrder !== undefined) set.sortOrder = input.sortOrder;
     if (input.isActive !== undefined) set.isActive = input.isActive;
 

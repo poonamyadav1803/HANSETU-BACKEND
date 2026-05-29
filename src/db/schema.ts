@@ -243,6 +243,8 @@ export const navRawMaterialCategories = pgTable("nav_raw_material_categories", {
   label: varchar("label", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).unique().notNull(),
   icon: varchar("icon", { length: 100 }),
+  groupName: varchar("group_name", { length: 255 }),
+  subcategories: jsonb("subcategories").default([]),
   sortOrder: integer("sort_order").default(0),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -431,6 +433,31 @@ export const insertRawMaterialSchema = createInsertSchema(rawMaterials).omit({
 
 export type InsertRawMaterial = z.infer<typeof insertRawMaterialSchema>;
 export type RawMaterial = typeof rawMaterials.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Raw Material Products (material-category-based catalogue)
+// ─────────────────────────────────────────────────────────────────────────────
+export const rawMaterialProducts = pgTable("raw_material_products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  categorySlug: varchar("category_slug", { length: 100 }).notNull(),
+  subcategory: varchar("subcategory", { length: 255 }),
+  name: varchar("name", { length: 500 }).notNull(),
+  grade: varchar("grade", { length: 255 }),
+  unit: varchar("unit", { length: 50 }),
+  priceMin: numeric("price_min"),
+  priceMax: numeric("price_max"),
+  specifications: jsonb("specifications"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRawMaterialProductSchema = createInsertSchema(rawMaterialProducts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRawMaterialProduct = z.infer<typeof insertRawMaterialProductSchema>;
+export type RawMaterialProduct = typeof rawMaterialProducts.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Machines
@@ -762,3 +789,149 @@ export const insertSupplierTransactionSchema = createInsertSchema(supplierTransa
 
 export type InsertSupplierTransaction = z.infer<typeof insertSupplierTransactionSchema>;
 export type SupplierTransaction = typeof supplierTransactions.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Manufacturer Industries (seed-driven catalog)
+// ─────────────────────────────────────────────────────────────────────────────
+export const mfrIndustries = pgTable("mfr_industries", {
+  id: varchar("id", { length: 100 }).primaryKey(), // e.g. "automobile"
+  name: varchar("name", { length: 500 }).notNull(),
+  slug: varchar("slug", { length: 100 }).unique().notNull(),
+  icon: varchar("icon", { length: 100 }).notNull(),
+  emoji: varchar("emoji", { length: 50 }),
+  description: text("description"),
+  certifications: jsonb("certifications").default([]).notNull(),
+  routePath: varchar("route_path", { length: 200 }).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MfrIndustry = typeof mfrIndustries.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Manufacturer Categories (per industry, seed-driven)
+// ─────────────────────────────────────────────────────────────────────────────
+export const mfrCategories = pgTable("mfr_categories", {
+  id: varchar("id", { length: 100 }).primaryKey(), // e.g. "auto-engine"
+  industryId: varchar("industry_id", { length: 100 })
+    .notNull()
+    .references(() => mfrIndustries.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 500 }).notNull(),
+  subcategories: jsonb("subcategories").default([]).notNull(),
+  materials: jsonb("materials").default([]).notNull(),
+  certifications: jsonb("certifications").default([]).notNull(),
+  tolerances: jsonb("tolerances").default([]).notNull(),
+  surfaceFinishes: jsonb("surface_finishes").default([]).notNull(),
+  dimensionTemplate: jsonb("dimension_template").default({}).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MfrCategory = typeof mfrCategories.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Manufacturer Products (seed-driven catalog)
+// ─────────────────────────────────────────────────────────────────────────────
+export const mfrProducts = pgTable("mfr_products", {
+  id: varchar("id", { length: 100 }).primaryKey(), // e.g. "prod-auto-piston-al"
+  industryId: varchar("industry_id", { length: 100 })
+    .notNull()
+    .references(() => mfrIndustries.id, { onDelete: "cascade" }),
+  categoryId: varchar("category_id", { length: 100 })
+    .notNull()
+    .references(() => mfrCategories.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 500 }).notNull(),
+  subcategory: varchar("subcategory", { length: 500 }),
+  description: text("description"),
+  grade: varchar("grade", { length: 255 }),
+  unit: varchar("unit", { length: 50 }).default("pc").notNull(),
+  priceMin: numeric("price_min", { precision: 14, scale: 2 }).notNull(),
+  priceMax: numeric("price_max", { precision: 14, scale: 2 }).notNull(),
+  leadTimeDays: integer("lead_time_days").notNull(),
+  certifications: jsonb("certifications").default([]).notNull(),
+  specifications: jsonb("specifications").default({}).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type MfrProduct = typeof mfrProducts.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// User Addresses (shipping / billing)
+// ─────────────────────────────────────────────────────────────────────────────
+export const userAddresses = pgTable("user_addresses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  label: varchar("label", { length: 100 }).notNull(), // e.g. "Office", "Factory"
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  line1: varchar("line1", { length: 500 }).notNull(),
+  line2: varchar("line2", { length: 500 }),
+  city: varchar("city", { length: 100 }).notNull(),
+  state: varchar("state", { length: 100 }).notNull(),
+  pincode: varchar("pincode", { length: 10 }).notNull(),
+  isDefault: boolean("is_default").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserAddressSchema = createInsertSchema(userAddresses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertUserAddress = z.infer<typeof insertUserAddressSchema>;
+export type UserAddress = typeof userAddresses.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auto Orders (manufacturer product orders via Hansetu merchant model)
+// ─────────────────────────────────────────────────────────────────────────────
+export const autoOrders = pgTable("auto_orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Spec form data (from the matching form)
+  partName: varchar("part_name", { length: 500 }).notNull(),
+  industrySlug: varchar("industry_slug", { length: 100 }).notNull(),
+  categoryId: varchar("category_id", { length: 100 }),
+  subcategory: varchar("subcategory", { length: 500 }),
+  material: varchar("material", { length: 255 }),
+  quantity: varchar("quantity", { length: 100 }),
+  orderType: varchar("order_type", { length: 50 }).notNull(), // sample | bulk | both | annual-contract
+  certifications: jsonb("certifications").default([]).notNull(),
+  deliveryState: varchar("delivery_state", { length: 100 }),
+  leadTime: varchar("lead_time", { length: 100 }),
+  budget: varchar("budget", { length: 100 }),
+  notes: text("notes"),
+  // Optionally ordered specific catalog product
+  mfrProductId: varchar("mfr_product_id", { length: 100 }).references(() => mfrProducts.id, { onDelete: "set null" }),
+  productQuantity: integer("product_quantity").default(1),
+  // Delivery address
+  addressId: uuid("address_id").references(() => userAddresses.id, { onDelete: "set null" }),
+  // Payment / status
+  totalAmount: numeric("total_amount", { precision: 14, scale: 2 }),
+  paymentMethod: varchar("payment_method", { length: 50 }), // upi | card | netbanking | wallet
+  paymentStatus: varchar("payment_status", { length: 50 }).default("pending").notNull(), // pending | paid | failed
+  status: varchar("status", { length: 50 }).default("pending").notNull(), // pending | confirmed | processing | dispatched | delivered | cancelled
+  orderNumber: varchar("order_number", { length: 30 }).unique(),
+  notes2: text("notes2"), // internal notes
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAutoOrderSchema = createInsertSchema(autoOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAutoOrder = z.infer<typeof insertAutoOrderSchema>;
+export type AutoOrder = typeof autoOrders.$inferSelect;
