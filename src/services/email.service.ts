@@ -105,6 +105,35 @@ export async function sendPasswordResetEmail(to: string, resetLink: string): Pro
   });
 }
 
+export async function sendRfqAdminNotification(
+  rfqNumber: string,
+  productName: string,
+  category: string,
+  deliveryLocation: string
+): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL ?? process.env.SMTP_USER;
+  if (!adminEmail) return;
+  const transporter = createTransport();
+  await transporter.sendMail({
+    from: env.EMAIL_FROM,
+    to: adminEmail,
+    subject: `New RFQ Submitted — ${rfqNumber}`,
+    text: `A new RFQ has been submitted on Hansetu.\n\nRFQ Number: ${rfqNumber}\nProduct: ${productName}\nCategory: ${category}\nDelivery Location: ${deliveryLocation}\n\nLog in to the admin panel to review and assign a supplier.`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto;">
+        <h2 style="color:#1d4ed8;">New RFQ Submitted</h2>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+          <tr><td style="padding:8px;color:#64748b;width:40%;">RFQ Number</td><td style="padding:8px;font-weight:600;">${rfqNumber}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">Product</td><td style="padding:8px;">${productName}</td></tr>
+          <tr><td style="padding:8px;color:#64748b;">Category</td><td style="padding:8px;">${category}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">Delivery Location</td><td style="padding:8px;">${deliveryLocation}</td></tr>
+        </table>
+        <p style="color:#64748b;font-size:0.875rem;">Log in to the admin panel to review this RFQ and assign a supplier.</p>
+      </div>
+    `,
+  });
+}
+
 export async function sendOtpEmail(to: string, otp: string): Promise<void> {
   const transporter = createTransport();
 
