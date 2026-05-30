@@ -935,3 +935,93 @@ export const insertAutoOrderSchema = createInsertSchema(autoOrders).omit({
 
 export type InsertAutoOrder = z.infer<typeof insertAutoOrderSchema>;
 export type AutoOrder = typeof autoOrders.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RFQ Requests (buyer submits a request for quotation)
+// ─────────────────────────────────────────────────────────────────────────────
+export const rfqRequests = pgTable("rfq_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  rfqNumber: varchar("rfq_number", { length: 50 }).unique().notNull(),
+  buyerId: uuid("buyer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  productName: varchar("product_name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  quantity: numeric("quantity").notNull(),
+  unit: varchar("unit", { length: 50 }).default("units").notNull(),
+  deliveryLocation: text("delivery_location").notNull(),
+  requiredBy: varchar("required_by", { length: 100 }),
+  specs: text("specs"),
+  orderType: varchar("order_type", { length: 20 }).default("BULK").notNull(), // SAMPLE | BULK
+  attachments: jsonb("attachments").default([]),                               // string[] of S3 URLs
+  status: varchar("status", { length: 50 }).default("SUBMITTED").notNull(),
+  // SUBMITTED | UNDER_REVIEW | SUPPLIER_ASSIGNED | NEGOTIATING
+  // | QUOTE_FINALIZED | PO_RAISED | DISPATCHED | DELIVERED | CLOSED | CANCELLED
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertRfqRequestSchema = createInsertSchema(rfqRequests).omit({
+  id: true,
+  rfqNumber: true,
+  status: true,
+  attachments: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertRfqRequest = z.infer<typeof insertRfqRequestSchema>;
+export type RfqRequest = typeof rfqRequests.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RFQ Assignments (admin assigns a supplier + sets opening price)
+// ─────────────────────────────────────────────────────────────────────────────
+export const rfqAssignments = pgTable("rfq_assignments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  rfqId: uuid("rfq_id")
+    .unique()
+    .notNull()
+    .references(() => rfqRequests.id, { onDelete: "cascade" }),
+  supplierUserId: uuid("supplier_user_id")
+    .notNull()
+    .references(() => users.id),
+  assignedBy: uuid("assigned_by").notNull(), // adminUsers.id
+  adminMarginPct: numeric("admin_margin_pct").default("10").notNull(),
+  adminOfferedPrice: numeric("admin_offered_price"),
+  finalAgreedPrice: numeric("final_agreed_price"),
+  negotiationStatus: varchar("negotiation_status", { length: 50 })
+    .default("PENDING_SUPPLIER")
+    .notNull(),
+  // PENDING_SUPPLIER | SUPPLIER_ACCEPTED | SUPPLIER_COUNTERED
+  // | ADMIN_REVIEWING | FINALIZED | REJECTED
+  internalNotes: text("internal_notes"),
+  finalizedAt: timestamp("finalized_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type RfqAssignment = typeof rfqAssignments.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RFQ Negotiations (one row per negotiation round — full history)
+// ─────────────────────────────────────────────────────────────────────────────
+export const rfqNegotiations = pgTable("rfq_negotiations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  rfqId: uuid("rfq_id")
+    .notNull()
+    .references(() => rfqRequests.id, { onDelete: "cascade" }),
+  assignmentId: uuid("assignment_id")
+    .notNull()
+    .references(() => rfqAssignments.id, { onDelete: "cascade" }),
+  round: integer("round").notNull(),
+  offeredBy: varchar("offered_by", { length: 20 }).notNull(), // ADMIN | SUPPLIER
+  offeredById: uuid("offered_by_id").notNull(),
+  offeredPrice: numeric("offered_price").notNull(),
+  leadTimeDays: integer("lead_time_days"),
+  validityDays: integer("validity_days"),
+  notes: text("notes"),
+  status: varchar("status", { length: 20 }).default("PENDING").notNull(),
+  // PENDING | ACCEPTED | COUNTERED | REJECTED
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type RfqNegotiation = typeof rfqNegotiations.$inferSelect;
