@@ -44,7 +44,7 @@ export type ShipmentStatus =
 // ─── Transition Maps ──────────────────────────────────────────────────────────
 
 const RFQ_TRANSITIONS: Record<RfqStatus, RfqStatus[]> = {
-  SUBMITTED:         ["UNDER_REVIEW", "CANCELLED"],
+  SUBMITTED:         ["UNDER_REVIEW", "SUPPLIER_ASSIGNED", "CANCELLED"],
   UNDER_REVIEW:      ["SUPPLIER_ASSIGNED", "CANCELLED"],
   SUPPLIER_ASSIGNED: ["NEGOTIATING", "QUOTE_FINALIZED", "CANCELLED"],
   NEGOTIATING:       ["QUOTE_FINALIZED", "CANCELLED"],
