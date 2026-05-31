@@ -17,7 +17,7 @@ import { HrServiceRoutes } from "./modules/hr-service/hr-service.routes";
 import { TrainingProgramRoutes } from "./modules/training-program/training-program.routes";
 import { StudentServiceRoutes } from "./modules/student-service/student-service.routes";
 import { FinancialServiceRoutes } from "./modules/financial-service/financial-service.routes";
-import { SupplierRoutes } from "./modules/supplier/supplier.routes";
+import { SupplierRoutes, AdminSupplierRoutes } from "./modules/supplier/supplier.routes";
 import { AdminRoutes } from "./modules/admin/admin.routes";
 import { AdminAuthRoutes } from "./modules/admin-auth/admin-auth.routes";
 import { BusinessAdminRoutes } from "./modules/business-admin/business-admin.routes";
@@ -116,6 +116,7 @@ export function createApp() {
   app.use("/api/student-services", new StudentServiceRoutes().router);
   app.use("/api/financial-services", new FinancialServiceRoutes().router);
   app.use("/api/suppliers", new SupplierRoutes().router);
+  app.use("/api/admin", new AdminSupplierRoutes().router);
   app.use("/api/admin", new AdminRoutes().router);
   app.use("/api/admin-auth", new AdminAuthRoutes().router);
   app.use("/api/business-admin", new BusinessAdminRoutes().router);
