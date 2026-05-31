@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { db } from "../../db";
-import { suppliers } from "../../db/schema";
+import { suppliers, users } from "../../db/schema";
 
 export class SupplierRepository {
   async findAll(filters: { industrySlug?: string; materialCategory?: string }) {
@@ -28,5 +28,28 @@ export class SupplierRepository {
       .from(suppliers)
       .where(eq(suppliers.isActive, true));
     return rows.length;
+  }
+
+  async findRegisteredSuppliers() {
+    return db
+      .select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        businessType: users.businessType,
+        isActive: users.isActive,
+        profile: users.profile,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(
+        and(
+          eq(users.isActive, true),
+          or(
+            eq(users.businessType, "raw_material_supplier"),
+            eq(users.businessType, "both")
+          )
+        )
+      );
   }
 }

@@ -58,6 +58,32 @@ export class RfqRepository extends BaseRepository {
     return row ?? null;
   }
 
+  async findBySupplier(supplierUserId: string) {
+    return this.db
+      .select({
+        rfq: {
+          id: rfqRequests.id,
+          rfqNumber: rfqRequests.rfqNumber,
+          productName: rfqRequests.productName,
+          category: rfqRequests.category,
+          quantity: rfqRequests.quantity,
+          unit: rfqRequests.unit,
+          deliveryLocation: rfqRequests.deliveryLocation,
+          requiredBy: rfqRequests.requiredBy,
+          specs: rfqRequests.specs,
+          orderType: rfqRequests.orderType,
+          status: rfqRequests.status,
+          createdAt: rfqRequests.createdAt,
+          updatedAt: rfqRequests.updatedAt,
+        },
+        assignment: rfqAssignments,
+      })
+      .from(rfqAssignments)
+      .innerJoin(rfqRequests, eq(rfqRequests.id, rfqAssignments.rfqId))
+      .where(eq(rfqAssignments.supplierUserId, supplierUserId))
+      .orderBy(desc(rfqAssignments.createdAt));
+  }
+
   async findAll(status?: string) {
     const query = this.db
       .select({
@@ -96,5 +122,45 @@ export class RfqRepository extends BaseRepository {
       .from(rfqNegotiations)
       .where(eq(rfqNegotiations.rfqId, rfqId))
       .orderBy(rfqNegotiations.round);
+  }
+
+  async upsertAssignment(input: {
+    rfqId: string;
+    supplierUserId: string;
+    assignedBy: string;
+    adminMarginPct: string;
+    adminOfferedPrice?: string;
+    internalNotes?: string;
+  }) {
+    const [assignment] = await this.db
+      .insert(rfqAssignments)
+      .values({
+        rfqId: input.rfqId,
+        supplierUserId: input.supplierUserId,
+        assignedBy: input.assignedBy,
+        adminMarginPct: input.adminMarginPct,
+        adminOfferedPrice: input.adminOfferedPrice,
+        internalNotes: input.internalNotes,
+        finalAgreedPrice: null,
+        finalizedAt: null,
+        negotiationStatus: "PENDING_SUPPLIER",
+      })
+      .onConflictDoUpdate({
+        target: rfqAssignments.rfqId,
+        set: {
+          supplierUserId: input.supplierUserId,
+          assignedBy: input.assignedBy,
+          adminMarginPct: input.adminMarginPct,
+          adminOfferedPrice: input.adminOfferedPrice,
+          internalNotes: input.internalNotes,
+          finalAgreedPrice: null,
+          finalizedAt: null,
+          negotiationStatus: "PENDING_SUPPLIER",
+          createdAt: new Date(),
+        },
+      })
+      .returning();
+
+    return assignment;
   }
 }
