@@ -1,8 +1,9 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../middlewares/auth.middleware";
+import { AdminRequest } from "../../middlewares/admin.middleware";
 import { RfqService } from "./rfq.service";
 import { RfqRepository } from "./rfq.repository";
-import { submitRfqSchema } from "./rfq.schema";
+import { assignSupplierSchema, submitRfqSchema } from "./rfq.schema";
 
 const service = new RfqService(new RfqRepository());
 
@@ -61,6 +62,31 @@ export class RfqController {
   async adminGetOne(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const data = await service.getById(req.params.id);
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // GET /api/rfq/assigned — Supplier views RFQs assigned to them
+  async supplierGetAssigned(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const data = await service.getAssignedRfqs(req.userId!);
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  // PATCH /api/admin/rfqs/:id/assign-supplier — Admin assigns supplier + pricing context
+  async adminAssignSupplier(req: AdminRequest, res: Response, next: NextFunction) {
+    try {
+      const parsed = assignSupplierSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
+      }
+
+      const data = await service.assignSupplier(req.params.id, req.adminId!, parsed.data);
       res.json(data);
     } catch (err) {
       next(err);
