@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { SupplierController } from "./supplier.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
+import { adminMiddleware } from "../../middlewares/admin.middleware";
 
 export class SupplierRoutes {
   public router = Router();
@@ -74,5 +75,46 @@ export class SupplierRoutes {
      *               $ref: '#/components/schemas/ErrorResponse'
      */
     this.router.get("/:id", this.controller.getById);
+  }
+}
+
+export class AdminSupplierRoutes {
+  public router = Router();
+  private controller = new SupplierController();
+
+  constructor() {
+    /**
+     * @openapi
+     * /api/admin/suppliers/search:
+     *   get:
+     *     tags: [Admin - Suppliers]
+     *     summary: Search registered suppliers for RFQ assignment
+     *     security:
+     *       - adminAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: query
+     *         schema: { type: string }
+     *       - in: query
+     *         name: category
+     *         schema: { type: string }
+     *       - in: query
+     *         name: capability
+     *         schema: { type: string }
+     *       - in: query
+     *         name: location
+     *         schema: { type: string }
+     *       - in: query
+     *         name: certification
+     *         schema: { type: string }
+     *       - in: query
+     *         name: moqLte
+     *         schema: { type: number }
+     *     responses:
+     *       200:
+     *         description: Ranked supplier candidates for admin matching
+     */
+    this.router.get("/suppliers/search", adminMiddleware, this.controller.adminSearch);
+    this.router.get("/suppliers-list", adminMiddleware, this.controller.adminSearch);
   }
 }
