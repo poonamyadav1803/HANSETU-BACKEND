@@ -2,7 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { RfqController } from "./rfq.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
-import { requireBuyer, requireAdmin } from "../../middlewares/rbac.middleware";
+import { requireBuyer, requireAdmin, requireSupplier } from "../../middlewares/rbac.middleware";
 import { adminMiddleware } from "../../middlewares/admin.middleware";
 
 const upload = multer({
@@ -72,6 +72,20 @@ export class RfqRoutes {
 
     /**
      * @openapi
+     * /api/rfq/assigned:
+     *   get:
+     *     tags: [RFQ]
+     *     summary: Get RFQs assigned to the authenticated supplier
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Array of RFQs assigned to this supplier
+     */
+    this.router.get("/assigned", authMiddleware, requireSupplier, this.controller.supplierGetAssigned);
+
+    /**
+     * @openapi
      * /api/rfq/{id}:
      *   get:
      *     tags: [RFQ]
@@ -116,6 +130,41 @@ export class AdminRfqRoutes {
      *         description: Array of RFQs with buyer and assignment data
      */
     this.router.get("/rfqs", adminMiddleware, this.controller.adminGetAll);
+
+    /**
+     * @openapi
+     * /api/admin/rfqs/{id}/assign-supplier:
+     *   patch:
+     *     tags: [Admin - RFQ]
+     *     summary: Assign or reassign a supplier to an RFQ
+     *     security:
+     *       - adminAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: id
+     *         required: true
+     *         schema: { type: string, format: uuid }
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             required: [supplierUserId, adminMarginPct]
+     *             properties:
+     *               supplierUserId: { type: string, format: uuid }
+     *               adminMarginPct: { type: number }
+     *               adminOfferedPrice: { type: number }
+     *               internalNotes: { type: string }
+     *     responses:
+     *       200:
+     *         description: RFQ assignment saved
+     *       400:
+     *         description: Validation or matching error
+     */
+    this.router.patch("/rfqs/:id/assign-supplier", adminMiddleware, this.controller.adminAssignSupplier);
+
+    this.router.patch("/rfqs/:id/assign", adminMiddleware, this.controller.adminAssignSupplier);
 
     /**
      * @openapi
