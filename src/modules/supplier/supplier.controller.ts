@@ -33,4 +33,21 @@ export class SupplierController {
       next(err);
     }
   }
+
+  async adminSearch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { query, category, capability, location, certification, moqLte } = req.query;
+      const results = await service.searchForAdmin({
+        query: typeof query === "string" ? query : undefined,
+        category: typeof category === "string" ? category : undefined,
+        capability: typeof capability === "string" ? capability : undefined,
+        location: typeof location === "string" ? location : undefined,
+        certification: typeof certification === "string" ? certification : undefined,
+        moqLte: typeof moqLte === "string" && moqLte.trim() ? Number(moqLte) : undefined,
+      });
+      res.json(results);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
