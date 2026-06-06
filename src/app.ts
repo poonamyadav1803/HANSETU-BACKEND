@@ -33,6 +33,7 @@ import { MfrProductRoutes } from "./modules/mfr-product/mfr-product.routes";
 import { UserAddressRoutes } from "./modules/user-address/user-address.routes";
 import { AutoOrderRoutes } from "./modules/auto-order/auto-order.routes";
 import { RfqRoutes, AdminRfqRoutes } from "./modules/rfq/rfq.routes";
+import { AdminOrderRoutes, OrderRoutes } from "./modules/order/order.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerSpec } from "./config/swagger";
 import { log } from "./utils/logger";
@@ -132,6 +133,8 @@ export function createApp() {
   app.use("/api/addresses", new UserAddressRoutes().router);
   app.use("/api/auto-orders", new AutoOrderRoutes().router);
   app.use("/api/rfq", new RfqRoutes().router);
+  app.use("/api/orders", new OrderRoutes().router);
+  app.use("/api/admin", new AdminOrderRoutes().router);
   app.use("/api/admin", new AdminRfqRoutes().router);
 
   // ─── Health Check ─────────────────────────────────────────────────────────────

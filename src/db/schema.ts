@@ -1025,3 +1025,48 @@ export const rfqNegotiations = pgTable("rfq_negotiations", {
 });
 
 export type RfqNegotiation = typeof rfqNegotiations.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Orders (confirmed buyer orders created from accepted RFQ quote/sample)
+// ─────────────────────────────────────────────────────────────────────────────
+export const orders = pgTable("orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderNumber: varchar("order_number", { length: 50 }).unique().notNull(),
+  buyerId: uuid("buyer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  rfqId: uuid("rfq_id")
+    .unique()
+    .notNull()
+    .references(() => rfqRequests.id, { onDelete: "restrict" }),
+  assignmentId: uuid("assignment_id").references(() => rfqAssignments.id, { onDelete: "set null" }),
+  sourceType: varchar("source_type", { length: 30 }).notNull(), // ACCEPTED_QUOTE | SAMPLE
+  status: varchar("status", { length: 50 }).default("ORDER_CONFIRMED").notNull(),
+  totalAmount: numeric("total_amount", { precision: 14, scale: 2 }),
+  advancePaymentAmount: numeric("advance_payment_amount", { precision: 14, scale: 2 }),
+  advancePaymentMethod: varchar("advance_payment_method", { length: 50 }),
+  advancePaymentReference: varchar("advance_payment_reference", { length: 255 }),
+  advancePaymentStatus: varchar("advance_payment_status", { length: 50 }).default("NOT_APPLICABLE").notNull(),
+  phase5DocumentStatus: varchar("phase5_document_status", { length: 50 }).default("TRIGGERED").notNull(),
+  phase5DocumentGenerationTriggeredAt: timestamp("phase5_document_generation_triggered_at").defaultNow(),
+  phase5Documents: jsonb("phase5_documents").default([]).notNull(),
+  notes: text("notes"),
+  confirmedAt: timestamp("confirmed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertOrderSchema = createInsertSchema(orders).omit({
+  id: true,
+  orderNumber: true,
+  status: true,
+  phase5DocumentStatus: true,
+  phase5DocumentGenerationTriggeredAt: true,
+  phase5Documents: true,
+  confirmedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type Order = typeof orders.$inferSelect;
