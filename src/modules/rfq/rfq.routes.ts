@@ -1,190 +1,68 @@
 import { Router } from "express";
 import multer from "multer";
-import { RfqController } from "./rfq.controller";
+import * as ctrl from "./rfq.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
-import { requireBuyer, requireAdmin, requireSupplier } from "../../middlewares/rbac.middleware";
 import { adminMiddleware } from "../../middlewares/admin.middleware";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { files: 5, fileSize: 10 * 1024 * 1024 }, // 5 files, 10 MB each
+  limits: { files: 5, fileSize: 10 * 1024 * 1024 },
 });
 
+// ─── Buyer / Supplier routes  (prefix: /api/rfq) ─────────────────────────────
 export class RfqRoutes {
   public router = Router();
-  private controller = new RfqController();
 
   constructor() {
-    /**
-     * @openapi
-     * /api/rfq:
-     *   post:
-     *     tags: [RFQ]
-     *     summary: Submit a new RFQ (buyer)
-     *     security:
-     *       - bearerAuth: []
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         multipart/form-data:
-     *           schema:
-     *             type: object
-     *             required: [productName, category, quantity, deliveryLocation]
-     *             properties:
-     *               productName: { type: string }
-     *               category: { type: string }
-     *               quantity: { type: number }
-     *               unit: { type: string }
-     *               deliveryLocation: { type: string }
-     *               requiredBy: { type: string }
-     *               specs: { type: string }
-     *               orderType: { type: string, enum: [SAMPLE, BULK] }
-     *               attachments:
-     *                 type: array
-     *                 items: { type: string, format: binary }
-     *     responses:
-     *       201:
-     *         description: RFQ created
-     *       400:
-     *         description: Validation error
-     */
-    this.router.post(
-      "/",
-      authMiddleware,
-      requireBuyer,
-      upload.array("attachments", 5),
-      this.controller.submit
-    );
+    // Buyer: submit RFQ
+    this.router.post("/", authMiddleware, upload.array("attachments", 5), ctrl.submit);
 
-    /**
-     * @openapi
-     * /api/rfq/my:
-     *   get:
-     *     tags: [RFQ]
-     *     summary: Get all RFQs submitted by the authenticated buyer
-     *     security:
-     *       - bearerAuth: []
-     *     responses:
-     *       200:
-     *         description: Array of RFQs with assignment info
-     */
-    this.router.get("/my", authMiddleware, requireBuyer, this.controller.getMy);
+    // Buyer: own RFQs
+    this.router.get("/my", authMiddleware, ctrl.getMy);
 
-    /**
-     * @openapi
-     * /api/rfq/assigned:
-     *   get:
-     *     tags: [RFQ]
-     *     summary: Get RFQs assigned to the authenticated supplier
-     *     security:
-     *       - bearerAuth: []
-     *     responses:
-     *       200:
-     *         description: Array of RFQs assigned to this supplier
-     */
-    this.router.get("/assigned", authMiddleware, requireSupplier, this.controller.supplierGetAssigned);
+    // Supplier/Assignee: assigned RFQs (visible before PO is created) — static paths BEFORE /:id
+    this.router.get("/my-assigned", authMiddleware, ctrl.getMyAssigned);
 
-    /**
-     * @openapi
-     * /api/rfq/{id}:
-     *   get:
-     *     tags: [RFQ]
-     *     summary: Get a single RFQ by ID (buyer sees only their own)
-     *     security:
-     *       - bearerAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: string, format: uuid }
-     *     responses:
-     *       200:
-     *         description: RFQ detail
-     *       404:
-     *         description: Not found
-     */
-    this.router.get("/:id", authMiddleware, requireBuyer, this.controller.getOne);
+    // Supplier: submit quote on an assigned RFQ — static path BEFORE /:id
+    this.router.post("/:id/submit-quote", authMiddleware, ctrl.submitQuote);
+
+    // Supplier/Assignee: own POs — static paths BEFORE /:id
+    this.router.get("/my-pos", authMiddleware, ctrl.getMyPos);
+
+    // PO actions (supplier)
+    this.router.patch("/pos/:id/confirm", authMiddleware, ctrl.confirmPo);
+    this.router.patch("/pos/:id/upload-invoice", authMiddleware, ctrl.uploadInvoice);
+    this.router.post("/pos/:id/shipment", authMiddleware, ctrl.createShipment);
+
+    // Buyer marks received (closes order)
+    this.router.patch("/shipments/:id/received", authMiddleware, ctrl.markReceived);
+
+    // Buyer: single RFQ detail
+    this.router.get("/:id", authMiddleware, ctrl.getOne);
   }
 }
 
+// ─── Admin routes  (prefix: /api/admin) ──────────────────────────────────────
 export class AdminRfqRoutes {
   public router = Router();
-  private controller = new RfqController();
 
   constructor() {
-    /**
-     * @openapi
-     * /api/admin/rfqs:
-     *   get:
-     *     tags: [Admin - RFQ]
-     *     summary: List all RFQs (admin)
-     *     security:
-     *       - adminAuth: []
-     *     parameters:
-     *       - in: query
-     *         name: status
-     *         schema: { type: string }
-     *         description: Filter by RFQ status
-     *     responses:
-     *       200:
-     *         description: Array of RFQs with buyer and assignment data
-     */
-    this.router.get("/rfqs", adminMiddleware, this.controller.adminGetAll);
+    // Assignees list filtered by type (?type=supplier|manufacturer)
+    this.router.get("/assignees-list", adminMiddleware, ctrl.adminGetAssigneesList);
 
-    /**
-     * @openapi
-     * /api/admin/rfqs/{id}/assign-supplier:
-     *   patch:
-     *     tags: [Admin - RFQ]
-     *     summary: Assign or reassign a supplier to an RFQ
-     *     security:
-     *       - adminAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: string, format: uuid }
-     *     requestBody:
-     *       required: true
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             required: [supplierUserId, adminMarginPct]
-     *             properties:
-     *               supplierUserId: { type: string, format: uuid }
-     *               adminMarginPct: { type: number }
-     *               adminOfferedPrice: { type: number }
-     *               internalNotes: { type: string }
-     *     responses:
-     *       200:
-     *         description: RFQ assignment saved
-     *       400:
-     *         description: Validation or matching error
-     */
-    this.router.patch("/rfqs/:id/assign-supplier", adminMiddleware, this.controller.adminAssignSupplier);
+    // RFQ list + detail
+    this.router.get("/rfqs", adminMiddleware, ctrl.adminGetAll);
+    this.router.get("/rfqs/:id", adminMiddleware, ctrl.adminGetOne);
 
-    this.router.patch("/rfqs/:id/assign", adminMiddleware, this.controller.adminAssignSupplier);
+    // Step A: assign supplier/manufacturer
+    this.router.patch("/rfqs/:id/assign", adminMiddleware, ctrl.adminAssign);
 
-    /**
-     * @openapi
-     * /api/admin/rfqs/{id}:
-     *   get:
-     *     tags: [Admin - RFQ]
-     *     summary: Get a single RFQ with full detail (admin)
-     *     security:
-     *       - adminAuth: []
-     *     parameters:
-     *       - in: path
-     *         name: id
-     *         required: true
-     *         schema: { type: string, format: uuid }
-     *     responses:
-     *       200:
-     *         description: RFQ detail
-     *       404:
-     *         description: Not found
-     */
-    this.router.get("/rfqs/:id", adminMiddleware, this.controller.adminGetOne);
+    // Step B: approve → auto-create PO + Invoice
+    this.router.patch("/rfqs/:id/approve", adminMiddleware, ctrl.adminApprove);
+
+    // Shipment management
+    this.router.get("/shipments", adminMiddleware, ctrl.adminListShipments);
+    this.router.patch("/shipments/:id/checkpoint", adminMiddleware, ctrl.adminAddCheckpoint);
+    this.router.patch("/shipments/:id/deliver", adminMiddleware, ctrl.adminMarkDelivered);
   }
 }
