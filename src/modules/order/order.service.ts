@@ -49,7 +49,7 @@ export class OrderService extends BaseService {
     guardRfqTransition(rfqStatus, "PO_RAISED");
 
     const orderNumber = await this.repo.generateOrderNumber();
-    const totalAmount = confirmedAssignment.finalAgreedPrice ?? confirmedAssignment.adminOfferedPrice ?? null;
+    const totalAmount = confirmedAssignment.finalAgreedPrice ?? confirmedAssignment.negotiatedPrice ?? null;
     const advancePayment = dto.advancePayment;
 
     const order = await this.repo.create({
