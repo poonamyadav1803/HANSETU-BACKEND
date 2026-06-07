@@ -1,166 +1,500 @@
-import { eq, desc, sql } from "drizzle-orm";
-import { BaseRepository } from "../../core/BaseRepository";
-import { rfqRequests, rfqAssignments, rfqNegotiations, users } from "../../db/schema";
-import type { RfqStatus } from "../../core/order-state-machine";
+import { db } from "../../db";
+import {
+  rfqRequests, rfqAssignments, purchaseOrders, salesInvoices, shipments,
+  users, type RfqRequest, type RfqAssignment, type PurchaseOrder,
+  type SalesInvoice, type Shipment,
+} from "../../db/schema";
+import { eq, and, desc, sql, or } from "drizzle-orm";
 
-export class RfqRepository extends BaseRepository {
-  async generateRfqNumber(): Promise<string> {
-    const year = new Date().getFullYear();
-    const result = await this.db.execute(
-      sql`SELECT COUNT(*)::int AS count FROM rfq_requests WHERE EXTRACT(YEAR FROM created_at) = ${year}`
-    );
-    const count = (result.rows[0] as { count: number }).count;
-    const padded = String(count + 1).padStart(5, "0");
-    return `RFQ/${year}/${padded}`;
+// ─── RFQ Requests ────────────────────────────────────────────────────────────
+
+export async function createRfqRequest(data: {
+  rfqNumber: string;
+  buyerId: string;
+  productName: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  deliveryLocation: string;
+  requiredBy?: string;
+  specs?: string;
+  orderType: string;
+  requestType: string;
+  attachments: string[];
+}): Promise<RfqRequest> {
+  const [row] = await db.insert(rfqRequests).values({
+    rfqNumber: data.rfqNumber,
+    buyerId: data.buyerId,
+    productName: data.productName,
+    category: data.category,
+    quantity: String(data.quantity),
+    unit: data.unit,
+    deliveryLocation: data.deliveryLocation,
+    requiredBy: data.requiredBy,
+    specs: data.specs,
+    orderType: data.orderType,
+    requestType: data.requestType,
+    attachments: data.attachments,
+    status: "SUBMITTED",
+  }).returning();
+  return row;
+}
+
+export async function getRfqsByBuyer(buyerId: string) {
+  return db
+    .select({
+      rfq: rfqRequests,
+      assignment: rfqAssignments,
+      po: purchaseOrders,
+      invoice: salesInvoices,
+    })
+    .from(rfqRequests)
+    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
+    .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
+    .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
+    .where(eq(rfqRequests.buyerId, buyerId))
+    .orderBy(desc(rfqRequests.createdAt));
+}
+
+export async function getRfqById(id: string) {
+  const [row] = await db
+    .select({
+      rfq: rfqRequests,
+      assignment: rfqAssignments,
+      po: purchaseOrders,
+      invoice: salesInvoices,
+    })
+    .from(rfqRequests)
+    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
+    .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
+    .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
+    .where(eq(rfqRequests.id, id));
+  return row ?? null;
+}
+
+export async function updateRfqStatus(id: string, status: string) {
+  await db.update(rfqRequests).set({ status, updatedAt: new Date() }).where(eq(rfqRequests.id, id));
+}
+
+export async function generateRfqNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(rfqRequests);
+  return `RFQ/${year}/${String(count + 1).padStart(5, "0")}`;
+}
+
+// ─── Admin: all RFQs ─────────────────────────────────────────────────────────
+
+export async function adminGetAllRfqs(status?: string) {
+  const baseQuery = db
+    .select({
+      rfq: rfqRequests,
+      assignment: rfqAssignments,
+      buyer: {
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        businessType: users.businessType,
+      },
+    })
+    .from(rfqRequests)
+    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
+    .leftJoin(users, eq(users.id, rfqRequests.buyerId))
+    .orderBy(desc(rfqRequests.createdAt));
+
+  if (status) {
+    return baseQuery.where(eq(rfqRequests.status, status));
   }
+  return baseQuery;
+}
 
-  async create(data: {
-    rfqNumber: string;
-    buyerId: string;
-    productName: string;
-    category: string;
-    quantity: string;
-    unit: string;
-    deliveryLocation: string;
-    requiredBy?: string;
-    specs?: string;
-    orderType: string;
-    attachments: string[];
-  }) {
-    const [rfq] = await this.db
-      .insert(rfqRequests)
-      .values({ ...data, status: "SUBMITTED" })
+export async function adminGetRfqById(id: string) {
+  const [row] = await db
+    .select({
+      rfq: rfqRequests,
+      assignment: rfqAssignments,
+      buyer: {
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        businessType: users.businessType,
+      },
+      po: purchaseOrders,
+      invoice: salesInvoices,
+    })
+    .from(rfqRequests)
+    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
+    .leftJoin(users, eq(users.id, rfqRequests.buyerId))
+    .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
+    .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
+    .where(eq(rfqRequests.id, id));
+  return row ?? null;
+}
+
+// ─── Assignments ─────────────────────────────────────────────────────────────
+
+export async function createOrUpdateAssignment(data: {
+  rfqId: string;
+  assigneeUserId: string;
+  assignedBy: string;
+  negotiatedPrice: number;
+  adminMarginPct: number;
+  internalNotes?: string;
+}): Promise<RfqAssignment> {
+  const existing = await db
+    .select()
+    .from(rfqAssignments)
+    .where(eq(rfqAssignments.rfqId, data.rfqId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    const [row] = await db
+      .update(rfqAssignments)
+      .set({
+        supplierUserId: data.assigneeUserId,
+        assignedBy: data.assignedBy,
+        negotiatedPrice: String(data.negotiatedPrice),
+        adminMarginPct: String(data.adminMarginPct),
+        internalNotes: data.internalNotes,
+        negotiationStatus: "PENDING",
+      })
+      .where(eq(rfqAssignments.rfqId, data.rfqId))
       .returning();
-    return rfq;
+    return row;
   }
 
-  async findByBuyer(buyerId: string) {
-    return this.db
-      .select({
-        rfq: rfqRequests,
-        assignment: rfqAssignments,
-      })
-      .from(rfqRequests)
-      .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
-      .where(eq(rfqRequests.buyerId, buyerId))
-      .orderBy(desc(rfqRequests.createdAt));
-  }
+  const [row] = await db.insert(rfqAssignments).values({
+    rfqId: data.rfqId,
+    supplierUserId: data.assigneeUserId,
+    assignedBy: data.assignedBy,
+    negotiatedPrice: String(data.negotiatedPrice),
+    adminMarginPct: String(data.adminMarginPct),
+    internalNotes: data.internalNotes,
+    negotiationStatus: "PENDING",
+  }).returning();
+  return row;
+}
 
-  async findById(id: string) {
-    const [row] = await this.db
-      .select({
-        rfq: rfqRequests,
-        assignment: rfqAssignments,
-      })
-      .from(rfqRequests)
-      .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
-      .where(eq(rfqRequests.id, id));
-    return row ?? null;
-  }
+export async function getAssignment(rfqId: string): Promise<RfqAssignment | null> {
+  const [row] = await db.select().from(rfqAssignments).where(eq(rfqAssignments.rfqId, rfqId));
+  return row ?? null;
+}
 
-  async findBySupplier(supplierUserId: string) {
-    return this.db
-      .select({
-        rfq: {
-          id: rfqRequests.id,
-          rfqNumber: rfqRequests.rfqNumber,
-          productName: rfqRequests.productName,
-          category: rfqRequests.category,
-          quantity: rfqRequests.quantity,
-          unit: rfqRequests.unit,
-          deliveryLocation: rfqRequests.deliveryLocation,
-          requiredBy: rfqRequests.requiredBy,
-          specs: rfqRequests.specs,
-          orderType: rfqRequests.orderType,
-          status: rfqRequests.status,
-          createdAt: rfqRequests.createdAt,
-          updatedAt: rfqRequests.updatedAt,
-        },
-        assignment: rfqAssignments,
-      })
-      .from(rfqAssignments)
-      .innerJoin(rfqRequests, eq(rfqRequests.id, rfqAssignments.rfqId))
-      .where(eq(rfqAssignments.supplierUserId, supplierUserId))
-      .orderBy(desc(rfqAssignments.createdAt));
-  }
+export async function approveAssignment(rfqId: string, finalAgreedPrice: number) {
+  await db
+    .update(rfqAssignments)
+    .set({
+      negotiationStatus: "APPROVED",
+      finalAgreedPrice: String(finalAgreedPrice),
+      approvedAt: new Date(),
+    })
+    .where(eq(rfqAssignments.rfqId, rfqId));
+}
 
-  async findAll(status?: string) {
-    const query = this.db
-      .select({
-        rfq: rfqRequests,
-        assignment: rfqAssignments,
-        buyer: {
-          id: users.id,
-          username: users.username,
-          email: users.email,
-          businessType: users.businessType,
-        },
-      })
-      .from(rfqRequests)
-      .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
-      .leftJoin(users, eq(users.id, rfqRequests.buyerId))
-      .orderBy(desc(rfqRequests.createdAt));
+// ─── Assignees list ───────────────────────────────────────────────────────────
 
-    if (status) {
-      return query.where(eq(rfqRequests.status, status));
-    }
-    return query;
-  }
+export async function getAssignedRfqsBySupplier(supplierUserId: string) {
+  return db
+    .select({
+      rfq: {
+        id: rfqRequests.id,
+        rfqNumber: rfqRequests.rfqNumber,
+        productName: rfqRequests.productName,
+        category: rfqRequests.category,
+        quantity: rfqRequests.quantity,
+        unit: rfqRequests.unit,
+        deliveryLocation: rfqRequests.deliveryLocation,
+        requiredBy: rfqRequests.requiredBy,
+        specs: rfqRequests.specs,
+        orderType: rfqRequests.orderType,
+        requestType: rfqRequests.requestType,
+        status: rfqRequests.status,
+        createdAt: rfqRequests.createdAt,
+        // buyerId intentionally excluded
+      },
+      assignment: {
+        id: rfqAssignments.id,
+        negotiatedPrice: rfqAssignments.negotiatedPrice,
+        adminMarginPct: rfqAssignments.adminMarginPct,
+        negotiationStatus: rfqAssignments.negotiationStatus,
+        internalNotes: rfqAssignments.internalNotes,
+        approvedAt: rfqAssignments.approvedAt,
+        supplierQuotedPrice: rfqAssignments.supplierQuotedPrice,
+        supplierLeadTimeDays: rfqAssignments.supplierLeadTimeDays,
+        supplierMoq: rfqAssignments.supplierMoq,
+        quoteValidityDate: rfqAssignments.quoteValidityDate,
+        supplierNotes: rfqAssignments.supplierNotes,
+        quoteSubmittedAt: rfqAssignments.quoteSubmittedAt,
+      },
+    })
+    .from(rfqAssignments)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, rfqAssignments.rfqId))
+    .where(eq(rfqAssignments.supplierUserId, supplierUserId))
+    .orderBy(desc(rfqAssignments.createdAt));
+}
 
-  async updateStatus(id: string, status: RfqStatus) {
-    const [updated] = await this.db
-      .update(rfqRequests)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(rfqRequests.id, id))
-      .returning();
-    return updated;
-  }
+export async function submitSupplierQuote(rfqId: string, data: {
+  supplierQuotedPrice: number;
+  supplierLeadTimeDays?: number;
+  supplierMoq?: number;
+  quoteValidityDate?: string;
+  supplierNotes?: string;
+}) {
+  await db.update(rfqAssignments).set({
+    supplierQuotedPrice: String(data.supplierQuotedPrice),
+    supplierLeadTimeDays: data.supplierLeadTimeDays ?? null,
+    supplierMoq: data.supplierMoq ? String(data.supplierMoq) : null,
+    quoteValidityDate: data.quoteValidityDate ?? null,
+    supplierNotes: data.supplierNotes ?? null,
+    quoteSubmittedAt: new Date(),
+    negotiationStatus: "SUPPLIER_QUOTED",
+  }).where(eq(rfqAssignments.rfqId, rfqId));
+}
 
-  async getNegotiationHistory(rfqId: string) {
-    return this.db
-      .select()
-      .from(rfqNegotiations)
-      .where(eq(rfqNegotiations.rfqId, rfqId))
-      .orderBy(rfqNegotiations.round);
-  }
+export async function getAssigneesByType(type: "supplier" | "manufacturer") {
+  const businessTypes =
+    type === "supplier"
+      ? ["raw_material_supplier", "both"]
+      : ["manufacturer", "both"];
 
-  async upsertAssignment(input: {
-    rfqId: string;
-    supplierUserId: string;
-    assignedBy: string;
-    adminMarginPct: string;
-    adminOfferedPrice?: string;
-    internalNotes?: string;
-  }) {
-    const [assignment] = await this.db
-      .insert(rfqAssignments)
-      .values({
-        rfqId: input.rfqId,
-        supplierUserId: input.supplierUserId,
-        assignedBy: input.assignedBy,
-        adminMarginPct: input.adminMarginPct,
-        adminOfferedPrice: input.adminOfferedPrice,
-        internalNotes: input.internalNotes,
-        finalAgreedPrice: null,
-        finalizedAt: null,
-        negotiationStatus: "PENDING_SUPPLIER",
-      })
-      .onConflictDoUpdate({
-        target: rfqAssignments.rfqId,
-        set: {
-          supplierUserId: input.supplierUserId,
-          assignedBy: input.assignedBy,
-          adminMarginPct: input.adminMarginPct,
-          adminOfferedPrice: input.adminOfferedPrice,
-          internalNotes: input.internalNotes,
-          finalAgreedPrice: null,
-          finalizedAt: null,
-          negotiationStatus: "PENDING_SUPPLIER",
-          createdAt: new Date(),
-        },
-      })
-      .returning();
+  return db
+    .select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      businessType: users.businessType,
+    })
+    .from(users)
+    .where(
+      and(
+        eq(users.isActive, true),
+        or(...businessTypes.map((bt) => eq(users.businessType, bt)))
+      )
+    )
+    .orderBy(users.username);
+}
 
-    return assignment;
-  }
+// ─── PO / Invoice number generators ──────────────────────────────────────────
+
+export async function generatePoNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(purchaseOrders);
+  return `PO/${year}/${String(count + 1).padStart(5, "0")}`;
+}
+
+export async function generateInvoiceNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(salesInvoices);
+  return `INV/${year}/${String(count + 1).padStart(5, "0")}`;
+}
+
+// ─── Purchase Orders ─────────────────────────────────────────────────────────
+
+export async function createPurchaseOrder(data: {
+  poNumber: string;
+  rfqId: string;
+  supplierUserId: string;
+  buyerUserId: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+  baseAmount: number;
+  gstAmount: number;
+  totalAmount: number;
+  hsnCode?: string;
+  deliveryLocation?: string;
+}): Promise<PurchaseOrder> {
+  const [row] = await db.insert(purchaseOrders).values({
+    poNumber: data.poNumber,
+    rfqId: data.rfqId,
+    supplierUserId: data.supplierUserId,
+    buyerUserId: data.buyerUserId,
+    productName: data.productName,
+    quantity: String(data.quantity),
+    unit: data.unit,
+    baseAmount: String(data.baseAmount),
+    gstAmount: String(data.gstAmount),
+    totalAmount: String(data.totalAmount),
+    hsnCode: data.hsnCode,
+    deliveryLocation: data.deliveryLocation,
+    status: "ISSUED",
+  }).returning();
+  return row;
+}
+
+export async function getPosBySupplier(supplierUserId: string) {
+  return db
+    .select({ po: purchaseOrders, rfq: rfqRequests })
+    .from(purchaseOrders)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, purchaseOrders.rfqId))
+    .where(eq(purchaseOrders.supplierUserId, supplierUserId))
+    .orderBy(desc(purchaseOrders.createdAt));
+}
+
+export async function getPoById(id: string): Promise<PurchaseOrder | null> {
+  const [row] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id));
+  return row ?? null;
+}
+
+// Step 4: supplier confirms PO
+export async function confirmPo(id: string, expectedDispatchDate: string) {
+  await db.update(purchaseOrders).set({
+    status: "CONFIRMED",
+    acknowledgedAt: new Date(),
+    expectedDispatchDate,
+    updatedAt: new Date(),
+  }).where(eq(purchaseOrders.id, id));
+}
+
+// Step 5: supplier uploads their invoice + e-way bill
+export async function uploadSupplierInvoice(id: string, data: {
+  supplierInvoiceNo: string;
+  supplierInvoiceAmount: number;
+  ewayBillNo?: string;
+}) {
+  await db.update(purchaseOrders).set({
+    supplierInvoiceNo: data.supplierInvoiceNo,
+    supplierInvoiceAmount: String(data.supplierInvoiceAmount),
+    ewayBillNo: data.ewayBillNo,
+    status: "INVOICE_UPLOADED",
+    updatedAt: new Date(),
+  }).where(eq(purchaseOrders.id, id));
+}
+
+// ─── Sales Invoices ───────────────────────────────────────────────────────────
+
+export async function createSalesInvoice(data: {
+  invoiceNumber: string;
+  rfqId: string;
+  poId: string;
+  buyerUserId: string;
+  productName: string;
+  quantity: number;
+  unit: string;
+  baseAmount: number;
+  marginAmount: number;
+  gstAmount: number;
+  totalAmount: number;
+  hsnCode?: string;
+  deliveryLocation?: string;
+}): Promise<SalesInvoice> {
+  const [row] = await db.insert(salesInvoices).values({
+    invoiceNumber: data.invoiceNumber,
+    rfqId: data.rfqId,
+    poId: data.poId,
+    buyerUserId: data.buyerUserId,
+    productName: data.productName,
+    quantity: String(data.quantity),
+    unit: data.unit,
+    baseAmount: String(data.baseAmount),
+    marginAmount: String(data.marginAmount),
+    gstAmount: String(data.gstAmount),
+    totalAmount: String(data.totalAmount),
+    hsnCode: data.hsnCode,
+    deliveryLocation: data.deliveryLocation,
+    status: "ISSUED",
+  }).returning();
+  return row;
+}
+
+// ─── Shipments ────────────────────────────────────────────────────────────────
+
+export async function generateShipmentNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(shipments);
+  return `SHP/${year}/${String(count + 1).padStart(5, "0")}`;
+}
+
+// Step 6: supplier creates shipment
+export async function createShipment(data: {
+  shipmentNumber: string;
+  poId: string;
+  rfqId: string;
+  buyerId: string;
+  supplierId: string;
+  transporterName: string;
+  docketNumber: string;
+  dispatchDate: string;
+  ewayBillNo?: string;
+}): Promise<Shipment> {
+  const firstCheckpoint = [{
+    label: "Dispatched",
+    location: "Supplier Warehouse",
+    note: `Docket: ${data.docketNumber}`,
+    ts: new Date().toISOString(),
+  }];
+
+  const [row] = await db.insert(shipments).values({
+    shipmentNumber: data.shipmentNumber,
+    poId: data.poId,
+    rfqId: data.rfqId,
+    buyerId: data.buyerId,
+    supplierId: data.supplierId,
+    transporterName: data.transporterName,
+    docketNumber: data.docketNumber,
+    dispatchDate: data.dispatchDate,
+    ewayBillNo: data.ewayBillNo,
+    status: "DISPATCHED",
+    checkpoints: firstCheckpoint,
+  }).returning();
+  return row;
+}
+
+export async function getShipmentByRfqId(rfqId: string): Promise<Shipment | null> {
+  const [row] = await db.select().from(shipments).where(eq(shipments.rfqId, rfqId));
+  return row ?? null;
+}
+
+export async function getShipmentsByBuyer(buyerId: string) {
+  return db
+    .select({ shipment: shipments, rfq: rfqRequests })
+    .from(shipments)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, shipments.rfqId))
+    .where(eq(shipments.buyerId, buyerId))
+    .orderBy(desc(shipments.createdAt));
+}
+
+export async function adminGetAllShipments() {
+  return db
+    .select({
+      shipment: shipments,
+      rfq: rfqRequests,
+      buyer: { id: users.id, username: users.username, email: users.email },
+    })
+    .from(shipments)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, shipments.rfqId))
+    .innerJoin(users, eq(users.id, shipments.buyerId))
+    .orderBy(desc(shipments.createdAt));
+}
+
+// Step 7: admin adds a transit checkpoint
+export async function addCheckpoint(id: string, checkpoint: { label: string; location: string; note?: string }) {
+  const [current] = await db.select().from(shipments).where(eq(shipments.id, id));
+  if (!current) return;
+  const existing = (current.checkpoints as unknown[]) ?? [];
+  const updated = [...existing, { ...checkpoint, ts: new Date().toISOString() }];
+  await db.update(shipments).set({
+    checkpoints: updated,
+    status: "IN_TRANSIT",
+    updatedAt: new Date(),
+  }).where(eq(shipments.id, id));
+}
+
+// Step 8: admin marks delivered
+export async function markShipmentDelivered(id: string) {
+  await db.update(shipments).set({
+    status: "DELIVERED",
+    deliveredAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(shipments.id, id));
+}
+
+// Step 9: buyer marks received → closes order
+export async function markShipmentReceived(id: string) {
+  await db.update(shipments).set({
+    status: "RECEIVED",
+    receivedByBuyerAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(shipments.id, id));
 }
