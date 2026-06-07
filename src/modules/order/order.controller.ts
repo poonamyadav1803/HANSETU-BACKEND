@@ -4,6 +4,7 @@ import { OrderRepository } from "./order.repository";
 import { OrderService } from "./order.service";
 import {
   confirmOrderSchema,
+  acknowledgeOrderSchema,
   listOrdersQuerySchema,
   recordAdvancePaymentSchema,
   updatePhase5DocumentsSchema,
@@ -42,6 +43,41 @@ export class OrderController {
   async getOne(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       res.json(await service.getBuyerOrder(req.params.id, req.userId!));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async supplierList(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const parsed = listOrdersQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
+      }
+
+      res.json(await service.listSupplierOrders(req.userId!, parsed.data));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async supplierGetOne(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      res.json(await service.getSupplierOrder(req.params.id, req.userId!));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async acknowledge(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const parsed = acknowledgeOrderSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
+      }
+
+      const files = (req.files as Express.Multer.File[]) ?? [];
+      res.json(await service.acknowledgeOrder(req.params.id, req.userId!, parsed.data, files));
     } catch (err) {
       next(err);
     }

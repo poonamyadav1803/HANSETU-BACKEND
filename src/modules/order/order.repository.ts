@@ -1,8 +1,14 @@
 import { and, desc, eq, gte, ilike, lte, sql, type SQL } from "drizzle-orm";
 import { BaseRepository } from "../../core/BaseRepository";
-import { orders, rfqAssignments, rfqRequests } from "../../db/schema";
+import { orders, rfqAssignments, rfqRequests, users } from "../../db/schema";
 import type { RfqStatus } from "../../core/order-state-machine";
-import type { ListOrdersQuery, RecordAdvancePaymentDto, UpdatePhase5DocumentsDto } from "./order.schema";
+import type {
+  AcknowledgeOrderDto,
+  ListOrdersQuery,
+  RecordAdvancePaymentDto,
+  UpdatePhase5DocumentsDto,
+} from "./order.schema";
+import type { UploadedFile } from "../../services/file-upload.service";
 
 export class OrderRepository extends BaseRepository {
   async generateOrderNumber(): Promise<string> {
@@ -38,10 +44,16 @@ export class OrderRepository extends BaseRepository {
         order: orders,
         rfq: rfqRequests,
         assignment: rfqAssignments,
+        buyer: {
+          id: users.id,
+          email: users.email,
+          username: users.username,
+        },
       })
       .from(orders)
       .leftJoin(rfqRequests, eq(rfqRequests.id, orders.rfqId))
       .leftJoin(rfqAssignments, eq(rfqAssignments.id, orders.assignmentId))
+      .leftJoin(users, eq(users.id, orders.buyerId))
       .where(eq(orders.id, id));
 
     return row ?? null;
@@ -127,6 +139,23 @@ export class OrderRepository extends BaseRepository {
     return order ?? null;
   }
 
+  async acknowledge(id: string, dto: AcknowledgeOrderDto, certificateFiles: UploadedFile[]) {
+    const [order] = await this.db
+      .update(orders)
+      .set({
+        status: "SUPPLIER_ACKNOWLEDGED",
+        supplierAcknowledgedAt: new Date(),
+        expectedDispatchDate: dto.expectedDispatchDate,
+        supplierCertificateFiles: certificateFiles,
+        supplierAcknowledgementNotes: dto.notes ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, id))
+      .returning();
+
+    return order ?? null;
+  }
+
   async updateRfqStatus(rfqId: string, status: RfqStatus) {
     const [rfq] = await this.db
       .update(rfqRequests)
@@ -141,6 +170,7 @@ export class OrderRepository extends BaseRepository {
     const conditions: SQL[] = [];
 
     if (filters.buyerId) conditions.push(eq(orders.buyerId, filters.buyerId));
+    if (filters.supplierUserId) conditions.push(eq(rfqAssignments.supplierUserId, filters.supplierUserId));
     if (filters.status) conditions.push(eq(orders.status, filters.status));
     if (filters.sourceType) conditions.push(eq(orders.sourceType, filters.sourceType));
     if (filters.advancePaymentStatus) {

@@ -20,6 +20,7 @@ export const listOrdersQuerySchema = z.object({
   phase5DocumentStatus: z.enum(["TRIGGERED", "GENERATING", "GENERATED", "FAILED"]).optional(),
   rfqId: z.string().uuid().optional(),
   buyerId: z.string().uuid().optional(),
+  supplierUserId: z.string().uuid().optional(),
   orderNumber: z.string().trim().min(1).optional(),
   dateFrom: z.string().trim().min(1).optional(),
   dateTo: z.string().trim().min(1).optional(),
@@ -36,7 +37,13 @@ export const updatePhase5DocumentsSchema = z.object({
   documents: z.array(z.record(z.unknown())).default([]),
 });
 
+export const acknowledgeOrderSchema = z.object({
+  expectedDispatchDate: z.string().trim().min(1, "Expected dispatch date is required"),
+  notes: z.string().trim().max(5000, "Notes are too long").optional(),
+});
+
 export type ConfirmOrderDto = z.infer<typeof confirmOrderSchema>;
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
 export type RecordAdvancePaymentDto = z.infer<typeof recordAdvancePaymentSchema>;
 export type UpdatePhase5DocumentsDto = z.infer<typeof updatePhase5DocumentsSchema>;
+export type AcknowledgeOrderDto = z.infer<typeof acknowledgeOrderSchema>;
