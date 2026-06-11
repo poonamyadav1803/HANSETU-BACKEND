@@ -59,6 +59,10 @@ jobs:
             -e PORT=3000 \
             -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
             -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            -e WHITEBOOKS_GST_API_URL="${{ secrets.WHITEBOOKS_GST_API_URL }}" \
+            -e WHITEBOOKS_GST_EMAIL="${{ secrets.WHITEBOOKS_GST_EMAIL }}" \
+            -e WHITEBOOKS_CLIENT_ID="${{ secrets.WHITEBOOKS_CLIENT_ID }}" \
+            -e WHITEBOOKS_CLIENT_SECRET="${{ secrets.WHITEBOOKS_CLIENT_SECRET }}" \
             -e SMTP_HOST="${{ secrets.SMTP_HOST }}" \
             -e SMTP_PORT="${{ secrets.SMTP_PORT }}" \
             -e SMTP_USER="${{ secrets.SMTP_USER }}" \
