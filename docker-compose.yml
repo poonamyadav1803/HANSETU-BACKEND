@@ -29,15 +29,19 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      PORT:                   3000
-      DATABASE_URL:           ${DATABASE_URL}
-      JWT_SECRET:             ${JWT_SECRET}
-      SMTP_HOST:              ${SMTP_HOST}
-      SMTP_PORT:              ${SMTP_PORT}
-      SMTP_USER:              ${SMTP_USER}
-      SMTP_PASS:              ${SMTP_PASS}
-      EMAIL_FROM:             ${EMAIL_FROM}
-      NODE_ENV:               production
+      PORT:                    3000
+      DATABASE_URL:            ${DATABASE_URL}
+      JWT_SECRET:              ${JWT_SECRET}
+      WHITEBOOKS_GST_API_URL:  ${WHITEBOOKS_GST_API_URL}
+      WHITEBOOKS_GST_EMAIL:    ${WHITEBOOKS_GST_EMAIL}
+      WHITEBOOKS_CLIENT_ID:    ${WHITEBOOKS_CLIENT_ID}
+      WHITEBOOKS_CLIENT_SECRET:${WHITEBOOKS_CLIENT_SECRET}
+      SMTP_HOST:               ${SMTP_HOST}
+      SMTP_PORT:               ${SMTP_PORT}
+      SMTP_USER:               ${SMTP_USER}
+      SMTP_PASS:               ${SMTP_PASS}
+      EMAIL_FROM:              ${EMAIL_FROM}
+      NODE_ENV:                production
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:
