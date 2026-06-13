@@ -952,11 +952,12 @@ export const rfqRequests = pgTable("rfq_requests", {
   deliveryLocation: text("delivery_location").notNull(),
   requiredBy: varchar("required_by", { length: 100 }),
   specs: text("specs"),
-  orderType: varchar("order_type", { length: 20 }).default("BULK").notNull(), // SAMPLE | BULK
+  orderType: varchar("order_type", { length: 20 }).default("BULK").notNull(),   // SAMPLE | BULK
+  requestType: varchar("request_type", { length: 50 }).default("PRODUCT_CATALOGUE").notNull(),
+  // PRODUCT_CATALOGUE | COMPONENT_MANUFACTURER
   attachments: jsonb("attachments").default([]),                               // string[] of S3 URLs
   status: varchar("status", { length: 50 }).default("SUBMITTED").notNull(),
-  // SUBMITTED | UNDER_REVIEW | SUPPLIER_ASSIGNED | NEGOTIATING
-  // | QUOTE_FINALIZED | PO_RAISED | DISPATCHED | DELIVERED | CLOSED | CANCELLED
+  // SUBMITTED | UNDER_REVIEW | PO_RAISED | DISPATCHED | DELIVERED | CLOSED | CANCELLED
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -987,15 +988,21 @@ export const rfqAssignments = pgTable("rfq_assignments", {
     .references(() => users.id),
   assignedBy: uuid("assigned_by").notNull(), // adminUsers.id
   adminMarginPct: numeric("admin_margin_pct").default("10").notNull(),
-  adminOfferedPrice: numeric("admin_offered_price"),
+  negotiatedPrice: numeric("negotiated_price"),
   finalAgreedPrice: numeric("final_agreed_price"),
   negotiationStatus: varchar("negotiation_status", { length: 50 })
-    .default("PENDING_SUPPLIER")
+    .default("PENDING")
     .notNull(),
-  // PENDING_SUPPLIER | SUPPLIER_ACCEPTED | SUPPLIER_COUNTERED
-  // | ADMIN_REVIEWING | FINALIZED | REJECTED
+  // PENDING | SUPPLIER_QUOTED | APPROVED | REJECTED
   internalNotes: text("internal_notes"),
-  finalizedAt: timestamp("finalized_at"),
+  approvedAt: timestamp("approved_at"),
+  // Supplier quote fields (Story 3.2–3.3)
+  supplierQuotedPrice: numeric("supplier_quoted_price"),
+  supplierLeadTimeDays: integer("supplier_lead_time_days"),
+  supplierMoq: numeric("supplier_moq"),
+  quoteValidityDate: varchar("quote_validity_date", { length: 50 }),
+  supplierNotes: text("supplier_notes"),
+  quoteSubmittedAt: timestamp("quote_submitted_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -1074,3 +1081,100 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
 
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Purchase Orders (platform → supplier; supplier price, no margin shown)
+// ─────────────────────────────────────────────────────────────────────────────
+export const purchaseOrders = pgTable("purchase_orders", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  poNumber: varchar("po_number", { length: 50 }).unique().notNull(),
+  rfqId: uuid("rfq_id")
+    .notNull()
+    .references(() => rfqRequests.id, { onDelete: "restrict" }),
+  orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+  supplierUserId: uuid("supplier_user_id")
+    .notNull()
+    .references(() => users.id),
+  buyerUserId: uuid("buyer_user_id")
+    .notNull()
+    .references(() => users.id),
+  productName: varchar("product_name", { length: 255 }).notNull(),
+  quantity: numeric("quantity").notNull(),
+  unit: varchar("unit", { length: 50 }).default("units").notNull(),
+  baseAmount: numeric("base_amount", { precision: 14, scale: 2 }).notNull(),
+  gstAmount: numeric("gst_amount", { precision: 14, scale: 2 }).notNull(),
+  totalAmount: numeric("total_amount", { precision: 14, scale: 2 }).notNull(),
+  hsnCode: varchar("hsn_code", { length: 20 }),
+  deliveryLocation: text("delivery_location"),
+  terms: text("terms"),
+  status: varchar("status", { length: 50 }).default("ISSUED").notNull(),
+  // ISSUED | CONFIRMED | INVOICE_UPLOADED | DISPATCHED | DELIVERED | CLOSED
+  supplierInvoiceNo: varchar("supplier_invoice_no", { length: 100 }),
+  supplierInvoiceAmount: numeric("supplier_invoice_amount", { precision: 14, scale: 2 }),
+  ewayBillNo: varchar("eway_bill_no", { length: 50 }),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  expectedDispatchDate: varchar("expected_dispatch_date", { length: 50 }),
+  qcDocuments: jsonb("qc_documents").default([]), // string[] of S3 URLs
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sales Invoices (platform → buyer; includes margin)
+// ─────────────────────────────────────────────────────────────────────────────
+export const salesInvoices = pgTable("sales_invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  invoiceNumber: varchar("invoice_number", { length: 50 }).unique().notNull(),
+  rfqId: uuid("rfq_id")
+    .notNull()
+    .references(() => rfqRequests.id, { onDelete: "restrict" }),
+  poId: uuid("po_id").references(() => purchaseOrders.id, { onDelete: "set null" }),
+  buyerUserId: uuid("buyer_user_id")
+    .notNull()
+    .references(() => users.id),
+  productName: varchar("product_name", { length: 255 }).notNull(),
+  quantity: numeric("quantity").notNull(),
+  unit: varchar("unit", { length: 50 }).default("units").notNull(),
+  baseAmount: numeric("base_amount", { precision: 14, scale: 2 }).notNull(),
+  marginAmount: numeric("margin_amount", { precision: 14, scale: 2 }).notNull(),
+  gstRate: numeric("gst_rate", { precision: 5, scale: 2 }).default("18").notNull(),
+  gstAmount: numeric("gst_amount", { precision: 14, scale: 2 }).notNull(),
+  totalAmount: numeric("total_amount", { precision: 14, scale: 2 }).notNull(),
+  hsnCode: varchar("hsn_code", { length: 20 }),
+  ewayBillNo: varchar("eway_bill_no", { length: 50 }),
+  deliveryLocation: text("delivery_location"),
+  status: varchar("status", { length: 30 }).default("ISSUED").notNull(),
+  // ISSUED | PAID | CANCELLED
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type SalesInvoice = typeof salesInvoices.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shipments (created by supplier after uploading invoice)
+// ─────────────────────────────────────────────────────────────────────────────
+export const shipments = pgTable("shipments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  shipmentNumber: varchar("shipment_number", { length: 50 }).unique().notNull(),
+  poId: uuid("po_id").notNull().references(() => purchaseOrders.id, { onDelete: "restrict" }),
+  rfqId: uuid("rfq_id").notNull().references(() => rfqRequests.id, { onDelete: "restrict" }),
+  buyerId: uuid("buyer_id").notNull().references(() => users.id),
+  supplierId: uuid("supplier_id").notNull().references(() => users.id),
+  transporterName: varchar("transporter_name", { length: 255 }),
+  docketNumber: varchar("docket_number", { length: 100 }),
+  dispatchDate: varchar("dispatch_date", { length: 50 }),
+  ewayBillNo: varchar("eway_bill_no", { length: 50 }),
+  status: varchar("status", { length: 50 }).default("DISPATCHED").notNull(),
+  // DISPATCHED | IN_TRANSIT | OUT_FOR_DELIVERY | DELIVERED | RECEIVED
+  checkpoints: jsonb("checkpoints").default([]).notNull(),
+  // [{ label, location, note, ts }]
+  deliveredAt: timestamp("delivered_at"),
+  receivedByBuyerAt: timestamp("received_by_buyer_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Shipment = typeof shipments.$inferSelect;

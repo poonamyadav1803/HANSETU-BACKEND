@@ -1,95 +1,151 @@
-import { Response, NextFunction } from "express";
-import { AuthRequest } from "../../middlewares/auth.middleware";
-import { AdminRequest } from "../../middlewares/admin.middleware";
-import { RfqService } from "./rfq.service";
-import { RfqRepository } from "./rfq.repository";
-import { assignSupplierSchema, submitRfqSchema } from "./rfq.schema";
+import { Request, Response, NextFunction } from "express";
+import type { AuthRequest } from "../../middlewares/auth.middleware";
+import type { AdminRequest } from "../../middlewares/admin.middleware";
+import {
+  submitRfqSchema, assignSchema, approveRfqSchema, submitQuoteSchema,
+  confirmPoSchema, uploadInvoiceSchema, createShipmentSchema, addCheckpointSchema,
+} from "./rfq.schema";
+import * as svc from "./rfq.service";
 
-const service = new RfqService(new RfqRepository());
+// ─── Buyer ────────────────────────────────────────────────────────────────────
 
-export class RfqController {
-  // POST /api/rfq — Buyer submits RFQ
-  async submit(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const parsed = submitRfqSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
-      }
+export const submit = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = submitRfqSchema.parse(req.body);
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    const rfq = await svc.submitRfq(req.userId!, dto, files);
+    res.status(201).json(rfq);
+  } catch (err) { next(err); }
+};
 
-      const attachments: string[] = (req.files as Express.Multer.File[] ?? []).map(
-        (f: Express.Multer.File) => (f as any).location ?? f.path
-      );
+export const getMy = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getMyRfqs(req.userId!);
+    res.json(data);
+  } catch (err) { next(err); }
+};
 
-      const rfq = await service.submit(req.userId!, parsed.data, attachments);
-      res.status(201).json(rfq);
-    } catch (err) {
-      next(err);
-    }
-  }
+export const getOne = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getMyRfqById(req.params.id, req.userId!);
+    res.json(data);
+  } catch (err) { next(err); }
+};
 
-  // GET /api/rfq/my — Buyer views own RFQs
-  async getMy(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const data = await service.getMyRfqs(req.userId!);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  }
+// ─── Supplier / Assignee ─────────────────────────────────────────────────────
 
-  // GET /api/rfq/:id — Buyer views a single RFQ
-  async getOne(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const data = await service.getById(req.params.id, req.userId!);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  }
+export const getMyAssigned = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getMyAssignedRfqs(req.userId!);
+    res.json(data);
+  } catch (err) { next(err); }
+};
 
-  // GET /api/admin/rfqs — Admin views all RFQs
-  async adminGetAll(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const status = req.query.status as string | undefined;
-      const data = await service.getAllForAdmin(status);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  }
+export const submitQuote = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = submitQuoteSchema.parse(req.body);
+    await svc.supplierSubmitQuote(req.params.id, req.userId!, dto);
+    res.json({ message: "Quote submitted" });
+  } catch (err) { next(err); }
+};
 
-  // GET /api/admin/rfqs/:id — Admin views a single RFQ
-  async adminGetOne(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const data = await service.getById(req.params.id);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  }
+export const getMyPos = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getMyPos(req.userId!);
+    res.json(data);
+  } catch (err) { next(err); }
+};
 
-  // GET /api/rfq/assigned — Supplier views RFQs assigned to them
-  async supplierGetAssigned(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const data = await service.getAssignedRfqs(req.userId!);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  }
+export const confirmPo = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = confirmPoSchema.parse(req.body);
+    await svc.confirmPo(req.params.id, req.userId!, dto);
+    res.json({ message: "PO confirmed" });
+  } catch (err) { next(err); }
+};
 
-  // PATCH /api/admin/rfqs/:id/assign-supplier — Admin assigns supplier + pricing context
-  async adminAssignSupplier(req: AdminRequest, res: Response, next: NextFunction) {
-    try {
-      const parsed = assignSupplierSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
-      }
+export const uploadInvoice = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = uploadInvoiceSchema.parse(req.body);
+    await svc.uploadSupplierInvoice(req.params.id, req.userId!, dto);
+    res.json({ message: "Invoice uploaded" });
+  } catch (err) { next(err); }
+};
 
-      const data = await service.assignSupplier(req.params.id, req.adminId!, parsed.data);
-      res.json(data);
-    } catch (err) {
-      next(err);
-    }
-  }
-}
+export const createShipment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = createShipmentSchema.parse(req.body);
+    const shipment = await svc.createShipment(req.params.id, req.userId!, dto);
+    res.status(201).json(shipment);
+  } catch (err) { next(err); }
+};
+
+export const markReceived = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    await svc.buyerMarkReceived(req.params.id, req.userId!);
+    res.json({ message: "Order marked as received" });
+  } catch (err) { next(err); }
+};
+
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+export const adminGetAll = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const data = await svc.adminListRfqs(status);
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const adminGetOne = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.adminGetOne(req.params.id);
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const adminGetAssigneesList = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const type = (req.query.type as string) === "manufacturer" ? "manufacturer" : "supplier";
+    const data = await svc.getAssigneesList(type);
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const adminAssign = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = assignSchema.parse(req.body);
+    const data = await svc.adminAssign(req.params.id, req.adminId!, dto);
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const adminApprove = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = approveRfqSchema.parse(req.body);
+    const data = await svc.adminApprove(req.params.id, dto);
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const adminAddCheckpoint = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const dto = addCheckpointSchema.parse(req.body);
+    await svc.adminAddCheckpoint(req.params.id, dto);
+    res.json({ message: "Checkpoint added" });
+  } catch (err) { next(err); }
+};
+
+export const adminMarkDelivered = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    await svc.adminMarkDelivered(req.params.id);
+    res.json({ message: "Shipment marked as delivered" });
+  } catch (err) { next(err); }
+};
+
+export const adminListShipments = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.adminListShipments();
+    res.json(data);
+  } catch (err) { next(err); }
+};
