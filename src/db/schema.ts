@@ -987,6 +987,8 @@ export const rfqAssignments = pgTable("rfq_assignments", {
     .notNull()
     .references(() => users.id),
   assignedBy: uuid("assigned_by").notNull(), // adminUsers.id
+  assignmentMode: varchar("assignment_mode", { length: 30 }).default("REQUEST_QUOTE").notNull(),
+  // REQUEST_QUOTE | DIRECT_PRICE
   adminMarginPct: numeric("admin_margin_pct").default("10").notNull(),
   negotiatedPrice: numeric("negotiated_price"),
   finalAgreedPrice: numeric("final_agreed_price"),
@@ -995,6 +997,8 @@ export const rfqAssignments = pgTable("rfq_assignments", {
     .notNull(),
   // PENDING | SUPPLIER_QUOTED | APPROVED | REJECTED
   internalNotes: text("internal_notes"),
+  transportCompany: varchar("transport_company", { length: 255 }),
+  deliveryCharge: numeric("delivery_charge", { precision: 14, scale: 2 }),
   approvedAt: timestamp("approved_at"),
   // Supplier quote fields (Story 3.2–3.3)
   supplierQuotedPrice: numeric("supplier_quoted_price"),
