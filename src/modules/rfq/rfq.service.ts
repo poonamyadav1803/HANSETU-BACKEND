@@ -89,8 +89,11 @@ export async function adminAssign(rfqId: string, adminId: string, dto: AssignDto
     rfqId,
     assigneeUserId: dto.assigneeUserId,
     assignedBy: adminId,
+    assignmentMode: dto.assignmentMode,
     negotiatedPrice: dto.negotiatedPrice,
     adminMarginPct: dto.adminMarginPct,
+    transportCompany: dto.transportCompany,
+    deliveryCharge: dto.deliveryCharge,
     internalNotes: dto.internalNotes,
   });
 
@@ -119,6 +122,7 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     assignment.negotiatedPrice ?? assignment.supplierQuotedPrice ?? "0"
   );
   const marginPct = parseFloat(assignment.adminMarginPct ?? "10");
+  const deliveryCharge = parseFloat(assignment.deliveryCharge ?? "0");
 
   if (negotiatedPrice <= 0) {
     throw new HttpException(400, "Negotiated price must be set before approving");
@@ -131,7 +135,7 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
 
   // Sales Invoice: platform → buyer (includes margin)
   const marginAmt = parseFloat((negotiatedPrice * (marginPct / 100)).toFixed(2));
-  const invBase = parseFloat((negotiatedPrice + marginAmt).toFixed(2));
+  const invBase = parseFloat((negotiatedPrice + marginAmt + deliveryCharge).toFixed(2));
   const invGst = parseFloat((invBase * 0.18).toFixed(2));
   const invTotal = parseFloat((invBase + invGst).toFixed(2));
 
