@@ -172,6 +172,75 @@ export async function sendSupplierAssignedNotification(
   });
 }
 
+export async function sendOrderAcknowledgementNotification(input: {
+  buyerEmail: string;
+  orderNumber: string;
+  rfqNumber?: string | null;
+  productName?: string | null;
+  expectedDispatchDate: string;
+}): Promise<void> {
+  const transporter = createTransport();
+  await transporter.sendMail({
+    from: env.EMAIL_FROM,
+    to: input.buyerEmail,
+    subject: `Supplier acknowledged your Hansetu order — ${input.orderNumber}`,
+    text:
+      `Your Hansetu order has been acknowledged by the supplier.\n\n` +
+      `Order Number: ${input.orderNumber}\n` +
+      `RFQ Number: ${input.rfqNumber ?? "N/A"}\n` +
+      `Product: ${input.productName ?? "N/A"}\n` +
+      `Expected Dispatch Date: ${input.expectedDispatchDate}\n\n` +
+      `We will notify you as the order moves forward.`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto;">
+        <h2 style="color:#16a34a;">Supplier Acknowledged Order</h2>
+        <p>Your Hansetu order has been acknowledged by the supplier.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+          <tr><td style="padding:8px;color:#64748b;width:42%;">Order Number</td><td style="padding:8px;font-weight:600;">${input.orderNumber}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">RFQ Number</td><td style="padding:8px;">${input.rfqNumber ?? "N/A"}</td></tr>
+          <tr><td style="padding:8px;color:#64748b;">Product</td><td style="padding:8px;">${input.productName ?? "N/A"}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">Expected Dispatch</td><td style="padding:8px;">${input.expectedDispatchDate}</td></tr>
+        </table>
+      </div>
+    `,
+  });
+}
+
+export async function sendOrderAcknowledgementAdminNotification(input: {
+  orderNumber: string;
+  rfqNumber?: string | null;
+  productName?: string | null;
+  expectedDispatchDate: string;
+}): Promise<void> {
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL ?? process.env.SMTP_USER;
+  if (!adminEmail) return;
+
+  const transporter = createTransport();
+  await transporter.sendMail({
+    from: env.EMAIL_FROM,
+    to: adminEmail,
+    subject: `Supplier acknowledged order — ${input.orderNumber}`,
+    text:
+      `A supplier acknowledged an order on Hansetu.\n\n` +
+      `Order Number: ${input.orderNumber}\n` +
+      `RFQ Number: ${input.rfqNumber ?? "N/A"}\n` +
+      `Product: ${input.productName ?? "N/A"}\n` +
+      `Expected Dispatch Date: ${input.expectedDispatchDate}\n\n` +
+      `Review the order in the admin panel.`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto;">
+        <h2 style="color:#1d4ed8;">Supplier Acknowledged Order</h2>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+          <tr><td style="padding:8px;color:#64748b;width:42%;">Order Number</td><td style="padding:8px;font-weight:600;">${input.orderNumber}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">RFQ Number</td><td style="padding:8px;">${input.rfqNumber ?? "N/A"}</td></tr>
+          <tr><td style="padding:8px;color:#64748b;">Product</td><td style="padding:8px;">${input.productName ?? "N/A"}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">Expected Dispatch</td><td style="padding:8px;">${input.expectedDispatchDate}</td></tr>
+        </table>
+      </div>
+    `,
+  });
+}
+
 export async function sendOtpEmail(to: string, otp: string): Promise<void> {
   const transporter = createTransport();
 

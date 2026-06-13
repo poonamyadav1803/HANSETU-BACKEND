@@ -1,7 +1,13 @@
 import { BaseService } from "../../core/BaseService";
 import { guardRfqTransition, type RfqStatus } from "../../core/order-state-machine";
+import {
+  sendOrderAcknowledgementAdminNotification,
+  sendOrderAcknowledgementNotification,
+} from "../../services/email.service";
+import { FileUploadService } from "../../services/file-upload.service";
 import { OrderRepository } from "./order.repository";
 import type {
+  AcknowledgeOrderDto,
   ConfirmOrderDto,
   ListOrdersQuery,
   RecordAdvancePaymentDto,
@@ -9,6 +15,8 @@ import type {
 } from "./order.schema";
 
 export class OrderService extends BaseService {
+  private fileUploadService = new FileUploadService();
+
   constructor(private repo: OrderRepository) {
     super();
   }
@@ -90,6 +98,10 @@ export class OrderService extends BaseService {
     return this.repo.list(query);
   }
 
+  async listSupplierOrders(supplierUserId: string, query: ListOrdersQuery) {
+    return this.repo.list({ ...query, supplierUserId });
+  }
+
   async getBuyerOrder(id: string, buyerId: string) {
     const order = await this.repo.findById(id);
     if (!order) this.throwNotFound("Order not found");
@@ -105,6 +117,15 @@ export class OrderService extends BaseService {
     return order!;
   }
 
+  async getSupplierOrder(id: string, supplierUserId: string) {
+    const order = await this.repo.findById(id);
+    if (!order) this.throwNotFound("Order not found");
+    if (!order!.assignment || order!.assignment.supplierUserId !== supplierUserId) {
+      this.throwUnauthorized("You do not have access to this order");
+    }
+    return order!;
+  }
+
   async recordAdvancePayment(id: string, buyerId: string, dto: RecordAdvancePaymentDto) {
     await this.getBuyerOrder(id, buyerId);
     const order = await this.repo.updateAdvancePayment(id, dto);
@@ -115,6 +136,56 @@ export class OrderService extends BaseService {
   async updatePhase5Documents(id: string, dto: UpdatePhase5DocumentsDto) {
     const order = await this.repo.updatePhase5Documents(id, dto);
     if (!order) this.throwNotFound("Order not found");
+    return order!;
+  }
+
+  async acknowledgeOrder(
+    id: string,
+    supplierUserId: string,
+    dto: AcknowledgeOrderDto,
+    files: Express.Multer.File[] = []
+  ) {
+    const orderContext = await this.getSupplierOrder(id, supplierUserId);
+
+    if (orderContext.order.status !== "ORDER_CONFIRMED") {
+      this.throwBadRequest(`Order cannot be acknowledged while in status ${orderContext.order.status}.`);
+    }
+
+    const expectedDispatchDate = new Date(dto.expectedDispatchDate);
+    if (Number.isNaN(expectedDispatchDate.getTime())) {
+      this.throwBadRequest("Expected dispatch date must be a valid date.");
+    }
+
+    const certificateFiles = await this.fileUploadService.uploadMany(files, {
+      folder: `orders/${id}/supplier-certificates`,
+    });
+
+    const order = await this.repo.acknowledge(
+      id,
+      {
+        ...dto,
+        expectedDispatchDate: expectedDispatchDate.toISOString().slice(0, 10),
+      },
+      certificateFiles
+    );
+    if (!order) this.throwNotFound("Order not found");
+
+    const notification = {
+      orderNumber: order!.orderNumber,
+      rfqNumber: orderContext.rfq?.rfqNumber,
+      productName: orderContext.rfq?.productName,
+      expectedDispatchDate: order!.expectedDispatchDate ?? dto.expectedDispatchDate,
+    };
+
+    if (orderContext.buyer?.email) {
+      sendOrderAcknowledgementNotification({
+        ...notification,
+        buyerEmail: orderContext.buyer.email,
+      }).catch(() => undefined);
+    }
+
+    sendOrderAcknowledgementAdminNotification(notification).catch(() => undefined);
+
     return order!;
   }
 }
