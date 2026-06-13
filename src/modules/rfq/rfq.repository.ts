@@ -138,8 +138,11 @@ export async function createOrUpdateAssignment(data: {
   rfqId: string;
   assigneeUserId: string;
   assignedBy: string;
-  negotiatedPrice: number;
+  assignmentMode: "REQUEST_QUOTE" | "DIRECT_PRICE";
+  negotiatedPrice?: number;
   adminMarginPct: number;
+  transportCompany?: string;
+  deliveryCharge?: number;
   internalNotes?: string;
 }): Promise<RfqAssignment> {
   const existing = await db
@@ -154,8 +157,11 @@ export async function createOrUpdateAssignment(data: {
       .set({
         supplierUserId: data.assigneeUserId,
         assignedBy: data.assignedBy,
-        negotiatedPrice: String(data.negotiatedPrice),
+        assignmentMode: data.assignmentMode,
+        negotiatedPrice: data.negotiatedPrice != null ? String(data.negotiatedPrice) : null,
         adminMarginPct: String(data.adminMarginPct),
+        transportCompany: data.transportCompany ?? null,
+        deliveryCharge: data.deliveryCharge != null ? String(data.deliveryCharge) : null,
         internalNotes: data.internalNotes,
         negotiationStatus: "PENDING",
       })
@@ -168,8 +174,11 @@ export async function createOrUpdateAssignment(data: {
     rfqId: data.rfqId,
     supplierUserId: data.assigneeUserId,
     assignedBy: data.assignedBy,
-    negotiatedPrice: String(data.negotiatedPrice),
+    assignmentMode: data.assignmentMode,
+    negotiatedPrice: data.negotiatedPrice != null ? String(data.negotiatedPrice) : null,
     adminMarginPct: String(data.adminMarginPct),
+    transportCompany: data.transportCompany ?? null,
+    deliveryCharge: data.deliveryCharge != null ? String(data.deliveryCharge) : null,
     internalNotes: data.internalNotes,
     negotiationStatus: "PENDING",
   }).returning();
@@ -215,10 +224,13 @@ export async function getAssignedRfqsBySupplier(supplierUserId: string) {
       },
       assignment: {
         id: rfqAssignments.id,
+        assignmentMode: rfqAssignments.assignmentMode,
         negotiatedPrice: rfqAssignments.negotiatedPrice,
         adminMarginPct: rfqAssignments.adminMarginPct,
         negotiationStatus: rfqAssignments.negotiationStatus,
         internalNotes: rfqAssignments.internalNotes,
+        transportCompany: rfqAssignments.transportCompany,
+        deliveryCharge: rfqAssignments.deliveryCharge,
         approvedAt: rfqAssignments.approvedAt,
         supplierQuotedPrice: rfqAssignments.supplierQuotedPrice,
         supplierLeadTimeDays: rfqAssignments.supplierLeadTimeDays,
@@ -263,7 +275,10 @@ export async function getAssigneesByType(type: "supplier" | "manufacturer") {
       id: users.id,
       username: users.username,
       email: users.email,
+      mobile: users.mobile,
+      gstNumber: users.gstNumber,
       businessType: users.businessType,
+      profile: users.profile,
     })
     .from(users)
     .where(
