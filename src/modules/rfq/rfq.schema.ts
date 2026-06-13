@@ -12,12 +12,24 @@ export const submitRfqSchema = z.object({
   requestType: z.enum(["PRODUCT_CATALOGUE", "COMPONENT_MANUFACTURER"]).default("PRODUCT_CATALOGUE"),
 });
 
-// Admin assigns a supplier/manufacturer and enters the offline-negotiated price
+// Admin assigns a supplier/manufacturer and can either set a direct price
+// or ask the assignee to submit a quote.
 export const assignSchema = z.object({
   assigneeUserId: z.string().uuid("A valid user ID is required"),
-  negotiatedPrice: z.coerce.number().positive("Negotiated price is required"),
+  assignmentMode: z.enum(["REQUEST_QUOTE", "DIRECT_PRICE"]).default("REQUEST_QUOTE"),
+  negotiatedPrice: z.coerce.number().positive("Negotiated price must be positive").optional(),
   adminMarginPct: z.coerce.number().min(0).max(100).default(10),
+  transportCompany: z.string().max(255).optional(),
+  deliveryCharge: z.coerce.number().min(0, "Delivery charge cannot be negative").optional(),
   internalNotes: z.string().max(5000).optional(),
+}).superRefine((value, ctx) => {
+  if (value.assignmentMode === "DIRECT_PRICE" && value.negotiatedPrice == null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["negotiatedPrice"],
+      message: "Negotiated price is required when admin adds a direct price",
+    });
+  }
 });
 
 // Admin approves the assignment → creates PO + Invoice
