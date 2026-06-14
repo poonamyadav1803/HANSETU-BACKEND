@@ -47,11 +47,13 @@ export async function getRfqsByBuyer(buyerId: string) {
       assignment: rfqAssignments,
       po: purchaseOrders,
       invoice: salesInvoices,
+      shipment: shipments,
     })
     .from(rfqRequests)
     .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
     .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
     .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
+    .leftJoin(shipments, eq(shipments.rfqId, rfqRequests.id))
     .where(eq(rfqRequests.buyerId, buyerId))
     .orderBy(desc(rfqRequests.createdAt));
 }
@@ -97,10 +99,14 @@ export async function adminGetAllRfqs(status?: string) {
         email: users.email,
         businessType: users.businessType,
       },
+      po: purchaseOrders,
+      invoice: salesInvoices,
     })
     .from(rfqRequests)
     .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
     .leftJoin(users, eq(users.id, rfqRequests.buyerId))
+    .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
+    .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
     .orderBy(desc(rfqRequests.createdAt));
 
   if (status) {
@@ -264,13 +270,25 @@ export async function submitSupplierQuote(rfqId: string, data: {
   }).where(eq(rfqAssignments.rfqId, rfqId));
 }
 
-export async function getAssigneesByType(type: "supplier" | "manufacturer") {
+export async function getAssigneesByType(
+  type: "supplier" | "manufacturer",
+  filters?: { state?: string; category?: string; verified?: boolean },
+) {
   const businessTypes =
     type === "supplier"
       ? ["raw_material_supplier", "both"]
       : ["manufacturer", "both"];
 
-  return db
+  const conditions: ReturnType<typeof eq>[] = [
+    eq(users.isActive, true),
+    or(...businessTypes.map((bt) => eq(users.businessType, bt))) as ReturnType<typeof eq>,
+  ];
+
+  if (filters?.verified) {
+    conditions.push(eq(users.registrationComplete, true));
+  }
+
+  let rows = await db
     .select({
       id: users.id,
       username: users.username,
@@ -278,16 +296,49 @@ export async function getAssigneesByType(type: "supplier" | "manufacturer") {
       mobile: users.mobile,
       gstNumber: users.gstNumber,
       businessType: users.businessType,
+      registrationComplete: users.registrationComplete,
       profile: users.profile,
     })
     .from(users)
-    .where(
-      and(
-        eq(users.isActive, true),
-        or(...businessTypes.map((bt) => eq(users.businessType, bt)))
-      )
-    )
+    .where(and(...conditions))
     .orderBy(users.username);
+
+  if (filters?.state) {
+    const s = filters.state.toLowerCase();
+    rows = rows.filter((r) => {
+      const p = r.profile as { addresses?: Array<{ state?: string }> } | null;
+      return p?.addresses?.some((a) => a.state?.toLowerCase().includes(s));
+    });
+  }
+
+  if (filters?.category) {
+    const c = filters.category.toLowerCase();
+    rows = rows.filter((r) => {
+      const p = r.profile as { rawMaterialProducts?: string[]; manufacturingProductsFlat?: string[] } | null;
+      const products = [...(p?.rawMaterialProducts ?? []), ...(p?.manufacturingProductsFlat ?? [])];
+      return products.some((prod) => prod.toLowerCase().includes(c));
+    });
+  }
+
+  return rows;
+}
+
+export async function getAssigneeById(id: string) {
+  const [row] = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      mobile: users.mobile,
+      gstNumber: users.gstNumber,
+      businessType: users.businessType,
+      registrationComplete: users.registrationComplete,
+      profile: users.profile,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, id));
+  return row ?? null;
 }
 
 // ─── PO / Invoice number generators ──────────────────────────────────────────
@@ -340,9 +391,10 @@ export async function createPurchaseOrder(data: {
 
 export async function getPosBySupplier(supplierUserId: string) {
   return db
-    .select({ po: purchaseOrders, rfq: rfqRequests })
+    .select({ po: purchaseOrders, rfq: rfqRequests, shipment: shipments })
     .from(purchaseOrders)
     .innerJoin(rfqRequests, eq(rfqRequests.id, purchaseOrders.rfqId))
+    .leftJoin(shipments, eq(shipments.poId, purchaseOrders.id))
     .where(eq(purchaseOrders.supplierUserId, supplierUserId))
     .orderBy(desc(purchaseOrders.createdAt));
 }
