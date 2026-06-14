@@ -1,7 +1,7 @@
 import { HttpException } from "../../core/HttpException";
 import { FileUploadService } from "../../services/file-upload.service";
 import { db } from "../../db";
-import { shipments, purchaseOrders } from "../../db/schema";
+import { shipments, purchaseOrders, mfrProducts, mfrCategories } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import type {
   SubmitRfqDto, AssignDto, ApproveRfqDto, SubmitQuoteDto,
@@ -18,6 +18,32 @@ export async function submitRfq(
   dto: SubmitRfqDto,
   files: Express.Multer.File[] = [],
 ) {
+  if (dto.requestType === "COMPONENT_MANUFACTURER" && files.length === 0) {
+    throw new HttpException(400, "At least one attachment is required for component specification");
+  }
+
+  let finalProductName = dto.productName ?? "";
+  let finalCategory = dto.category ?? "";
+  let finalSpecs = dto.specs;
+
+  if (dto.requestType === "PRODUCT_CATALOGUE" && dto.mfrProductId) {
+    const [product] = await db
+      .select({ name: mfrProducts.name, categoryId: mfrProducts.categoryId, description: mfrProducts.description })
+      .from(mfrProducts)
+      .where(eq(mfrProducts.id, dto.mfrProductId));
+
+    if (!product) throw new HttpException(404, "Product not found in catalogue");
+
+    const [cat] = await db
+      .select({ name: mfrCategories.name })
+      .from(mfrCategories)
+      .where(eq(mfrCategories.id, product.categoryId));
+
+    finalProductName = product.name;
+    finalCategory = cat?.name ?? product.categoryId;
+    finalSpecs = product.description ?? undefined;
+  }
+
   const rfqNumber = await repo.generateRfqNumber();
 
   let attachmentUrls: string[] = [];
@@ -29,13 +55,13 @@ export async function submitRfq(
   return repo.createRfqRequest({
     rfqNumber,
     buyerId,
-    productName: dto.productName,
-    category: dto.category,
+    productName: finalProductName,
+    category: finalCategory,
     quantity: dto.quantity,
     unit: dto.unit,
     deliveryLocation: dto.deliveryLocation,
     requiredBy: dto.requiredBy,
-    specs: dto.specs,
+    specs: finalSpecs,
     orderType: dto.orderType,
     requestType: dto.requestType,
     attachments: attachmentUrls,
@@ -71,8 +97,17 @@ export async function adminGetOne(rfqId: string) {
 
 // ─── Admin: assignees list filtered by type ───────────────────────────────────
 
-export async function getAssigneesList(type: "supplier" | "manufacturer") {
-  return repo.getAssigneesByType(type);
+export async function getAssigneesList(
+  type: "supplier" | "manufacturer",
+  filters?: { state?: string; category?: string; verified?: boolean },
+) {
+  return repo.getAssigneesByType(type, filters);
+}
+
+export async function getAssigneeProfile(userId: string) {
+  const row = await repo.getAssigneeById(userId);
+  if (!row) throw new HttpException(404, "User not found");
+  return row;
 }
 
 // ─── Admin Step A: assign supplier/manufacturer ───────────────────────────────
@@ -89,8 +124,11 @@ export async function adminAssign(rfqId: string, adminId: string, dto: AssignDto
     rfqId,
     assigneeUserId: dto.assigneeUserId,
     assignedBy: adminId,
+    assignmentMode: dto.assignmentMode,
     negotiatedPrice: dto.negotiatedPrice,
     adminMarginPct: dto.adminMarginPct,
+    transportCompany: dto.transportCompany,
+    deliveryCharge: dto.deliveryCharge,
     internalNotes: dto.internalNotes,
   });
 
@@ -119,6 +157,7 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     assignment.negotiatedPrice ?? assignment.supplierQuotedPrice ?? "0"
   );
   const marginPct = parseFloat(assignment.adminMarginPct ?? "10");
+  const deliveryCharge = parseFloat(assignment.deliveryCharge ?? "0");
 
   if (negotiatedPrice <= 0) {
     throw new HttpException(400, "Negotiated price must be set before approving");
@@ -131,7 +170,7 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
 
   // Sales Invoice: platform → buyer (includes margin)
   const marginAmt = parseFloat((negotiatedPrice * (marginPct / 100)).toFixed(2));
-  const invBase = parseFloat((negotiatedPrice + marginAmt).toFixed(2));
+  const invBase = parseFloat((negotiatedPrice + marginAmt + deliveryCharge).toFixed(2));
   const invGst = parseFloat((invBase * 0.18).toFixed(2));
   const invTotal = parseFloat((invBase + invGst).toFixed(2));
 
@@ -189,7 +228,7 @@ export async function supplierSubmitQuote(rfqId: string, supplierUserId: string,
   const assignment = await repo.getAssignment(rfqId);
   if (!assignment) throw new HttpException(404, "RFQ not assigned");
   if (assignment.supplierUserId !== supplierUserId) throw new HttpException(403, "Access denied");
-  if (!["PENDING", "SUPPLIER_QUOTED"].includes(assignment.negotiationStatus)) {
+  if (assignment.negotiationStatus !== "PENDING") {
     throw new HttpException(400, `Cannot submit quote: status is ${assignment.negotiationStatus}`);
   }
 

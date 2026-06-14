@@ -107,7 +107,19 @@ export const adminGetOne = async (req: AdminRequest, res: Response, next: NextFu
 export const adminGetAssigneesList = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const type = (req.query.type as string) === "manufacturer" ? "manufacturer" : "supplier";
-    const data = await svc.getAssigneesList(type);
+    const filters = {
+      state: (req.query.state as string) || undefined,
+      category: (req.query.category as string) || undefined,
+      verified: req.query.verified === "true" ? true : undefined,
+    };
+    const data = await svc.getAssigneesList(type, filters);
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const adminGetAssigneeProfile = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getAssigneeProfile(req.params.id);
     res.json(data);
   } catch (err) { next(err); }
 };
