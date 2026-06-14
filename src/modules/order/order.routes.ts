@@ -1,8 +1,31 @@
 import { Router } from "express";
+import multer from "multer";
 import { authMiddleware } from "../../middlewares/auth.middleware";
-import { requireBuyer } from "../../middlewares/rbac.middleware";
+import { requireBuyer, requireSupplier } from "../../middlewares/rbac.middleware";
 import { adminMiddleware } from "../../middlewares/admin.middleware";
+import { HttpException } from "../../core/HttpException";
 import { OrderController } from "./order.controller";
+
+const certificateMimeTypes = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+const certificateUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: 10,
+    fileSize: 10 * 1024 * 1024,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!certificateMimeTypes.has(file.mimetype)) {
+      return cb(new HttpException(400, "Only PDF and image certificate files can be uploaded."));
+    }
+    cb(null, true);
+  },
+});
 
 export class OrderRoutes {
   public router = Router();
@@ -10,6 +33,8 @@ export class OrderRoutes {
 
   constructor() {
     this.router.get("/", authMiddleware, requireBuyer, this.controller.list);
+    this.router.get("/supplier/assigned", authMiddleware, requireSupplier, this.controller.supplierList);
+    this.router.get("/supplier/:id", authMiddleware, requireSupplier, this.controller.supplierGetOne);
 
     /**
      * @openapi
@@ -45,6 +70,13 @@ export class OrderRoutes {
     this.router.post("/", authMiddleware, requireBuyer, this.controller.create);
 
     this.router.get("/:id", authMiddleware, requireBuyer, this.controller.getOne);
+    this.router.patch(
+      "/:id/acknowledge",
+      authMiddleware,
+      requireSupplier,
+      certificateUpload.array("certificates", 10),
+      this.controller.acknowledge
+    );
     this.router.patch(
       "/:id/advance-payment",
       authMiddleware,
