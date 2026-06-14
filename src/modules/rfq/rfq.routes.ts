@@ -47,8 +47,11 @@ export class AdminRfqRoutes {
   public router = Router();
 
   constructor() {
-    // Assignees list filtered by type (?type=supplier|manufacturer)
+    // Assignees list filtered by type (?type=supplier|manufacturer&state=...&category=...&verified=true)
     this.router.get("/assignees-list", adminMiddleware, ctrl.adminGetAssigneesList);
+
+    // Single assignee profile
+    this.router.get("/assignees/:id/profile", adminMiddleware, ctrl.adminGetAssigneeProfile);
 
     // RFQ list + detail
     this.router.get("/rfqs", adminMiddleware, ctrl.adminGetAll);
