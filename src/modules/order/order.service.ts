@@ -3,12 +3,14 @@ import { guardRfqTransition, type RfqStatus } from "../../core/order-state-machi
 import {
   sendOrderAcknowledgementAdminNotification,
   sendOrderAcknowledgementNotification,
+  sendOrderDispatchedNotification,
 } from "../../services/email.service";
 import { FileUploadService } from "../../services/file-upload.service";
 import { OrderRepository } from "./order.repository";
 import type {
   AcknowledgeOrderDto,
   ConfirmOrderDto,
+  CreateShipmentDto,
   ListOrdersQuery,
   RecordAdvancePaymentDto,
   UpdatePhase5DocumentsDto,
@@ -187,5 +189,56 @@ export class OrderService extends BaseService {
     sendOrderAcknowledgementAdminNotification(notification).catch(() => undefined);
 
     return order!;
+  }
+
+  async createShipment(id: string, supplierUserId: string, dto: CreateShipmentDto) {
+    const orderContext = await this.getSupplierOrder(id, supplierUserId);
+
+    if (!["ORDER_CONFIRMED", "SUPPLIER_ACKNOWLEDGED"].includes(orderContext.order.status)) {
+      this.throwBadRequest(`Shipment cannot be created while order is in status ${orderContext.order.status}.`);
+    }
+
+    if (orderContext.rfq?.status) {
+      guardRfqTransition(orderContext.rfq.status as RfqStatus, "DISPATCHED");
+    }
+
+    const existingShipment = await this.repo.findShipmentByOrderId(id);
+    if (existingShipment) {
+      this.throwBadRequest("A shipment has already been created for this order.");
+    }
+
+    const totalAmount = Number(orderContext.order.totalAmount ?? 0);
+    if (totalAmount > 50000 && !dto.ewayBillNumber && !dto.ewayBillDocumentUrl) {
+      this.throwBadRequest("E-Way Bill is required for orders above ₹50,000.");
+    }
+
+    const dispatchedAt = dto.dispatchedAt ? new Date(dto.dispatchedAt) : new Date();
+    if (Number.isNaN(dispatchedAt.getTime())) {
+      this.throwBadRequest("Dispatched at must be a valid date.");
+    }
+
+    const shipmentNumber = await this.repo.generateShipmentNumber();
+    const result = await this.repo.createShipment({
+      orderId: id,
+      rfqId: orderContext.order.rfqId,
+      buyerId: orderContext.order.buyerId,
+      supplierUserId,
+      shipmentNumber,
+      dto,
+      dispatchedAt,
+    });
+
+    if (orderContext.buyer?.email) {
+      sendOrderDispatchedNotification({
+        buyerEmail: orderContext.buyer.email,
+        orderNumber: orderContext.order.orderNumber,
+        rfqNumber: orderContext.rfq?.rfqNumber,
+        productName: orderContext.rfq?.productName,
+        trackingNumber: result.shipment.trackingNumber,
+        carrierName: result.shipment.carrierName,
+      }).catch(() => undefined);
+    }
+
+    return result;
   }
 }

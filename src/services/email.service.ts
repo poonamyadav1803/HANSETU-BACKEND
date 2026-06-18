@@ -241,6 +241,43 @@ export async function sendOrderAcknowledgementAdminNotification(input: {
   });
 }
 
+export async function sendOrderDispatchedNotification(input: {
+  buyerEmail: string;
+  orderNumber: string;
+  rfqNumber?: string | null;
+  productName?: string | null;
+  trackingNumber?: string | null;
+  carrierName?: string | null;
+}): Promise<void> {
+  const transporter = createTransport();
+  await transporter.sendMail({
+    from: env.EMAIL_FROM,
+    to: input.buyerEmail,
+    subject: `Your Hansetu order has been dispatched — ${input.orderNumber}`,
+    text:
+      `Your order has been dispatched.\n\n` +
+      `Order Number: ${input.orderNumber}\n` +
+      `RFQ Number: ${input.rfqNumber ?? "N/A"}\n` +
+      `Product: ${input.productName ?? "N/A"}\n` +
+      `Carrier: ${input.carrierName ?? "N/A"}\n` +
+      `Tracking Number: ${input.trackingNumber ?? "N/A"}\n\n` +
+      `We will keep you updated as the shipment progresses.`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto;">
+        <h2 style="color:#16a34a;">Your order has been dispatched</h2>
+        <p>Your order has been dispatched.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+          <tr><td style="padding:8px;color:#64748b;width:42%;">Order Number</td><td style="padding:8px;font-weight:600;">${input.orderNumber}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">RFQ Number</td><td style="padding:8px;">${input.rfqNumber ?? "N/A"}</td></tr>
+          <tr><td style="padding:8px;color:#64748b;">Product</td><td style="padding:8px;">${input.productName ?? "N/A"}</td></tr>
+          <tr style="background:#f8fafc;"><td style="padding:8px;color:#64748b;">Carrier</td><td style="padding:8px;">${input.carrierName ?? "N/A"}</td></tr>
+          <tr><td style="padding:8px;color:#64748b;">Tracking Number</td><td style="padding:8px;">${input.trackingNumber ?? "N/A"}</td></tr>
+        </table>
+      </div>
+    `,
+  });
+}
+
 export async function sendOtpEmail(to: string, otp: string): Promise<void> {
   const transporter = createTransport();
 
