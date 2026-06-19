@@ -73,15 +73,24 @@ jobs:
             -e SMTP_USER="${{ secrets.SMTP_USER }}" \
             -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
             -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
-            ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }} 
+            ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
 
+      - name: Debug Backend
+        run: |
+          echo "Waiting..."
           sleep 180
 
-          docker logs test-backend
-          curl --fail http://localhost:3000/api/health
+          echo "===== CONTAINER STATUS ====="
+          docker ps -a
 
-          docker stop test-backend
-          docker rm test-backend
+          echo "===== CONTAINER LOGS ====="
+          docker logs test-backend
+
+          echo "===== PORTS ====="
+          docker port test-backend
+
+          echo "===== HEALTH CHECK ====="
+          curl -v http://localhost:3000/api/health
 
       - name: Push backend image to ECR
         run: |
@@ -163,7 +172,7 @@ jobs:
 
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "Hansetu Deployment Started"
-            echo "Version: {{ needs.build-backend.outputs.version }}"
+            echo "Version: ${{ needs.build-backend.outputs.version }}"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
             ECR_REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
@@ -180,11 +189,13 @@ jobs:
 
             git clone -b main git@github.com:poonamyadav1803/HANSETU-BACKEND.git
 
-            cp ~/.env HANSETU-BACKEND/
+            if [ -f ~/.env ]; then
+              cp ~/.env HANSETU-BACKEND/
+            fi
 
             cd HANSETU-BACKEND
 
-            VERSION=$(cat version.txt | tr -d '\n')
+            VERSION=$(cat VERSION.txt | tr -d '\n')
 
             export VERSION
             export ECR_REGISTRY
