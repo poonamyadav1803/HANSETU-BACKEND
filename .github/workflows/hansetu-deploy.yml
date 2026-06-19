@@ -73,6 +73,10 @@ jobs:
             -e SMTP_USER="${{ secrets.SMTP_USER }}" \
             -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
             -e EMAIL_FROM="${{ secrets.EMAIL_FROM }}" \
+            -e WHITEBOOKS_CLIENT_ID="${{ secrets.WHITEBOOKS_CLIENT_ID }}" \
+            -e WHITEBOOKS_CLIENT_SECRET="${{ secrets.WHITEBOOKS_CLIENT_SECRET }}" \
+            -e WHITEBOOKS_GST_API_URL="${{ secrets.WHITEBOOKS_GST_API_URL }}" \
+            -e WHITEBOOKS_GST_EMAIL="${{ secrets.WHITEBOOKS_GST_EMAIL }}" \
             ${{ env.ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
 
       - name: Debug Backend
@@ -201,6 +205,17 @@ jobs:
             SMTP_USER="${{ secrets.SMTP_USER }}"
             SMTP_PASS="${{ secrets.SMTP_PASS }}"
             EMAIL_FROM="${{ secrets.EMAIL_FROM }}"
+            POSTGRES_USER="${{ secrets.POSTGRES_USER }}"
+            POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+            POSTGRES_DB="${{ secrets.POSTGRES_DB }}"
+            WHITEBOOKS_CLIENT_ID="${{ secrets.WHITEBOOKS_CLIENT_ID }}"
+            WHITEBOOKS_CLIENT_SECRET="${{ secrets.WHITEBOOKS_CLIENT_SECRET }}"
+            WHITEBOOKS_GST_API_URL="${{ secrets.WHITEBOOKS_GST_API_URL }}"
+            WHITEBOOKS_GST_EMAIL="${{ secrets.WHITEBOOKS_GST_EMAIL }}"
+
+
+
+            
             EOF
             cat .env
             VERSION=$(cat VERSION.txt | tr -d '\n')
