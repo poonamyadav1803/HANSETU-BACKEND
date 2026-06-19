@@ -212,10 +212,6 @@ jobs:
             WHITEBOOKS_CLIENT_SECRET="${{ secrets.WHITEBOOKS_CLIENT_SECRET }}"
             WHITEBOOKS_GST_API_URL="${{ secrets.WHITEBOOKS_GST_API_URL }}"
             WHITEBOOKS_GST_EMAIL="${{ secrets.WHITEBOOKS_GST_EMAIL }}"
-
-
-
-            
             EOF
             cat .env
             VERSION=$(cat VERSION.txt | tr -d '\n')
