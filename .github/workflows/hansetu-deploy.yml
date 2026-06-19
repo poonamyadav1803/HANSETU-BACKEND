@@ -189,25 +189,20 @@ jobs:
 
             git clone -b rollback-pipeline git@github.com:poonamyadav1803/HANSETU-BACKEND.git
 
-            if [ -f ~/.env ]; then
-              cp ~/.env HANSETU-BACKEND/
-            fi
-
             cd HANSETU-BACKEND
             cat > .env <<EOF
             PORT=3000
             NODE_ENV=production
 
-            DATABASE_URL=${DATABASE_URL}
-            JWT_SECRET=${JWT_SECRET}
-            SMTP_HOST=${SMTP_HOST}
-            SMTP_PORT=${SMTP_PORT}
-            SMTP_USER=${SMTP_USER}
-            SMTP_PASS=${SMTP_PASS}
-            EMAIL_FROM=${EMAIL_FROM}
-
-            
-
+            DATABASE_URL="${{ secrets.DATABASE_URL }}"
+            JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            SMTP_HOST="${{ secrets.SMTP_HOST }}"
+            SMTP_PORT="${{ secrets.SMTP_PORT }}"
+            SMTP_USER="${{ secrets.SMTP_USER }}"
+            SMTP_PASS="${{ secrets.SMTP_PASS }}"
+            EMAIL_FROM="${{ secrets.EMAIL_FROM }}"
+            EOF
+            cat .env
             VERSION=$(cat VERSION.txt | tr -d '\n')
 
             export VERSION
