@@ -2,6 +2,9 @@ name: Hansetu Full Deploy
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - rollback-pipeline
 
 env:
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
