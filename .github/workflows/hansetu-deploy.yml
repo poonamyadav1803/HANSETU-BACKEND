@@ -187,7 +187,7 @@ jobs:
               sudo rm -rf HANSETU-BACKEND
             fi
 
-            git clone -b main git@github.com:poonamyadav1803/HANSETU-BACKEND.git
+            git clone -b rollback-pipeline git@github.com:poonamyadav1803/HANSETU-BACKEND.git
 
             if [ -f ~/.env ]; then
               cp ~/.env HANSETU-BACKEND/
