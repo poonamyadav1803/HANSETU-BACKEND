@@ -127,12 +127,12 @@ jobs:
         run: |
           docker build \
             --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
-            -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.VERSION }} \
+            -t ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ needs.build-backend.outputs.version }} \
             -f Dockerfile .
 
       - name: Push frontend image to ECR
         run: |
-          docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ env.VERSION }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ needs.build-backend.outputs.version }}
           echo "Frontend pushed successfully"
 
   deploy:
@@ -150,8 +150,8 @@ jobs:
       - name: SSH into EC2 and deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
+          host: 3.89.253.117
+          username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           timeout: 20m
