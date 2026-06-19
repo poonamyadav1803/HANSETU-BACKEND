@@ -22,7 +22,7 @@ services:
       retries: 5
 
   backend:
-    image: ${ECR_REGISTRY}/hansetu/backend:latest
+    image: ${ECR_REGISTRY}/hansetu/backend:${VERSION}
     container_name: hansetu-backend
     restart: unless-stopped
     depends_on:
@@ -47,7 +47,7 @@ services:
       retries: 5
 
   frontend:
-    image: ${ECR_REGISTRY}/hansetu/frontend:latest
+    image: ${ECR_REGISTRY}/hansetu/frontend:${VERSION}
     container_name: hansetu-frontend
     restart: "no"
     ports:
