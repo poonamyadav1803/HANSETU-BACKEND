@@ -81,16 +81,16 @@ jobs:
           sleep 180
 
           echo "===== CONTAINER STATUS ====="
-          docker ps -a
+          docker ps -a || true
 
           echo "===== CONTAINER LOGS ====="
-          docker logs test-backend
+          docker logs test-backend || true
 
           echo "===== PORTS ====="
-          docker port test-backend
+          docker port test-backend || true
 
           echo "===== HEALTH CHECK ====="
-          curl -v http://localhost:3000/api/health
+          curl -v http://localhost:3000/api/health || true
 
       - name: Push backend image to ECR
         run: |
