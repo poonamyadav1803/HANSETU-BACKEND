@@ -1073,6 +1073,8 @@ export const purchaseOrders = pgTable("purchase_orders", {
   acknowledgedAt: timestamp("acknowledged_at"),
   expectedDispatchDate: varchar("expected_dispatch_date", { length: 50 }),
   qcDocuments: jsonb("qc_documents").default([]), // string[] of S3 URLs
+  paymentReleased: boolean("payment_released").default(false).notNull(),
+  paymentReleasedAt: timestamp("payment_released_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1104,7 +1106,10 @@ export const salesInvoices = pgTable("sales_invoices", {
   ewayBillNo: varchar("eway_bill_no", { length: 50 }),
   deliveryLocation: text("delivery_location"),
   status: varchar("status", { length: 30 }).default("ISSUED").notNull(),
-  // ISSUED | PAID | CANCELLED
+  // ISSUED | AWAITING_PAYMENT | PAID | CANCELLED
+  razorpayOrderId: varchar("razorpay_order_id", { length: 255 }),
+  razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
+  paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
