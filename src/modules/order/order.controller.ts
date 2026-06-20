@@ -5,6 +5,7 @@ import { OrderService } from "./order.service";
 import {
   confirmOrderSchema,
   acknowledgeOrderSchema,
+  createShipmentSchema,
   listOrdersQuerySchema,
   recordAdvancePaymentSchema,
   updatePhase5DocumentsSchema,
@@ -78,6 +79,19 @@ export class OrderController {
 
       const files = (req.files as Express.Multer.File[]) ?? [];
       res.json(await service.acknowledgeOrder(req.params.id, req.userId!, parsed.data, files));
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async createShipment(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const parsed = createShipmentSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
+      }
+
+      res.status(201).json(await service.createShipment(req.params.id, req.userId!, parsed.data));
     } catch (err) {
       next(err);
     }

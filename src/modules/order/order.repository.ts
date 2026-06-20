@@ -1,9 +1,10 @@
 import { and, desc, eq, gte, ilike, lte, sql, type SQL } from "drizzle-orm";
 import { BaseRepository } from "../../core/BaseRepository";
-import { orders, rfqAssignments, rfqRequests, users } from "../../db/schema";
+import { orders, rfqAssignments, rfqRequests, shipments, users } from "../../db/schema";
 import type { RfqStatus } from "../../core/order-state-machine";
 import type {
   AcknowledgeOrderDto,
+  CreateShipmentDto,
   ListOrdersQuery,
   RecordAdvancePaymentDto,
   UpdatePhase5DocumentsDto,
@@ -18,6 +19,15 @@ export class OrderRepository extends BaseRepository {
     );
     const count = (result.rows[0] as { count: number }).count;
     return `ORD/${year}/${String(count + 1).padStart(5, "0")}`;
+  }
+
+  async generateShipmentNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const result = await this.db.execute(
+      sql`SELECT COUNT(*)::int AS count FROM shipments WHERE EXTRACT(YEAR FROM created_at) = ${year}`
+    );
+    const count = (result.rows[0] as { count: number }).count;
+    return `SHP/${year}/${String(count + 1).padStart(5, "0")}`;
   }
 
   async findSourceByRfqId(rfqId: string) {
@@ -56,6 +66,11 @@ export class OrderRepository extends BaseRepository {
       .leftJoin(users, eq(users.id, orders.buyerId))
       .where(eq(orders.id, id));
 
+    return row ?? null;
+  }
+
+  async findShipmentByOrderId(orderId: string) {
+    const [row] = await this.db.select().from(shipments).where(eq(shipments.orderId, orderId));
     return row ?? null;
   }
 
@@ -154,6 +169,56 @@ export class OrderRepository extends BaseRepository {
       .returning();
 
     return order ?? null;
+  }
+
+  async createShipment(input: {
+    orderId: string;
+    rfqId: string;
+    buyerId: string;
+    supplierUserId: string;
+    shipmentNumber: string;
+    dto: CreateShipmentDto;
+    dispatchedAt: Date;
+  }) {
+    return this.db.transaction(async (tx) => {
+      const [shipment] = await tx
+        .insert(shipments)
+        .values({
+          shipmentNumber: input.shipmentNumber,
+          orderId: input.orderId,
+          buyerId: input.buyerId,
+          supplierUserId: input.supplierUserId,
+          status: "DISPATCHED",
+          carrierName: input.dto.carrierName ?? null,
+          trackingNumber: input.dto.trackingNumber ?? null,
+          vehicleNumber: input.dto.vehicleNumber ?? null,
+          ewayBillNumber: input.dto.ewayBillNumber ?? null,
+          ewayBillDocumentUrl: input.dto.ewayBillDocumentUrl ?? null,
+          dispatchedAt: input.dispatchedAt,
+          notes: input.dto.notes ?? null,
+        })
+        .returning();
+
+      const [order] = await tx
+        .update(orders)
+        .set({
+          status: "DISPATCHED",
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, input.orderId))
+        .returning();
+
+      const [rfq] = await tx
+        .update(rfqRequests)
+        .set({
+          status: "DISPATCHED",
+          updatedAt: new Date(),
+        })
+        .where(eq(rfqRequests.id, input.rfqId))
+        .returning();
+
+      return { shipment, order, rfq };
+    });
   }
 
   async updateRfqStatus(rfqId: string, status: RfqStatus) {
