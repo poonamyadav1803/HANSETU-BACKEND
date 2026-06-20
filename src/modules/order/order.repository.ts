@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, ilike, lte, sql, type SQL } from "drizzle-orm";
 import { BaseRepository } from "../../core/BaseRepository";
-import { orders, rfqAssignments, rfqRequests, shipments, users } from "../../db/schema";
+import { orders, orderShipments, rfqAssignments, rfqRequests, users } from "../../db/schema";
 import type { RfqStatus } from "../../core/order-state-machine";
 import type {
   AcknowledgeOrderDto,
@@ -24,7 +24,7 @@ export class OrderRepository extends BaseRepository {
   async generateShipmentNumber(): Promise<string> {
     const year = new Date().getFullYear();
     const result = await this.db.execute(
-      sql`SELECT COUNT(*)::int AS count FROM shipments WHERE EXTRACT(YEAR FROM created_at) = ${year}`
+      sql`SELECT COUNT(*)::int AS count FROM order_shipments WHERE EXTRACT(YEAR FROM created_at) = ${year}`
     );
     const count = (result.rows[0] as { count: number }).count;
     return `SHP/${year}/${String(count + 1).padStart(5, "0")}`;
@@ -70,7 +70,7 @@ export class OrderRepository extends BaseRepository {
   }
 
   async findShipmentByOrderId(orderId: string) {
-    const [row] = await this.db.select().from(shipments).where(eq(shipments.orderId, orderId));
+    const [row] = await this.db.select().from(orderShipments).where(eq(orderShipments.orderId, orderId));
     return row ?? null;
   }
 
@@ -182,7 +182,7 @@ export class OrderRepository extends BaseRepository {
   }) {
     return this.db.transaction(async (tx) => {
       const [shipment] = await tx
-        .insert(shipments)
+        .insert(orderShipments)
         .values({
           shipmentNumber: input.shipmentNumber,
           orderId: input.orderId,

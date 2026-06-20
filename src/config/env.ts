@@ -22,6 +22,9 @@ export const env = {
   TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || '',
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || '',
   TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || '',
+  // Razorpay
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_T15MfBYXLfMM6G',
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || 'l1625LaEQO3xqY3o2Vdqpc9b',
   // S3 uploads
   AWS_REGION: process.env.AWS_REGION || 'ap-southeast-2',
   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || 'AKIAT4XN4JEUW7LRDP74',

@@ -1,7 +1,8 @@
 import { HttpException } from "../../core/HttpException";
 import { FileUploadService } from "../../services/file-upload.service";
+import * as razorpayService from "../../services/razorpay.service";
 import { db } from "../../db";
-import { shipments, purchaseOrders, mfrProducts, mfrCategories } from "../../db/schema";
+import { shipments, purchaseOrders, mfrProducts, mfrCategories, users } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import type {
   SubmitRfqDto, AssignDto, ApproveRfqDto, SubmitQuoteDto,
@@ -322,6 +323,9 @@ export async function adminMarkDelivered(shipmentId: string) {
   const [shipment] = await db.select().from(shipments).where(eq(shipments.id, shipmentId));
   if (shipment) {
     await repo.updateRfqStatus(shipment.rfqId, "DELIVERED");
+    await db.update(purchaseOrders)
+      .set({ status: "DELIVERED", updatedAt: new Date() })
+      .where(eq(purchaseOrders.rfqId, shipment.rfqId));
   }
 }
 
@@ -335,10 +339,100 @@ export async function buyerMarkReceived(shipmentId: string, buyerId: string) {
 
   await repo.markShipmentReceived(shipmentId);
   await repo.updateRfqStatus(shipment.rfqId, "CLOSED");
+  await db.update(purchaseOrders)
+    .set({ status: "CLOSED", updatedAt: new Date() })
+    .where(eq(purchaseOrders.rfqId, shipment.rfqId));
 }
 
 // ─── Admin: all shipments ─────────────────────────────────────────────────────
 
 export async function adminListShipments() {
   return repo.adminGetAllShipments();
+}
+
+// ─── Payment: buyer creates Razorpay order ────────────────────────────────────
+
+export async function createRazorpayOrder(invoiceId: string, buyerId: string) {
+  const invoice = await repo.getInvoiceById(invoiceId);
+  if (!invoice) throw new HttpException(404, "Invoice not found");
+  if (invoice.buyerUserId !== buyerId) throw new HttpException(403, "Access denied");
+  if (invoice.status === "PAID") throw new HttpException(400, "Invoice is already paid");
+  if (invoice.status === "CANCELLED") throw new HttpException(400, "Invoice has been cancelled");
+
+  const amountInPaise = Math.round(parseFloat(invoice.totalAmount) * 100);
+
+  const order = await razorpayService.createOrder({
+    amountInPaise,
+    receipt: invoice.invoiceNumber,
+    notes: { invoiceId, invoiceNumber: invoice.invoiceNumber },
+  });
+
+  await repo.setInvoiceAwaitingPayment(invoiceId, order.id);
+
+  return {
+    orderId: order.id,
+    amount: order.amount,
+    currency: order.currency,
+    invoiceNumber: invoice.invoiceNumber,
+    productName: invoice.productName,
+  };
+}
+
+// ─── Payment: buyer verifies Razorpay payment ────────────────────────────────
+
+export async function verifyRazorpayPayment(
+  invoiceId: string,
+  buyerId: string,
+  dto: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string },
+) {
+  const invoice = await repo.getInvoiceById(invoiceId);
+  if (!invoice) throw new HttpException(404, "Invoice not found");
+  if (invoice.buyerUserId !== buyerId) throw new HttpException(403, "Access denied");
+  if (invoice.status === "PAID") throw new HttpException(400, "Invoice is already paid");
+
+  const valid = razorpayService.verifyPaymentSignature({
+    razorpayOrderId: dto.razorpayOrderId,
+    razorpayPaymentId: dto.razorpayPaymentId,
+    razorpaySignature: dto.razorpaySignature,
+  });
+  if (!valid) throw new HttpException(400, "Payment verification failed — signature mismatch");
+
+  await repo.markInvoicePaid(invoiceId, dto.razorpayPaymentId, dto.razorpayOrderId);
+}
+
+// ─── Payment: admin manual mark-paid ─────────────────────────────────────────
+
+export async function adminMarkInvoicePaid(invoiceId: string) {
+  const invoice = await repo.getInvoiceById(invoiceId);
+  if (!invoice) throw new HttpException(404, "Invoice not found");
+  if (invoice.status === "PAID") throw new HttpException(400, "Invoice is already paid");
+
+  await repo.adminMarkInvoicePaidManually(invoiceId);
+}
+
+// ─── Payment: admin releases payment to supplier ──────────────────────────────
+
+export async function adminReleasePayment(poId: string) {
+  const po = await repo.getPoById(poId);
+  if (!po) throw new HttpException(404, "Purchase order not found");
+  if (po.paymentReleased) throw new HttpException(400, "Payment has already been released");
+  if (!["DELIVERED", "CLOSED"].includes(po.status)) {
+    throw new HttpException(400, "Payment can only be released after delivery is confirmed");
+  }
+
+  await repo.markPoPaymentReleased(poId);
+}
+
+// ─── Payment Audit ────────────────────────────────────────────────────────────
+
+export async function getAdminPaymentAudit() {
+  return repo.getAdminPaymentAudit();
+}
+
+export async function getBuyerPaymentHistory(buyerUserId: string) {
+  return repo.getBuyerPaymentHistory(buyerUserId);
+}
+
+export async function getSupplierPaymentHistory(supplierUserId: string) {
+  return repo.getSupplierPaymentHistory(supplierUserId);
 }

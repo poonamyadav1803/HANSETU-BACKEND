@@ -161,3 +161,65 @@ export const adminListShipments = async (req: AdminRequest, res: Response, next:
     res.json(data);
   } catch (err) { next(err); }
 };
+
+// ─── Payment controllers ──────────────────────────────────────────────────────
+
+export const createRazorpayOrder = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const result = await svc.createRazorpayOrder(req.params.id, req.userId!);
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
+export const verifyRazorpayPayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body as {
+      razorpayOrderId: string;
+      razorpayPaymentId: string;
+      razorpaySignature: string;
+    };
+    await svc.verifyRazorpayPayment(req.params.id, req.userId!, {
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    });
+    res.json({ success: true, message: "Payment verified and recorded" });
+  } catch (err) { next(err); }
+};
+
+export const adminMarkInvoicePaid = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    await svc.adminMarkInvoicePaid(req.params.id);
+    res.json({ message: "Invoice marked as paid" });
+  } catch (err) { next(err); }
+};
+
+export const adminReleasePayment = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    await svc.adminReleasePayment(req.params.id);
+    res.json({ message: "Payment released to supplier" });
+  } catch (err) { next(err); }
+};
+
+// ─── Payment Audit ────────────────────────────────────────────────────────────
+
+export const adminGetPaymentAudit = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getAdminPaymentAudit();
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const buyerGetPaymentHistory = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getBuyerPaymentHistory(req.userId!);
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
+export const supplierGetPaymentHistory = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const data = await svc.getSupplierPaymentHistory(req.userId!);
+    res.json(data);
+  } catch (err) { next(err); }
+};

@@ -34,8 +34,16 @@ export class RfqRoutes {
     this.router.patch("/pos/:id/upload-invoice", authMiddleware, ctrl.uploadInvoice);
     this.router.post("/pos/:id/shipment", authMiddleware, ctrl.createShipment);
 
+    // Razorpay payment: create order then verify after payment
+    this.router.post("/invoices/:id/create-order", authMiddleware, ctrl.createRazorpayOrder);
+    this.router.post("/invoices/:id/verify-payment", authMiddleware, ctrl.verifyRazorpayPayment);
+
     // Buyer marks received (closes order)
     this.router.patch("/shipments/:id/received", authMiddleware, ctrl.markReceived);
+
+    // Payment audit history (static paths before /:id)
+    this.router.get("/payment-history", authMiddleware, ctrl.buyerGetPaymentHistory);
+    this.router.get("/supplier-payment-history", authMiddleware, ctrl.supplierGetPaymentHistory);
 
     // Buyer: single RFQ detail
     this.router.get("/:id", authMiddleware, ctrl.getOne);
@@ -67,5 +75,12 @@ export class AdminRfqRoutes {
     this.router.get("/shipments", adminMiddleware, ctrl.adminListShipments);
     this.router.patch("/shipments/:id/checkpoint", adminMiddleware, ctrl.adminAddCheckpoint);
     this.router.patch("/shipments/:id/deliver", adminMiddleware, ctrl.adminMarkDelivered);
+
+    // Payment management
+    this.router.patch("/invoices/:id/mark-paid", adminMiddleware, ctrl.adminMarkInvoicePaid);
+    this.router.patch("/pos/:id/release-payment", adminMiddleware, ctrl.adminReleasePayment);
+
+    // Payment audit
+    this.router.get("/payment-audit", adminMiddleware, ctrl.adminGetPaymentAudit);
   }
 }
