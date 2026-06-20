@@ -1041,7 +1041,6 @@ export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
-<<<<<<< Updated upstream
 // Purchase Orders (platform → supplier; supplier price, no margin shown)
 // ─────────────────────────────────────────────────────────────────────────────
 export const purchaseOrders = pgTable("purchase_orders", {
@@ -1119,14 +1118,10 @@ export type SalesInvoice = typeof salesInvoices.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shipments (created by supplier after uploading invoice)
-=======
-// Shipments (dispatch records for confirmed buyer orders)
->>>>>>> Stashed changes
 // ─────────────────────────────────────────────────────────────────────────────
 export const shipments = pgTable("shipments", {
   id: uuid("id").primaryKey().defaultRandom(),
   shipmentNumber: varchar("shipment_number", { length: 50 }).unique().notNull(),
-<<<<<<< Updated upstream
   poId: uuid("po_id").notNull().references(() => purchaseOrders.id, { onDelete: "restrict" }),
   rfqId: uuid("rfq_id").notNull().references(() => rfqRequests.id, { onDelete: "restrict" }),
   buyerId: uuid("buyer_id").notNull().references(() => users.id),
@@ -1141,7 +1136,18 @@ export const shipments = pgTable("shipments", {
   // [{ label, location, note, ts }]
   deliveredAt: timestamp("delivered_at"),
   receivedByBuyerAt: timestamp("received_by_buyer_at"),
-=======
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Shipment = typeof shipments.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Order Shipments (dispatch records for the legacy `orders`-based order flow)
+// ─────────────────────────────────────────────────────────────────────────────
+export const orderShipments = pgTable("order_shipments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  shipmentNumber: varchar("shipment_number", { length: 50 }).unique().notNull(),
   orderId: uuid("order_id")
     .unique()
     .notNull()
@@ -1160,14 +1166,11 @@ export const shipments = pgTable("shipments", {
   ewayBillDocumentUrl: text("eway_bill_document_url"),
   dispatchedAt: timestamp("dispatched_at").defaultNow().notNull(),
   notes: text("notes"),
->>>>>>> Stashed changes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-<<<<<<< Updated upstream
-=======
-export const insertShipmentSchema = createInsertSchema(shipments).omit({
+export const insertOrderShipmentSchema = createInsertSchema(orderShipments).omit({
   id: true,
   shipmentNumber: true,
   status: true,
@@ -1176,6 +1179,5 @@ export const insertShipmentSchema = createInsertSchema(shipments).omit({
   updatedAt: true,
 });
 
-export type InsertShipment = z.infer<typeof insertShipmentSchema>;
->>>>>>> Stashed changes
-export type Shipment = typeof shipments.$inferSelect;
+export type InsertOrderShipment = z.infer<typeof insertOrderShipmentSchema>;
+export type OrderShipment = typeof orderShipments.$inferSelect;
