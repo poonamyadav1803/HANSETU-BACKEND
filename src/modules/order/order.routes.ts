@@ -70,6 +70,12 @@ export class OrderRoutes {
     this.router.post("/", authMiddleware, requireBuyer, this.controller.create);
 
     this.router.get("/:id", authMiddleware, requireBuyer, this.controller.getOne);
+    this.router.post(
+      "/:id/shipment",
+      authMiddleware,
+      requireSupplier,
+      this.controller.createShipment
+    );
     this.router.patch(
       "/:id/acknowledge",
       authMiddleware,

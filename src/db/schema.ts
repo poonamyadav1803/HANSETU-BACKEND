@@ -1041,6 +1041,7 @@ export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
+<<<<<<< Updated upstream
 // Purchase Orders (platform → supplier; supplier price, no margin shown)
 // ─────────────────────────────────────────────────────────────────────────────
 export const purchaseOrders = pgTable("purchase_orders", {
@@ -1113,10 +1114,14 @@ export type SalesInvoice = typeof salesInvoices.$inferSelect;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shipments (created by supplier after uploading invoice)
+=======
+// Shipments (dispatch records for confirmed buyer orders)
+>>>>>>> Stashed changes
 // ─────────────────────────────────────────────────────────────────────────────
 export const shipments = pgTable("shipments", {
   id: uuid("id").primaryKey().defaultRandom(),
   shipmentNumber: varchar("shipment_number", { length: 50 }).unique().notNull(),
+<<<<<<< Updated upstream
   poId: uuid("po_id").notNull().references(() => purchaseOrders.id, { onDelete: "restrict" }),
   rfqId: uuid("rfq_id").notNull().references(() => rfqRequests.id, { onDelete: "restrict" }),
   buyerId: uuid("buyer_id").notNull().references(() => users.id),
@@ -1131,8 +1136,41 @@ export const shipments = pgTable("shipments", {
   // [{ label, location, note, ts }]
   deliveredAt: timestamp("delivered_at"),
   receivedByBuyerAt: timestamp("received_by_buyer_at"),
+=======
+  orderId: uuid("order_id")
+    .unique()
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  buyerId: uuid("buyer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  supplierUserId: uuid("supplier_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "restrict" }),
+  status: varchar("status", { length: 50 }).default("DISPATCHED").notNull(),
+  carrierName: varchar("carrier_name", { length: 255 }),
+  trackingNumber: varchar("tracking_number", { length: 255 }),
+  vehicleNumber: varchar("vehicle_number", { length: 50 }),
+  ewayBillNumber: varchar("eway_bill_number", { length: 100 }),
+  ewayBillDocumentUrl: text("eway_bill_document_url"),
+  dispatchedAt: timestamp("dispatched_at").defaultNow().notNull(),
+  notes: text("notes"),
+>>>>>>> Stashed changes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+<<<<<<< Updated upstream
+=======
+export const insertShipmentSchema = createInsertSchema(shipments).omit({
+  id: true,
+  shipmentNumber: true,
+  status: true,
+  dispatchedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertShipment = z.infer<typeof insertShipmentSchema>;
+>>>>>>> Stashed changes
 export type Shipment = typeof shipments.$inferSelect;

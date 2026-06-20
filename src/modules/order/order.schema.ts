@@ -42,8 +42,19 @@ export const acknowledgeOrderSchema = z.object({
   notes: z.string().trim().max(5000, "Notes are too long").optional(),
 });
 
+export const createShipmentSchema = z.object({
+  carrierName: z.string().trim().min(1).max(255).optional(),
+  trackingNumber: z.string().trim().min(1).max(255).optional(),
+  vehicleNumber: z.string().trim().min(1).max(50).optional(),
+  ewayBillNumber: z.string().trim().min(1).max(100).optional(),
+  ewayBillDocumentUrl: z.string().trim().url().max(2000).optional(),
+  dispatchedAt: z.string().trim().min(1).optional(),
+  notes: z.string().trim().max(5000, "Notes are too long").optional(),
+});
+
 export type ConfirmOrderDto = z.infer<typeof confirmOrderSchema>;
 export type ListOrdersQuery = z.infer<typeof listOrdersQuerySchema>;
 export type RecordAdvancePaymentDto = z.infer<typeof recordAdvancePaymentSchema>;
 export type UpdatePhase5DocumentsDto = z.infer<typeof updatePhase5DocumentsSchema>;
 export type AcknowledgeOrderDto = z.infer<typeof acknowledgeOrderSchema>;
+export type CreateShipmentDto = z.infer<typeof createShipmentSchema>;
