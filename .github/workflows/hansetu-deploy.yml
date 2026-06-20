@@ -79,6 +79,8 @@ jobs:
             WHITEBOOKS_CLIENT_SECRET=${{ secrets.WHITEBOOKS_CLIENT_SECRET }}
             WHITEBOOKS_GST_API_URL=${{ secrets.WHITEBOOKS_GST_API_URL }}
             WHITEBOOKS_GST_EMAIL=${{ secrets.WHITEBOOKS_GST_EMAIL }}
+            RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}
+            RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}
             EOF
 
             docker-compose pull
