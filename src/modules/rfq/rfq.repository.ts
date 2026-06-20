@@ -40,13 +40,42 @@ export async function createRfqRequest(data: {
   return row;
 }
 
+// Buyer-safe assignment projection — strips supplier price and margin from buyer view
+const buyerSafeAssignment = {
+  id: rfqAssignments.id,
+  assignmentMode: rfqAssignments.assignmentMode,
+  negotiationStatus: rfqAssignments.negotiationStatus,
+  transportCompany: rfqAssignments.transportCompany,
+  approvedAt: rfqAssignments.approvedAt,
+  // finalAgreedPrice, negotiatedPrice, adminMarginPct, internalNotes intentionally omitted
+};
+
+// Buyer-safe invoice projection — strips marginAmount from buyer view
+const buyerSafeInvoice = {
+  id: salesInvoices.id,
+  invoiceNumber: salesInvoices.invoiceNumber,
+  productName: salesInvoices.productName,
+  quantity: salesInvoices.quantity,
+  unit: salesInvoices.unit,
+  baseAmount: salesInvoices.baseAmount,
+  gstRate: salesInvoices.gstRate,
+  gstAmount: salesInvoices.gstAmount,
+  totalAmount: salesInvoices.totalAmount,
+  hsnCode: salesInvoices.hsnCode,
+  deliveryLocation: salesInvoices.deliveryLocation,
+  status: salesInvoices.status,
+  razorpayOrderId: salesInvoices.razorpayOrderId,
+  paidAt: salesInvoices.paidAt,
+  // marginAmount intentionally omitted
+};
+
 export async function getRfqsByBuyer(buyerId: string) {
   return db
     .select({
       rfq: rfqRequests,
-      assignment: rfqAssignments,
+      assignment: buyerSafeAssignment,
       po: purchaseOrders,
-      invoice: salesInvoices,
+      invoice: buyerSafeInvoice,
       shipment: shipments,
     })
     .from(rfqRequests)
@@ -62,9 +91,9 @@ export async function getRfqById(id: string) {
   const [row] = await db
     .select({
       rfq: rfqRequests,
-      assignment: rfqAssignments,
+      assignment: buyerSafeAssignment,
       po: purchaseOrders,
-      invoice: salesInvoices,
+      invoice: buyerSafeInvoice,
     })
     .from(rfqRequests)
     .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
@@ -232,11 +261,11 @@ export async function getAssignedRfqsBySupplier(supplierUserId: string) {
         id: rfqAssignments.id,
         assignmentMode: rfqAssignments.assignmentMode,
         negotiatedPrice: rfqAssignments.negotiatedPrice,
-        adminMarginPct: rfqAssignments.adminMarginPct,
+        // adminMarginPct intentionally excluded — supplier must not see Hansetu's margin
         negotiationStatus: rfqAssignments.negotiationStatus,
-        internalNotes: rfqAssignments.internalNotes,
+        // internalNotes intentionally excluded — admin-only
         transportCompany: rfqAssignments.transportCompany,
-        deliveryCharge: rfqAssignments.deliveryCharge,
+        // deliveryCharge intentionally excluded — added to buyer invoice only, not supplier's concern
         approvedAt: rfqAssignments.approvedAt,
         supplierQuotedPrice: rfqAssignments.supplierQuotedPrice,
         supplierLeadTimeDays: rfqAssignments.supplierLeadTimeDays,
@@ -339,6 +368,52 @@ export async function getAssigneeById(id: string) {
     .from(users)
     .where(eq(users.id, id));
   return row ?? null;
+}
+
+// ─── Invoice lookups (payment) ────────────────────────────────────────────────
+
+export async function getInvoiceById(id: string): Promise<SalesInvoice | null> {
+  const [row] = await db.select().from(salesInvoices).where(eq(salesInvoices.id, id));
+  return row ?? null;
+}
+
+export async function getInvoiceByRazorpayOrder(razorpayOrderId: string): Promise<SalesInvoice | null> {
+  const [row] = await db.select().from(salesInvoices).where(eq(salesInvoices.razorpayOrderId, razorpayOrderId));
+  return row ?? null;
+}
+
+export async function markInvoicePaid(id: string, razorpayPaymentId: string, razorpayOrderId: string) {
+  await db.update(salesInvoices).set({
+    status: "PAID",
+    razorpayPaymentId,
+    razorpayOrderId,
+    paidAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(salesInvoices.id, id));
+}
+
+export async function setInvoiceAwaitingPayment(id: string, razorpayOrderId: string) {
+  await db.update(salesInvoices).set({
+    status: "AWAITING_PAYMENT",
+    razorpayOrderId,
+    updatedAt: new Date(),
+  }).where(eq(salesInvoices.id, id));
+}
+
+export async function adminMarkInvoicePaidManually(id: string) {
+  await db.update(salesInvoices).set({
+    status: "PAID",
+    paidAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(salesInvoices.id, id));
+}
+
+export async function markPoPaymentReleased(poId: string) {
+  await db.update(purchaseOrders).set({
+    paymentReleased: true,
+    paymentReleasedAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(purchaseOrders.id, poId));
 }
 
 // ─── PO / Invoice number generators ──────────────────────────────────────────
@@ -564,4 +639,84 @@ export async function markShipmentReceived(id: string) {
     receivedByBuyerAt: new Date(),
     updatedAt: new Date(),
   }).where(eq(shipments.id, id));
+}
+
+// ─── Payment Audit ────────────────────────────────────────────────────────────
+
+export async function getBuyerPaymentHistory(buyerUserId: string) {
+  return db
+    .select({
+      invoice: salesInvoices,
+      rfq: {
+        rfqNumber: rfqRequests.rfqNumber,
+        productName: rfqRequests.productName,
+        category: rfqRequests.category,
+      },
+    })
+    .from(salesInvoices)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, salesInvoices.rfqId))
+    .where(eq(salesInvoices.buyerUserId, buyerUserId))
+    .orderBy(desc(salesInvoices.createdAt));
+}
+
+export async function getSupplierPaymentHistory(supplierUserId: string) {
+  return db
+    .select({
+      po: purchaseOrders,
+      rfq: {
+        rfqNumber: rfqRequests.rfqNumber,
+        productName: rfqRequests.productName,
+        category: rfqRequests.category,
+      },
+    })
+    .from(purchaseOrders)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, purchaseOrders.rfqId))
+    .where(eq(purchaseOrders.supplierUserId, supplierUserId))
+    .orderBy(desc(purchaseOrders.createdAt));
+}
+
+export async function getAdminPaymentAudit() {
+  const buyerPayments = await db
+    .select({
+      invoice: salesInvoices,
+      buyer: {
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        gstNumber: users.gstNumber,
+      },
+      rfq: {
+        rfqNumber: rfqRequests.rfqNumber,
+        productName: rfqRequests.productName,
+        category: rfqRequests.category,
+      },
+    })
+    .from(salesInvoices)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, salesInvoices.rfqId))
+    .innerJoin(users, eq(users.id, salesInvoices.buyerUserId))
+    .orderBy(desc(salesInvoices.createdAt));
+
+  const supplierPayments = await db
+    .select({
+      po: purchaseOrders,
+      supplier: {
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        gstNumber: users.gstNumber,
+      },
+      rfq: {
+        rfqNumber: rfqRequests.rfqNumber,
+        productName: rfqRequests.productName,
+        category: rfqRequests.category,
+      },
+      invoiceTotalAmount: salesInvoices.totalAmount,
+    })
+    .from(purchaseOrders)
+    .innerJoin(rfqRequests, eq(rfqRequests.id, purchaseOrders.rfqId))
+    .innerJoin(users, eq(users.id, purchaseOrders.supplierUserId))
+    .leftJoin(salesInvoices, eq(salesInvoices.rfqId, purchaseOrders.rfqId))
+    .orderBy(desc(purchaseOrders.createdAt));
+
+  return { buyerPayments, supplierPayments };
 }
