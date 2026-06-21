@@ -22,7 +22,7 @@ services:
       retries: 5
 
   backend:
-    image: ${ECR_REGISTRY}/hansetu/backend:latest
+    image: ${ECR_REGISTRY}/hansetu/backend:${VERSION}
     container_name: hansetu-backend
     restart: unless-stopped
     depends_on:
@@ -30,14 +30,20 @@ services:
         condition: service_healthy
     environment:
       PORT:                   3000
-      DATABASE_URL:           ${DATABASE_URL}
-      JWT_SECRET:             ${JWT_SECRET}
-      SMTP_HOST:              ${SMTP_HOST}
-      SMTP_PORT:              ${SMTP_PORT}
-      SMTP_USER:              ${SMTP_USER}
-      SMTP_PASS:              ${SMTP_PASS}
-      EMAIL_FROM:             ${EMAIL_FROM}
-      NODE_ENV:               production
+      DATABASE_URL:             ${DATABASE_URL}
+      JWT_SECRET:               ${JWT_SECRET}
+      SMTP_HOST:                ${SMTP_HOST}
+      SMTP_PORT:                ${SMTP_PORT}
+      SMTP_USER:                ${SMTP_USER}
+      SMTP_PASS:                ${SMTP_PASS}
+      EMAIL_FROM:               ${EMAIL_FROM}
+      WHITEBOOKS_CLIENT_ID:     ${WHITEBOOKS_CLIENT_ID}
+      WHITEBOOKS_CLIENT_SECRET: ${WHITEBOOKS_CLIENT_SECRET}
+      WHITEBOOKS_GST_API_URL:   ${WHITEBOOKS_GST_API_URL}
+      WHITEBOOKS_GST_EMAIL:     ${WHITEBOOKS_GST_EMAIL}
+      RAZORPAY_KEY_ID:          ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET:      ${RAZORPAY_KEY_SECRET}
+      NODE_ENV:                 production
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:
@@ -47,7 +53,7 @@ services:
       retries: 5
 
   frontend:
-    image: ${ECR_REGISTRY}/hansetu/frontend:latest
+    image: ${ECR_REGISTRY}/hansetu/frontend:${VERSION}
     container_name: hansetu-frontend
     restart: "no"
     ports:
