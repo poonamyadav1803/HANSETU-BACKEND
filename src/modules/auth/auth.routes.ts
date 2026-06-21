@@ -61,6 +61,56 @@ export class AuthRoutes {
      */
     this.router.get('/check-username/:username', this.controller.checkUsername);
 
+    /**
+     * @openapi
+     * /api/auth/check-mobile/{mobile}:
+     *   get:
+     *     tags: [Auth]
+     *     summary: Check if a mobile number is already registered
+     *     parameters:
+     *       - in: path
+     *         name: mobile
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Returns availability status
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 available:
+     *                   type: boolean
+     */
+    this.router.get('/check-mobile/:mobile', this.controller.checkMobile);
+
+    /**
+     * @openapi
+     * /api/auth/check-email/{email}:
+     *   get:
+     *     tags: [Auth]
+     *     summary: Check if an email is already registered
+     *     parameters:
+     *       - in: path
+     *         name: email
+     *         required: true
+     *         schema:
+     *           type: string
+     *     responses:
+     *       200:
+     *         description: Returns availability status
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 available:
+     *                   type: boolean
+     */
+    this.router.get('/check-email/:email', this.controller.checkEmail);
+
     this.router.post('/gst-verify', this.controller.gstVerify);
 
     /**
