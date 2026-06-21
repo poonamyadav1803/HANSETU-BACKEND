@@ -86,21 +86,22 @@ export async function getMyRfqById(rfqId: string, buyerId: string) {
 // ─── Admin: list + detail ─────────────────────────────────────────────────────
 
 export async function adminListRfqs(status?: string) {
-  return repo.adminGetAllRfqs(status);
+  const rows = await repo.adminGetAllRfqs(status);
+  const assignmentsByRfq = await repo.getAssignmentsByRfqIds(rows.map((r) => r.rfq.id));
+  return rows.map((row) => ({ ...row, assignments: assignmentsByRfq[row.rfq.id] ?? [] }));
 }
 
 export async function adminGetOne(rfqId: string) {
-  const row = await repo.adminGetRfqById(rfqId);
-  if (!row) throw new HttpException(404, "RFQ not found");
-  const shipment = await repo.getShipmentByRfqId(rfqId);
-  return { ...row, shipment };
+  const detail = await getAdminRfqDetail(rfqId);
+  if (!detail) throw new HttpException(404, "RFQ not found");
+  return detail;
 }
 
 // ─── Admin: assignees list filtered by type ───────────────────────────────────
 
 export async function getAssigneesList(
   type: "supplier" | "manufacturer",
-  filters?: { state?: string; category?: string; verified?: boolean },
+  filters?: { state?: string; category?: string; subcategory?: string; verified?: boolean; excludeUserId?: string },
 ) {
   return repo.getAssigneesByType(type, filters);
 }
@@ -111,6 +112,19 @@ export async function getAssigneeProfile(userId: string) {
   return row;
 }
 
+// Combines the RFQ + buyer/po/invoice row with its full candidate-assignment list
+// and shipment — the shape every admin-facing RFQ detail/list endpoint returns now
+// that an RFQ can carry more than one assignment.
+async function getAdminRfqDetail(rfqId: string) {
+  const row = await repo.adminGetRfqById(rfqId);
+  if (!row) return null;
+  const [assignments, shipment] = await Promise.all([
+    repo.getAssignmentsByRfq(rfqId),
+    repo.getShipmentByRfqId(rfqId),
+  ]);
+  return { ...row, assignments, shipment };
+}
+
 // ─── Admin Step A: assign supplier/manufacturer ───────────────────────────────
 
 export async function adminAssign(rfqId: string, adminId: string, dto: AssignDto) {
@@ -119,6 +133,10 @@ export async function adminAssign(rfqId: string, adminId: string, dto: AssignDto
 
   if (!["SUBMITTED", "UNDER_REVIEW"].includes(rfq.rfq.status)) {
     throw new HttpException(400, `Cannot assign: RFQ status is ${rfq.rfq.status}`);
+  }
+
+  if (dto.assigneeUserId === rfq.rfq.buyerId) {
+    throw new HttpException(400, "Cannot assign the RFQ's own buyer as the supplier/manufacturer");
   }
 
   await repo.createOrUpdateAssignment({
@@ -134,7 +152,7 @@ export async function adminAssign(rfqId: string, adminId: string, dto: AssignDto
   });
 
   await repo.updateRfqStatus(rfqId, "UNDER_REVIEW");
-  return repo.adminGetRfqById(rfqId);
+  return getAdminRfqDetail(rfqId);
 }
 
 // ─── Admin Step B: approve → auto-create PO + Sales Invoice ──────────────────
@@ -147,18 +165,33 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     throw new HttpException(400, `Cannot approve: RFQ status is ${rfq.rfq.status}`);
   }
 
-  const assignment = await repo.getAssignment(rfqId);
-  if (!assignment) throw new HttpException(400, "No supplier assigned to this RFQ");
+  const candidates = await repo.getAssignmentsByRfq(rfqId);
+  if (candidates.length === 0) throw new HttpException(400, "No supplier assigned to this RFQ");
+
+  let assignment = candidates[0];
+  if (candidates.length > 1) {
+    if (!dto.assignmentId) {
+      throw new HttpException(400, "Multiple candidates have been invited — specify which one to approve");
+    }
+    const match = candidates.find((c) => c.id === dto.assignmentId);
+    if (!match) throw new HttpException(404, "Assignment not found for this RFQ");
+    assignment = match;
+  } else if (dto.assignmentId && dto.assignmentId !== assignment.id) {
+    throw new HttpException(404, "Assignment not found for this RFQ");
+  }
+
   if (!["PENDING", "SUPPLIER_QUOTED"].includes(assignment.negotiationStatus)) {
     throw new HttpException(400, "Assignment already approved");
   }
 
-  // Use supplier's quoted price as the base if admin has not set one
-  const negotiatedPrice = parseFloat(
+  // Admin can override price/margin/transport here based on the real quote received;
+  // falls back to whatever was set at assign time otherwise.
+  const negotiatedPrice = dto.negotiatedPrice ?? parseFloat(
     assignment.negotiatedPrice ?? assignment.supplierQuotedPrice ?? "0"
   );
-  const marginPct = parseFloat(assignment.adminMarginPct ?? "10");
-  const deliveryCharge = parseFloat(assignment.deliveryCharge ?? "0");
+  const marginPct = dto.adminMarginPct ?? parseFloat(assignment.adminMarginPct ?? "10");
+  const deliveryCharge = dto.deliveryCharge ?? parseFloat(assignment.deliveryCharge ?? "0");
+  const transportCompany = dto.transportCompany ?? assignment.transportCompany ?? undefined;
 
   if (negotiatedPrice <= 0) {
     throw new HttpException(400, "Negotiated price must be set before approving");
@@ -211,10 +244,16 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     deliveryLocation: rfq.rfq.deliveryLocation,
   });
 
-  await repo.approveAssignment(rfqId, negotiatedPrice);
+  await repo.approveAssignment(assignment.id, {
+    finalAgreedPrice: negotiatedPrice,
+    adminMarginPct: marginPct,
+    deliveryCharge,
+    transportCompany,
+  });
+  await repo.rejectOtherAssignments(rfqId, assignment.id);
   await repo.updateRfqStatus(rfqId, "PO_RAISED");
 
-  return repo.adminGetRfqById(rfqId);
+  return getAdminRfqDetail(rfqId);
 }
 
 // ─── Supplier: get assigned RFQs (before PO is created) ─────────────────────
@@ -226,14 +265,13 @@ export async function getMyAssignedRfqs(supplierUserId: string) {
 // ─── Supplier: submit quote (Story 3.3) ──────────────────────────────────────
 
 export async function supplierSubmitQuote(rfqId: string, supplierUserId: string, dto: SubmitQuoteDto) {
-  const assignment = await repo.getAssignment(rfqId);
-  if (!assignment) throw new HttpException(404, "RFQ not assigned");
-  if (assignment.supplierUserId !== supplierUserId) throw new HttpException(403, "Access denied");
+  const assignment = await repo.getAssignmentByRfqAndSupplier(rfqId, supplierUserId);
+  if (!assignment) throw new HttpException(404, "RFQ not assigned to you");
   if (assignment.negotiationStatus !== "PENDING") {
     throw new HttpException(400, `Cannot submit quote: status is ${assignment.negotiationStatus}`);
   }
 
-  await repo.submitSupplierQuote(rfqId, {
+  await repo.submitSupplierQuote(assignment.id, {
     supplierQuotedPrice: dto.unitPrice,
     supplierLeadTimeDays: dto.leadTimeDays,
     supplierMoq: dto.moqQuantity,
