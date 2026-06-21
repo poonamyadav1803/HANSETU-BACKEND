@@ -110,7 +110,9 @@ export const adminGetAssigneesList = async (req: Request, res: Response, next: N
     const filters = {
       state: (req.query.state as string) || undefined,
       category: (req.query.category as string) || undefined,
+      subcategory: (req.query.subcategory as string) || undefined,
       verified: req.query.verified === "true" ? true : undefined,
+      excludeUserId: (req.query.excludeUserId as string) || undefined,
     };
     const data = await svc.getAssigneesList(type, filters);
     res.json(data);
