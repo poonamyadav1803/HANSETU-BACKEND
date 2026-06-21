@@ -76,6 +76,26 @@ export class AuthController {
     }
   }
 
+  async checkMobile(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { mobile } = req.params;
+      const result = await authService.checkMobile(mobile);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async checkEmail(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.params;
+      const result = await authService.checkEmail(email);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async gstVerify(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { gstNumber } = gstVerifySchema.parse(req.body);

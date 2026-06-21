@@ -31,6 +31,11 @@ function toSafeUser(user: IUser) {
   return safe;
 }
 
+function normalizeMobile(mobile: string): string {
+  const digits = mobile.replace(/\D/g, '');
+  return digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+}
+
 function normalizeCertifications(value?: string | string[]) {
   if (!value) return [];
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -75,18 +80,36 @@ export class AuthService {
   }
 
   // ─── Phone OTP ─────────────────────────────────────────────────────────────
-  async sendPhoneOtp(mobile: string): Promise<void> {
+  async sendPhoneOtp(rawMobile: string): Promise<void> {
+    const mobile = normalizeMobile(rawMobile);
+
+    const existing = await this.userRepo.findByMobile(mobile);
+    if (existing)
+      throw new HttpException(
+        409,
+        'An account with this mobile number already exists. Please log in instead.',
+      );
+
     const otp = generateOtp();
     otpStore.set('phone', mobile, otp);
     await sendOtpSms(mobile, otp);
   }
 
-  async verifyPhoneOtp(mobile: string, otp: string): Promise<boolean> {
-    return otpStore.verify('phone', mobile, otp);
+  async verifyPhoneOtp(rawMobile: string, otp: string): Promise<boolean> {
+    return otpStore.verify('phone', normalizeMobile(rawMobile), otp);
   }
 
   // ─── Email OTP ─────────────────────────────────────────────────────────────
-  async sendEmailOtp(email: string): Promise<void> {
+  async sendEmailOtp(rawEmail: string): Promise<void> {
+    const email = rawEmail.trim().toLowerCase();
+
+    const existing = await this.userRepo.findByEmail(email);
+    if (existing)
+      throw new HttpException(
+        409,
+        'An account with this email already exists. Please log in instead.',
+      );
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -97,7 +120,8 @@ export class AuthService {
     console.log('OTP sent successfully', otp);
   }
 
-  async verifyEmailOtp(email: string, otp: string): Promise<string> {
+  async verifyEmailOtp(rawEmail: string, otp: string): Promise<string> {
+    const email = rawEmail.trim().toLowerCase();
     const record = await db.query.otpTable.findFirst({
       where: (table, { eq, and }) =>
         and(eq(table.email, email), eq(table.otp, otp)),
@@ -131,6 +155,20 @@ export class AuthService {
   async checkUsername(username: string): Promise<{ available: boolean }> {
     if (username.length < 4) return { available: false };
     const existing = await this.userRepo.findByUsername(username);
+    return { available: !existing };
+  }
+
+  async checkMobile(rawMobile: string): Promise<{ available: boolean }> {
+    const mobile = normalizeMobile(rawMobile);
+    if (mobile.length !== 10) return { available: false };
+    const existing = await this.userRepo.findByMobile(mobile);
+    return { available: !existing };
+  }
+
+  async checkEmail(rawEmail: string): Promise<{ available: boolean }> {
+    const email = rawEmail.trim().toLowerCase();
+    if (!email.includes('@')) return { available: false };
+    const existing = await this.userRepo.findByEmail(email);
     return { available: !existing };
   }
 
@@ -242,23 +280,33 @@ export class AuthService {
     certifications?: string | string[];
     existingClients?: string;
   }) {
+    const email = data.email.trim().toLowerCase();
+
     const verified = consumeOtpToken(data.otpToken);
     if (!verified)
       throw new HttpException(
         401,
         'OTP session expired. Please verify your email again.',
       );
-    if (verified.email !== data.email)
+    if (verified.email !== email)
       throw new HttpException(
         400,
         'Email does not match the verified OTP session.',
       );
 
-    const existing = await this.userRepo.findByEmail(data.email);
+    const existing = await this.userRepo.findByEmail(email);
     if (existing)
       throw new HttpException(
         409,
         'An account with this email already exists.',
+      );
+
+    const mobile = normalizeMobile(data.mobile);
+    const existingByMobile = await this.userRepo.findByMobile(mobile);
+    if (existingByMobile)
+      throw new HttpException(
+        409,
+        'An account with this mobile number already exists.',
       );
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -290,8 +338,8 @@ export class AuthService {
 
     const user = await this.userRepo.create({
       gstNumber: data.gstNumber,
-      email: data.email,
-      mobile: data.mobile,
+      email,
+      mobile,
       username: data.username,
       password: hashedPassword,
       businessType: data.businessType,
@@ -308,7 +356,7 @@ export class AuthService {
   async login(identifier: string, password: string) {
     const isEmail = identifier.includes('@');
     const user = isEmail
-      ? await this.userRepo.findByEmail(identifier)
+      ? await this.userRepo.findByEmail(identifier.trim().toLowerCase())
       : await this.userRepo.findByUsername(identifier);
 
     if (!user)

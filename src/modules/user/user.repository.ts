@@ -32,6 +32,11 @@ export class UserRepository {
     return row ? this.mapRow(row) : null;
   }
 
+  async findByMobile(mobile: string) {
+    const [row] = await db.select().from(users).where(eq(users.mobile, mobile));
+    return row ? this.mapRow(row) : null;
+  }
+
   async findById(id: string) {
     const [row] = await db.select().from(users).where(eq(users.id, id));
     return row ? this.mapRow(row) : null;

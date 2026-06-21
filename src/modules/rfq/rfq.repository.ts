@@ -4,7 +4,9 @@ import {
   users, type RfqRequest, type RfqAssignment, type PurchaseOrder,
   type SalesInvoice, type Shipment,
 } from "../../db/schema";
-import { eq, and, desc, sql, or } from "drizzle-orm";
+import { eq, and, desc, sql, or, ne, inArray } from "drizzle-orm";
+
+const DOCUMENT_NUMBER_START = 110001;
 
 // ─── RFQ Requests ────────────────────────────────────────────────────────────
 
@@ -69,6 +71,12 @@ const buyerSafeInvoice = {
   // marginAmount intentionally omitted
 };
 
+// Buyer never sees competing quotes — only the winning (APPROVED) assignment, if any.
+const approvedAssignmentJoin = and(
+  eq(rfqAssignments.rfqId, rfqRequests.id),
+  eq(rfqAssignments.negotiationStatus, "APPROVED"),
+);
+
 export async function getRfqsByBuyer(buyerId: string) {
   return db
     .select({
@@ -79,7 +87,7 @@ export async function getRfqsByBuyer(buyerId: string) {
       shipment: shipments,
     })
     .from(rfqRequests)
-    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
+    .leftJoin(rfqAssignments, approvedAssignmentJoin)
     .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
     .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
     .leftJoin(shipments, eq(shipments.rfqId, rfqRequests.id))
@@ -96,7 +104,7 @@ export async function getRfqById(id: string) {
       invoice: buyerSafeInvoice,
     })
     .from(rfqRequests)
-    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
+    .leftJoin(rfqAssignments, approvedAssignmentJoin)
     .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
     .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
     .where(eq(rfqRequests.id, id));
@@ -112,16 +120,18 @@ export async function generateRfqNumber(): Promise<string> {
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(rfqRequests);
-  return `RFQ/${year}/${String(count + 1).padStart(5, "0")}`;
+  return `RFQ/${year}/${String(count + DOCUMENT_NUMBER_START).padStart(6, "0")}`;
 }
 
 // ─── Admin: all RFQs ─────────────────────────────────────────────────────────
 
+// `assignments` is fetched separately (see getAssignmentsByRfq / getAssignmentsByRfqIds)
+// and merged in the service layer — an RFQ can now have multiple candidate assignments,
+// so joining rfq_assignments directly here would fan out one RFQ into multiple rows.
 export async function adminGetAllRfqs(status?: string) {
   const baseQuery = db
     .select({
       rfq: rfqRequests,
-      assignment: rfqAssignments,
       buyer: {
         id: users.id,
         username: users.username,
@@ -132,7 +142,6 @@ export async function adminGetAllRfqs(status?: string) {
       invoice: salesInvoices,
     })
     .from(rfqRequests)
-    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
     .leftJoin(users, eq(users.id, rfqRequests.buyerId))
     .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
     .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
@@ -148,7 +157,6 @@ export async function adminGetRfqById(id: string) {
   const [row] = await db
     .select({
       rfq: rfqRequests,
-      assignment: rfqAssignments,
       buyer: {
         id: users.id,
         username: users.username,
@@ -159,7 +167,6 @@ export async function adminGetRfqById(id: string) {
       invoice: salesInvoices,
     })
     .from(rfqRequests)
-    .leftJoin(rfqAssignments, eq(rfqAssignments.rfqId, rfqRequests.id))
     .leftJoin(users, eq(users.id, rfqRequests.buyerId))
     .leftJoin(purchaseOrders, eq(purchaseOrders.rfqId, rfqRequests.id))
     .leftJoin(salesInvoices, eq(salesInvoices.rfqId, rfqRequests.id))
@@ -169,6 +176,9 @@ export async function adminGetRfqById(id: string) {
 
 // ─── Assignments ─────────────────────────────────────────────────────────────
 
+// One row per (rfqId, supplierUserId) pair — re-inviting the same candidate updates
+// their existing row in place; inviting a new candidate adds another row, so an RFQ
+// can carry multiple parallel candidate assignments while admin compares quotes.
 export async function createOrUpdateAssignment(data: {
   rfqId: string;
   assigneeUserId: string;
@@ -180,17 +190,21 @@ export async function createOrUpdateAssignment(data: {
   deliveryCharge?: number;
   internalNotes?: string;
 }): Promise<RfqAssignment> {
+  const pairCondition = and(
+    eq(rfqAssignments.rfqId, data.rfqId),
+    eq(rfqAssignments.supplierUserId, data.assigneeUserId),
+  );
+
   const existing = await db
     .select()
     .from(rfqAssignments)
-    .where(eq(rfqAssignments.rfqId, data.rfqId))
+    .where(pairCondition)
     .limit(1);
 
   if (existing.length > 0) {
     const [row] = await db
       .update(rfqAssignments)
       .set({
-        supplierUserId: data.assigneeUserId,
         assignedBy: data.assignedBy,
         assignmentMode: data.assignmentMode,
         negotiatedPrice: data.negotiatedPrice != null ? String(data.negotiatedPrice) : null,
@@ -200,7 +214,7 @@ export async function createOrUpdateAssignment(data: {
         internalNotes: data.internalNotes,
         negotiationStatus: "PENDING",
       })
-      .where(eq(rfqAssignments.rfqId, data.rfqId))
+      .where(pairCondition)
       .returning();
     return row;
   }
@@ -220,20 +234,100 @@ export async function createOrUpdateAssignment(data: {
   return row;
 }
 
-export async function getAssignment(rfqId: string): Promise<RfqAssignment | null> {
-  const [row] = await db.select().from(rfqAssignments).where(eq(rfqAssignments.rfqId, rfqId));
+// Includes basic supplier identity so the admin comparison view can show "who" —
+// admin-only data, never exposed to buyer- or supplier-facing endpoints.
+const assignmentWithSupplier = {
+  id: rfqAssignments.id,
+  rfqId: rfqAssignments.rfqId,
+  supplierUserId: rfqAssignments.supplierUserId,
+  supplierUsername: users.username,
+  supplierEmail: users.email,
+  supplierProfile: users.profile,
+  assignmentMode: rfqAssignments.assignmentMode,
+  adminMarginPct: rfqAssignments.adminMarginPct,
+  negotiatedPrice: rfqAssignments.negotiatedPrice,
+  finalAgreedPrice: rfqAssignments.finalAgreedPrice,
+  negotiationStatus: rfqAssignments.negotiationStatus,
+  internalNotes: rfqAssignments.internalNotes,
+  transportCompany: rfqAssignments.transportCompany,
+  deliveryCharge: rfqAssignments.deliveryCharge,
+  approvedAt: rfqAssignments.approvedAt,
+  supplierQuotedPrice: rfqAssignments.supplierQuotedPrice,
+  supplierLeadTimeDays: rfqAssignments.supplierLeadTimeDays,
+  supplierMoq: rfqAssignments.supplierMoq,
+  quoteValidityDate: rfqAssignments.quoteValidityDate,
+  supplierNotes: rfqAssignments.supplierNotes,
+  quoteSubmittedAt: rfqAssignments.quoteSubmittedAt,
+  createdAt: rfqAssignments.createdAt,
+};
+
+export async function getAssignmentsByRfq(rfqId: string) {
+  return db
+    .select(assignmentWithSupplier)
+    .from(rfqAssignments)
+    .leftJoin(users, eq(users.id, rfqAssignments.supplierUserId))
+    .where(eq(rfqAssignments.rfqId, rfqId));
+}
+
+// Batch version for the admin list page — one query for every RFQ on the page,
+// grouped in JS, instead of an N+1 or a fan-out join.
+export async function getAssignmentsByRfqIds(rfqIds: string[]) {
+  if (rfqIds.length === 0) return {};
+  const rows = await db
+    .select(assignmentWithSupplier)
+    .from(rfqAssignments)
+    .leftJoin(users, eq(users.id, rfqAssignments.supplierUserId))
+    .where(inArray(rfqAssignments.rfqId, rfqIds));
+  const grouped: Record<string, typeof rows> = {};
+  for (const row of rows) {
+    (grouped[row.rfqId] ??= []).push(row);
+  }
+  return grouped;
+}
+
+export async function getAssignmentById(assignmentId: string): Promise<RfqAssignment | null> {
+  const [row] = await db.select().from(rfqAssignments).where(eq(rfqAssignments.id, assignmentId));
   return row ?? null;
 }
 
-export async function approveAssignment(rfqId: string, finalAgreedPrice: number) {
+export async function getAssignmentByRfqAndSupplier(rfqId: string, supplierUserId: string): Promise<RfqAssignment | null> {
+  const [row] = await db
+    .select()
+    .from(rfqAssignments)
+    .where(and(eq(rfqAssignments.rfqId, rfqId), eq(rfqAssignments.supplierUserId, supplierUserId)));
+  return row ?? null;
+}
+
+export async function approveAssignment(assignmentId: string, data: {
+  finalAgreedPrice: number;
+  adminMarginPct: number;
+  deliveryCharge: number;
+  transportCompany?: string;
+}) {
   await db
     .update(rfqAssignments)
     .set({
       negotiationStatus: "APPROVED",
-      finalAgreedPrice: String(finalAgreedPrice),
+      finalAgreedPrice: String(data.finalAgreedPrice),
+      adminMarginPct: String(data.adminMarginPct),
+      deliveryCharge: String(data.deliveryCharge),
+      transportCompany: data.transportCompany ?? null,
       approvedAt: new Date(),
     })
-    .where(eq(rfqAssignments.rfqId, rfqId));
+    .where(eq(rfqAssignments.id, assignmentId));
+}
+
+// Closes out every other candidate once one assignment is approved, so they stop
+// showing as "pending" / "quoted" on their own dashboards.
+export async function rejectOtherAssignments(rfqId: string, exceptAssignmentId: string) {
+  await db
+    .update(rfqAssignments)
+    .set({ negotiationStatus: "REJECTED" })
+    .where(and(
+      eq(rfqAssignments.rfqId, rfqId),
+      ne(rfqAssignments.id, exceptAssignmentId),
+      inArray(rfqAssignments.negotiationStatus, ["PENDING", "SUPPLIER_QUOTED"]),
+    ));
 }
 
 // ─── Assignees list ───────────────────────────────────────────────────────────
@@ -281,7 +375,7 @@ export async function getAssignedRfqsBySupplier(supplierUserId: string) {
     .orderBy(desc(rfqAssignments.createdAt));
 }
 
-export async function submitSupplierQuote(rfqId: string, data: {
+export async function submitSupplierQuote(assignmentId: string, data: {
   supplierQuotedPrice: number;
   supplierLeadTimeDays?: number;
   supplierMoq?: number;
@@ -296,12 +390,12 @@ export async function submitSupplierQuote(rfqId: string, data: {
     supplierNotes: data.supplierNotes ?? null,
     quoteSubmittedAt: new Date(),
     negotiationStatus: "SUPPLIER_QUOTED",
-  }).where(eq(rfqAssignments.rfqId, rfqId));
+  }).where(eq(rfqAssignments.id, assignmentId));
 }
 
 export async function getAssigneesByType(
   type: "supplier" | "manufacturer",
-  filters?: { state?: string; category?: string; verified?: boolean },
+  filters?: { state?: string; category?: string; subcategory?: string; verified?: boolean; excludeUserId?: string },
 ) {
   const businessTypes =
     type === "supplier"
@@ -315,6 +409,10 @@ export async function getAssigneesByType(
 
   if (filters?.verified) {
     conditions.push(eq(users.registrationComplete, true));
+  }
+
+  if (filters?.excludeUserId) {
+    conditions.push(ne(users.id, filters.excludeUserId));
   }
 
   let rows = await db
@@ -346,6 +444,15 @@ export async function getAssigneesByType(
       const p = r.profile as { rawMaterialProducts?: string[]; manufacturingProductsFlat?: string[] } | null;
       const products = [...(p?.rawMaterialProducts ?? []), ...(p?.manufacturingProductsFlat ?? [])];
       return products.some((prod) => prod.toLowerCase().includes(c));
+    });
+  }
+
+  if (filters?.subcategory) {
+    const sc = filters.subcategory.toLowerCase();
+    rows = rows.filter((r) => {
+      const p = r.profile as { rawMaterialProducts?: string[]; manufacturingProductsFlat?: string[] } | null;
+      const products = [...(p?.rawMaterialProducts ?? []), ...(p?.manufacturingProductsFlat ?? [])];
+      return products.some((prod) => prod.toLowerCase().includes(sc));
     });
   }
 
@@ -421,13 +528,13 @@ export async function markPoPaymentReleased(poId: string) {
 export async function generatePoNumber(): Promise<string> {
   const year = new Date().getFullYear();
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(purchaseOrders);
-  return `PO/${year}/${String(count + 1).padStart(5, "0")}`;
+  return `PO/${year}/${String(count + DOCUMENT_NUMBER_START).padStart(6, "0")}`;
 }
 
 export async function generateInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(salesInvoices);
-  return `INV/${year}/${String(count + 1).padStart(5, "0")}`;
+  return `INV/${year}/${String(count + DOCUMENT_NUMBER_START).padStart(6, "0")}`;
 }
 
 // ─── Purchase Orders ─────────────────────────────────────────────────────────
@@ -545,7 +652,7 @@ export async function createSalesInvoice(data: {
 export async function generateShipmentNumber(): Promise<string> {
   const year = new Date().getFullYear();
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(shipments);
-  return `SHP/${year}/${String(count + 1).padStart(5, "0")}`;
+  return `SHP/${year}/${String(count + DOCUMENT_NUMBER_START).padStart(6, "0")}`;
 }
 
 // Step 6: supplier creates shipment

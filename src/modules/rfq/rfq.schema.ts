@@ -55,9 +55,17 @@ export const assignSchema = z.object({
   }
 });
 
-// Admin approves the assignment → creates PO + Invoice
+// Admin approves a specific candidate's assignment → creates PO + Invoice.
+// assignmentId is required once more than one candidate has been invited;
+// the price/margin/transport fields let admin set or override these based on
+// the actual quote received, instead of only what was guessed at assign time.
 export const approveRfqSchema = z.object({
+  assignmentId: z.string().uuid().optional(),
   hsnCode: z.string().max(20).optional(),
+  negotiatedPrice: z.coerce.number().positive("Negotiated price must be positive").optional(),
+  adminMarginPct: z.coerce.number().min(0).max(100).optional(),
+  transportCompany: z.string().max(255).optional(),
+  deliveryCharge: z.coerce.number().min(0, "Delivery charge cannot be negative").optional(),
 });
 
 // Supplier confirms PO
