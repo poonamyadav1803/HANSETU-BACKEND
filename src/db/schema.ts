@@ -29,7 +29,7 @@ export const otpTable = pgTable("otp", {
 // ─────────────────────────────────────────────────────────────────────────────
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  gstNumber: varchar("gst_number", { length: 20 }).unique().notNull(),
+  gstNumber: varchar("gst_number", { length: 20 }).notNull(),
   email: varchar("email", { length: 255 }).unique().notNull(),
   mobile: varchar("mobile", { length: 15 }).unique().notNull(),
   username: varchar("username", { length: 100 }).unique().notNull(),
@@ -934,7 +934,6 @@ export type RfqRequest = typeof rfqRequests.$inferSelect;
 export const rfqAssignments = pgTable("rfq_assignments", {
   id: uuid("id").primaryKey().defaultRandom(),
   rfqId: uuid("rfq_id")
-    .unique()
     .notNull()
     .references(() => rfqRequests.id, { onDelete: "cascade" }),
   supplierUserId: uuid("supplier_user_id")
