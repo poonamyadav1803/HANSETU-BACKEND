@@ -198,14 +198,19 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     throw new HttpException(400, "Negotiated price must be set before approving");
   }
 
-  // PO: platform → supplier (no margin shown; GST at admin-set rate)
-  const poBase = negotiatedPrice;
+  const qty = parseFloat(rfq.rfq.quantity);
+
+  // PO: platform → supplier — unit price × qty, then GST on total
+  const poBase = parseFloat((negotiatedPrice * qty).toFixed(2));
   const poGst = parseFloat((poBase * (gstRate / 100)).toFixed(2));
   const poTotal = parseFloat((poBase + poGst).toFixed(2));
 
-  // Sales Invoice: platform → buyer (supplier price + Hansetu margin + delivery, then GST)
-  const marginAmt = parseFloat((negotiatedPrice * (marginPct / 100)).toFixed(2));
-  const invBase = parseFloat((negotiatedPrice + marginAmt + deliveryCharge).toFixed(2));
+  // Sales Invoice: platform → buyer
+  // productBase = (unitPrice × qty) + Hansetu margin (no delivery here, taxed separately)
+  const marginAmt = parseFloat((negotiatedPrice * qty * (marginPct / 100)).toFixed(2));
+  const productBase = parseFloat((negotiatedPrice * qty + marginAmt).toFixed(2));
+  // invBase (taxable value) = product cost + delivery charge
+  const invBase = parseFloat((productBase + deliveryCharge).toFixed(2));
   const invGst = parseFloat((invBase * (gstRate / 100)).toFixed(2));
   const invTotal = parseFloat((invBase + invGst).toFixed(2));
 
@@ -238,8 +243,11 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     poId: po.id,
     buyerUserId: rfq.rfq.buyerId,
     productName: rfq.rfq.productName,
-    quantity: parseFloat(rfq.rfq.quantity),
+    quantity: qty,
     unit: rfq.rfq.unit,
+    unitPrice: negotiatedPrice,
+    productBaseAmount: productBase,
+    deliveryCharge,
     baseAmount: invBase,
     marginAmount: marginAmt,
     gstRate,
@@ -466,6 +474,48 @@ export async function adminReleasePayment(poId: string) {
   }
 
   await repo.markPoPaymentReleased(poId);
+}
+
+export async function adminRecordSupplierPayment(
+  poId: string,
+  data: { utrReference: string; amount: number; paymentDate: string },
+  file?: Express.Multer.File,
+) {
+  let receiptUrl: string | undefined;
+  if (file) {
+    const [uploaded] = await fileUpload.uploadMany([file], { folder: "payment-receipts/supplier" });
+    receiptUrl = uploaded.url;
+  }
+  await repo.recordPoSupplierPayment(poId, { ...data, receiptUrl });
+}
+
+export async function adminRecordTransporterPayment(
+  poId: string,
+  data: { utrReference: string; amount: number; paymentDate: string },
+  file?: Express.Multer.File,
+) {
+  let receiptUrl: string | undefined;
+  if (file) {
+    const [uploaded] = await fileUpload.uploadMany([file], { folder: "payment-receipts/transporter" });
+    receiptUrl = uploaded.url;
+  }
+  await repo.recordPoTransporterPayment(poId, { ...data, receiptUrl });
+}
+
+export async function adminSetRfqStatus(rfqId: string, status: string) {
+  await repo.adminSetRfqStatus(rfqId, status);
+}
+
+export async function adminSetPoStatus(poId: string, status: string) {
+  await repo.adminSetPoStatus(poId, status);
+}
+
+export async function supplierUploadAckReceipt(poId: string, supplierUserId: string, file: Express.Multer.File) {
+  const po = await repo.getPoById(poId);
+  if (!po) throw new HttpException(404, "Purchase order not found");
+  if (po.supplierUserId !== supplierUserId) throw new HttpException(403, "Access denied");
+  const [uploaded] = await fileUpload.uploadMany([file], { folder: "payment-receipts/supplier-ack" });
+  await repo.uploadSupplierAckReceipt(poId, uploaded.url);
 }
 
 // ─── Payment Audit ────────────────────────────────────────────────────────────

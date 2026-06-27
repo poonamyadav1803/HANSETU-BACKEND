@@ -59,6 +59,9 @@ const buyerSafeInvoice = {
   productName: salesInvoices.productName,
   quantity: salesInvoices.quantity,
   unit: salesInvoices.unit,
+  unitPrice: salesInvoices.unitPrice,
+  productBaseAmount: salesInvoices.productBaseAmount,
+  deliveryCharge: salesInvoices.deliveryCharge,
   baseAmount: salesInvoices.baseAmount,
   gstRate: salesInvoices.gstRate,
   gstAmount: salesInvoices.gstAmount,
@@ -536,6 +539,52 @@ export async function markPoPaymentReleased(poId: string) {
   }).where(eq(purchaseOrders.id, poId));
 }
 
+export async function recordPoSupplierPayment(poId: string, data: {
+  utrReference: string;
+  amount: number;
+  paymentDate: string;
+  receiptUrl?: string;
+}) {
+  await db.update(purchaseOrders).set({
+    supplierPaymentId: data.utrReference,
+    supplierPaymentAmount: String(data.amount),
+    supplierPaymentDate: data.paymentDate,
+    supplierReceiptUrl: data.receiptUrl ?? null,
+    supplierPaidAt: new Date(),
+    paymentReleased: true,
+    paymentReleasedAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(purchaseOrders.id, poId));
+}
+
+export async function recordPoTransporterPayment(poId: string, data: {
+  utrReference: string;
+  amount: number;
+  paymentDate: string;
+  receiptUrl?: string;
+}) {
+  await db.update(purchaseOrders).set({
+    transporterPaymentId: data.utrReference,
+    transporterPaymentAmount: String(data.amount),
+    transporterPaymentDate: data.paymentDate,
+    transporterReceiptUrl: data.receiptUrl ?? null,
+    transporterPaidAt: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(purchaseOrders.id, poId));
+}
+
+export async function adminSetRfqStatus(rfqId: string, status: string) {
+  await db.update(rfqRequests).set({ status, updatedAt: new Date() }).where(eq(rfqRequests.id, rfqId));
+}
+
+export async function adminSetPoStatus(poId: string, status: string) {
+  await db.update(purchaseOrders).set({ status, updatedAt: new Date() }).where(eq(purchaseOrders.id, poId));
+}
+
+export async function uploadSupplierAckReceipt(poId: string, url: string) {
+  await db.update(purchaseOrders).set({ supplierAckReceiptUrl: url, updatedAt: new Date() }).where(eq(purchaseOrders.id, poId));
+}
+
 // ─── PO / Invoice number generators ──────────────────────────────────────────
 
 export async function generatePoNumber(): Promise<string> {
@@ -640,6 +689,9 @@ export async function createSalesInvoice(data: {
   productName: string;
   quantity: number;
   unit: string;
+  unitPrice: number;
+  productBaseAmount: number;
+  deliveryCharge: number;
   baseAmount: number;
   marginAmount: number;
   gstRate: number;
@@ -656,6 +708,9 @@ export async function createSalesInvoice(data: {
     productName: data.productName,
     quantity: String(data.quantity),
     unit: data.unit,
+    unitPrice: String(data.unitPrice),
+    productBaseAmount: String(data.productBaseAmount),
+    deliveryCharge: String(data.deliveryCharge),
     baseAmount: String(data.baseAmount),
     marginAmount: String(data.marginAmount),
     gstRate: String(data.gstRate),

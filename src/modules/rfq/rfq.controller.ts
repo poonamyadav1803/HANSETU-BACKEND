@@ -87,6 +87,14 @@ export const markReceived = async (req: AuthRequest, res: Response, next: NextFu
   } catch (err) { next(err); }
 };
 
+export const supplierAckPayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) { res.status(400).json({ message: "Receipt file is required" }); return; }
+    await svc.supplierUploadAckReceipt(req.params.id, req.userId!, req.file);
+    res.json({ message: "Payment acknowledgment uploaded" });
+  } catch (err) { next(err); }
+};
+
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
 export const adminGetAll = async (req: AdminRequest, res: Response, next: NextFunction) => {
@@ -200,6 +208,44 @@ export const adminReleasePayment = async (req: AdminRequest, res: Response, next
   try {
     await svc.adminReleasePayment(req.params.id);
     res.json({ message: "Payment released to supplier" });
+  } catch (err) { next(err); }
+};
+
+export const adminRecordSupplierPayment = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const { utrReference, amount, paymentDate } = req.body;
+    await svc.adminRecordSupplierPayment(
+      req.params.id,
+      { utrReference, amount: parseFloat(amount), paymentDate },
+      req.file,
+    );
+    res.json({ message: "Supplier payment recorded" });
+  } catch (err) { next(err); }
+};
+
+export const adminRecordTransporterPayment = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    const { utrReference, amount, paymentDate } = req.body;
+    await svc.adminRecordTransporterPayment(
+      req.params.id,
+      { utrReference, amount: parseFloat(amount), paymentDate },
+      req.file,
+    );
+    res.json({ message: "Transporter payment recorded" });
+  } catch (err) { next(err); }
+};
+
+export const adminSetRfqStatus = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    await svc.adminSetRfqStatus(req.params.id, req.body.status);
+    res.json({ message: "RFQ status updated" });
+  } catch (err) { next(err); }
+};
+
+export const adminSetPoStatus = async (req: AdminRequest, res: Response, next: NextFunction) => {
+  try {
+    await svc.adminSetPoStatus(req.params.id, req.body.status);
+    res.json({ message: "PO status updated" });
   } catch (err) { next(err); }
 };
 

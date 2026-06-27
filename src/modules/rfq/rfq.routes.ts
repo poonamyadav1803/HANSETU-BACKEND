@@ -33,6 +33,7 @@ export class RfqRoutes {
     this.router.patch("/pos/:id/confirm", authMiddleware, ctrl.confirmPo);
     this.router.patch("/pos/:id/upload-invoice", authMiddleware, ctrl.uploadInvoice);
     this.router.post("/pos/:id/shipment", authMiddleware, ctrl.createShipment);
+    this.router.patch("/pos/:id/ack-payment", authMiddleware, upload.single("receipt"), ctrl.supplierAckPayment);
 
     // Razorpay payment: create order then verify after payment
     this.router.post("/invoices/:id/create-order", authMiddleware, ctrl.createRazorpayOrder);
@@ -79,6 +80,12 @@ export class AdminRfqRoutes {
     // Payment management
     this.router.patch("/invoices/:id/mark-paid", adminMiddleware, ctrl.adminMarkInvoicePaid);
     this.router.patch("/pos/:id/release-payment", adminMiddleware, ctrl.adminReleasePayment);
+    this.router.patch("/pos/:id/record-supplier-payment", adminMiddleware, upload.single("receipt"), ctrl.adminRecordSupplierPayment);
+    this.router.patch("/pos/:id/record-transporter-payment", adminMiddleware, upload.single("receipt"), ctrl.adminRecordTransporterPayment);
+
+    // Manual status overrides
+    this.router.patch("/rfqs/:id/status", adminMiddleware, ctrl.adminSetRfqStatus);
+    this.router.patch("/pos/:id/status", adminMiddleware, ctrl.adminSetPoStatus);
 
     // Payment audit
     this.router.get("/payment-audit", adminMiddleware, ctrl.adminGetPaymentAudit);
