@@ -19,10 +19,6 @@ export async function submitRfq(
   dto: SubmitRfqDto,
   files: Express.Multer.File[] = [],
 ) {
-  if (dto.requestType === "COMPONENT_MANUFACTURER" && files.length === 0) {
-    throw new HttpException(400, "At least one attachment is required for component specification");
-  }
-
   let finalProductName = dto.productName ?? "";
   let finalCategory = dto.category ?? "";
   let finalSpecs = dto.specs;
