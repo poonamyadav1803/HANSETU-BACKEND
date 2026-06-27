@@ -951,6 +951,8 @@ export const rfqAssignments = pgTable("rfq_assignments", {
   // PENDING | SUPPLIER_QUOTED | APPROVED | REJECTED
   internalNotes: text("internal_notes"),
   transportCompany: varchar("transport_company", { length: 255 }),
+  transporterEmail: varchar("transporter_email", { length: 255 }),
+  transporterPhone: varchar("transporter_phone", { length: 50 }),
   deliveryCharge: numeric("delivery_charge", { precision: 14, scale: 2 }),
   approvedAt: timestamp("approved_at"),
   // Supplier quote fields (Story 3.2–3.3)
@@ -1072,6 +1074,13 @@ export const purchaseOrders = pgTable("purchase_orders", {
   acknowledgedAt: timestamp("acknowledged_at"),
   expectedDispatchDate: varchar("expected_dispatch_date", { length: 50 }),
   qcDocuments: jsonb("qc_documents").default([]), // string[] of S3 URLs
+  transportCompany: varchar("transport_company", { length: 255 }),
+  transporterEmail: varchar("transporter_email", { length: 255 }),
+  transporterPhone: varchar("transporter_phone", { length: 50 }),
+  supplierPaymentId: varchar("supplier_payment_id", { length: 100 }),
+  supplierPaidAt: timestamp("supplier_paid_at"),
+  transporterPaymentId: varchar("transporter_payment_id", { length: 100 }),
+  transporterPaidAt: timestamp("transporter_paid_at"),
   paymentReleased: boolean("payment_released").default(false).notNull(),
   paymentReleasedAt: timestamp("payment_released_at"),
   createdAt: timestamp("created_at").defaultNow(),

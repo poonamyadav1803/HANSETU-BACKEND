@@ -67,6 +67,7 @@ const buyerSafeInvoice = {
   deliveryLocation: salesInvoices.deliveryLocation,
   status: salesInvoices.status,
   razorpayOrderId: salesInvoices.razorpayOrderId,
+  razorpayPaymentId: salesInvoices.razorpayPaymentId,
   paidAt: salesInvoices.paidAt,
   // marginAmount intentionally omitted
 };
@@ -187,6 +188,8 @@ export async function createOrUpdateAssignment(data: {
   negotiatedPrice?: number;
   adminMarginPct: number;
   transportCompany?: string;
+  transporterEmail?: string;
+  transporterPhone?: string;
   deliveryCharge?: number;
   internalNotes?: string;
 }): Promise<RfqAssignment> {
@@ -210,6 +213,8 @@ export async function createOrUpdateAssignment(data: {
         negotiatedPrice: data.negotiatedPrice != null ? String(data.negotiatedPrice) : null,
         adminMarginPct: String(data.adminMarginPct),
         transportCompany: data.transportCompany ?? null,
+        transporterEmail: data.transporterEmail ?? null,
+        transporterPhone: data.transporterPhone ?? null,
         deliveryCharge: data.deliveryCharge != null ? String(data.deliveryCharge) : null,
         internalNotes: data.internalNotes,
         negotiationStatus: "PENDING",
@@ -227,6 +232,8 @@ export async function createOrUpdateAssignment(data: {
     negotiatedPrice: data.negotiatedPrice != null ? String(data.negotiatedPrice) : null,
     adminMarginPct: String(data.adminMarginPct),
     transportCompany: data.transportCompany ?? null,
+    transporterEmail: data.transporterEmail ?? null,
+    transporterPhone: data.transporterPhone ?? null,
     deliveryCharge: data.deliveryCharge != null ? String(data.deliveryCharge) : null,
     internalNotes: data.internalNotes,
     negotiationStatus: "PENDING",
@@ -250,6 +257,8 @@ const assignmentWithSupplier = {
   negotiationStatus: rfqAssignments.negotiationStatus,
   internalNotes: rfqAssignments.internalNotes,
   transportCompany: rfqAssignments.transportCompany,
+  transporterEmail: rfqAssignments.transporterEmail,
+  transporterPhone: rfqAssignments.transporterPhone,
   deliveryCharge: rfqAssignments.deliveryCharge,
   approvedAt: rfqAssignments.approvedAt,
   supplierQuotedPrice: rfqAssignments.supplierQuotedPrice,
@@ -303,6 +312,8 @@ export async function approveAssignment(assignmentId: string, data: {
   adminMarginPct: number;
   deliveryCharge: number;
   transportCompany?: string;
+  transporterEmail?: string;
+  transporterPhone?: string;
 }) {
   await db
     .update(rfqAssignments)
@@ -312,6 +323,8 @@ export async function approveAssignment(assignmentId: string, data: {
       adminMarginPct: String(data.adminMarginPct),
       deliveryCharge: String(data.deliveryCharge),
       transportCompany: data.transportCompany ?? null,
+      transporterEmail: data.transporterEmail ?? null,
+      transporterPhone: data.transporterPhone ?? null,
       approvedAt: new Date(),
     })
     .where(eq(rfqAssignments.id, assignmentId));
@@ -552,6 +565,9 @@ export async function createPurchaseOrder(data: {
   totalAmount: number;
   hsnCode?: string;
   deliveryLocation?: string;
+  transportCompany?: string;
+  transporterEmail?: string;
+  transporterPhone?: string;
 }): Promise<PurchaseOrder> {
   const [row] = await db.insert(purchaseOrders).values({
     poNumber: data.poNumber,
@@ -566,6 +582,9 @@ export async function createPurchaseOrder(data: {
     totalAmount: String(data.totalAmount),
     hsnCode: data.hsnCode,
     deliveryLocation: data.deliveryLocation,
+    transportCompany: data.transportCompany,
+    transporterEmail: data.transporterEmail,
+    transporterPhone: data.transporterPhone,
     status: "ISSUED",
   }).returning();
   return row;
@@ -623,6 +642,7 @@ export async function createSalesInvoice(data: {
   unit: string;
   baseAmount: number;
   marginAmount: number;
+  gstRate: number;
   gstAmount: number;
   totalAmount: number;
   hsnCode?: string;
@@ -638,6 +658,7 @@ export async function createSalesInvoice(data: {
     unit: data.unit,
     baseAmount: String(data.baseAmount),
     marginAmount: String(data.marginAmount),
+    gstRate: String(data.gstRate),
     gstAmount: String(data.gstAmount),
     totalAmount: String(data.totalAmount),
     hsnCode: data.hsnCode,

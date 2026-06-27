@@ -143,6 +143,8 @@ export async function adminAssign(rfqId: string, adminId: string, dto: AssignDto
     negotiatedPrice: dto.negotiatedPrice,
     adminMarginPct: dto.adminMarginPct,
     transportCompany: dto.transportCompany,
+    transporterEmail: dto.transporterEmail,
+    transporterPhone: dto.transporterPhone,
     deliveryCharge: dto.deliveryCharge,
     internalNotes: dto.internalNotes,
   });
@@ -186,22 +188,25 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     assignment.negotiatedPrice ?? assignment.supplierQuotedPrice ?? "0"
   );
   const marginPct = dto.adminMarginPct ?? parseFloat(assignment.adminMarginPct ?? "10");
+  const gstRate = dto.gstRate ?? 18;
   const deliveryCharge = dto.deliveryCharge ?? parseFloat(assignment.deliveryCharge ?? "0");
   const transportCompany = dto.transportCompany ?? assignment.transportCompany ?? undefined;
+  const transporterEmail = dto.transporterEmail ?? assignment.transporterEmail ?? undefined;
+  const transporterPhone = dto.transporterPhone ?? assignment.transporterPhone ?? undefined;
 
   if (negotiatedPrice <= 0) {
     throw new HttpException(400, "Negotiated price must be set before approving");
   }
 
-  // PO: platform → supplier (no margin shown)
+  // PO: platform → supplier (no margin shown; GST at admin-set rate)
   const poBase = negotiatedPrice;
-  const poGst = parseFloat((poBase * 0.18).toFixed(2));
+  const poGst = parseFloat((poBase * (gstRate / 100)).toFixed(2));
   const poTotal = parseFloat((poBase + poGst).toFixed(2));
 
-  // Sales Invoice: platform → buyer (includes margin)
+  // Sales Invoice: platform → buyer (supplier price + Hansetu margin + delivery, then GST)
   const marginAmt = parseFloat((negotiatedPrice * (marginPct / 100)).toFixed(2));
   const invBase = parseFloat((negotiatedPrice + marginAmt + deliveryCharge).toFixed(2));
-  const invGst = parseFloat((invBase * 0.18).toFixed(2));
+  const invGst = parseFloat((invBase * (gstRate / 100)).toFixed(2));
   const invTotal = parseFloat((invBase + invGst).toFixed(2));
 
   const [poNumber, invNumber] = await Promise.all([
@@ -222,6 +227,9 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     totalAmount: poTotal,
     hsnCode: dto.hsnCode ?? "7208",
     deliveryLocation: rfq.rfq.deliveryLocation,
+    transportCompany,
+    transporterEmail,
+    transporterPhone,
   });
 
   await repo.createSalesInvoice({
@@ -234,6 +242,7 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     unit: rfq.rfq.unit,
     baseAmount: invBase,
     marginAmount: marginAmt,
+    gstRate,
     gstAmount: invGst,
     totalAmount: invTotal,
     hsnCode: dto.hsnCode ?? "7208",
@@ -245,6 +254,8 @@ export async function adminApprove(rfqId: string, dto: ApproveRfqDto) {
     adminMarginPct: marginPct,
     deliveryCharge,
     transportCompany,
+    transporterEmail,
+    transporterPhone,
   });
   await repo.rejectOtherAssignments(rfqId, assignment.id);
   await repo.updateRfqStatus(rfqId, "PO_RAISED");
