@@ -43,6 +43,8 @@ export const assignSchema = z.object({
   negotiatedPrice: z.coerce.number().positive("Negotiated price must be positive").optional(),
   adminMarginPct: z.coerce.number().min(0).max(100).default(10),
   transportCompany: z.string().max(255).optional(),
+  transporterEmail: z.string().email().max(255).optional(),
+  transporterPhone: z.string().max(50).optional(),
   deliveryCharge: z.coerce.number().min(0, "Delivery charge cannot be negative").optional(),
   internalNotes: z.string().max(5000).optional(),
 }).superRefine((value, ctx) => {
@@ -64,7 +66,10 @@ export const approveRfqSchema = z.object({
   hsnCode: z.string().max(20).optional(),
   negotiatedPrice: z.coerce.number().positive("Negotiated price must be positive").optional(),
   adminMarginPct: z.coerce.number().min(0).max(100).optional(),
+  gstRate: z.coerce.number().min(0).max(100).default(18),
   transportCompany: z.string().max(255).optional(),
+  transporterEmail: z.string().email().max(255).optional(),
+  transporterPhone: z.string().max(50).optional(),
   deliveryCharge: z.coerce.number().min(0, "Delivery charge cannot be negative").optional(),
 });
 
